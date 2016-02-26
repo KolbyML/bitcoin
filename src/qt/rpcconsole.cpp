@@ -295,7 +295,6 @@ RPCConsole::RPCConsole(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHi
     connect(ui->btn_convert_to_hd_Wallet, SIGNAL(clicked()), this, SLOT(walletUpgradeToHd()));
 
     // set library version labels
-    ui->openSSLVersion->setText(SSLeay_version(SSLEAY_VERSION));
 #ifdef ENABLE_WALLET
     std::string strPathCustom = GetArg("-backuppath", "");
     std::string strzphrPathCustom = GetArg("-zphrbackuppath", "");
