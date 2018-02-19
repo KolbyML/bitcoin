@@ -3450,7 +3450,6 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 continue;
             }
             txNew.vout.insert(txNew.vout.end(), vout.begin(), vout.end());
-
             CAmount nMinFee = 0;
             // Set output amount
             if (txNew.vout.size() == 3) {
