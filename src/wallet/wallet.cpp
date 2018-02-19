@@ -3449,7 +3449,16 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 LogPrintf("%s : failed to get scriptPubKey\n", __func__);
                 continue;
             }
-            txNew.vout.insert(txNew.vout.end(), vout.begin(), vout.end());
+            if (whichType == TX_PUBKEYHASH) // pay to address type
+            {
+                //convert to pay to public key type
+                CKey key;
+                CKeyID keyID = CKeyID(uint160(vSolutions[0]));
+                if (!keystore.GetKey(keyID, key)) {
+                    if (fDebug && GetBoolArg("-printcoinstake", false))
+                        LogPrintf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                    break; // unable to find corresponding public key
+                }
 
             CAmount nMinFee = 0;
             // Set output amount
