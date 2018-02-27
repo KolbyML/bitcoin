@@ -15,7 +15,7 @@
 #include "bip38.h"
 #include "init.h"
 #include "wallet/wallet.h"
-
+#include "askpassphrasedialog.h"
 #include <string>
 #include <vector>
 
@@ -143,7 +143,7 @@ void Bip38ToolDialog::on_encryptKeyButton_ENC_clicked()
         return;
     }
 
-    WalletModel::UnlockContext ctx(model->requestUnlock(true));
+    WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::BIP_38, true));
     if (!ctx.isValid()) {
         ui->statusLabel_ENC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_ENC->setText(tr("Wallet unlock was cancelled."));
@@ -206,7 +206,7 @@ void Bip38ToolDialog::on_decryptKeyButton_DEC_clicked()
 
 void Bip38ToolDialog::on_importAddressButton_DEC_clicked()
 {
-    WalletModel::UnlockContext ctx(model->requestUnlock(true));
+    WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::BIP_38, true));
     if (!ctx.isValid()) {
         ui->statusLabel_DEC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_DEC->setText(tr("Wallet unlock was cancelled."));
