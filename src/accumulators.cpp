@@ -10,6 +10,7 @@
 #include "init.h"
 #include "spork.h"
 #include "accumulatorcheckpoints.h"
+#include "zphrchain.h"
 
 #include <iterator>
 

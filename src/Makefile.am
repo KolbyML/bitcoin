@@ -178,6 +178,7 @@ BITCOIN_CORE_H = \
   validationinterface.h \
   utilsplitstring.h \
   version.h \
+  zphrchain.h \
   zphrtracker.h \
   zphrwallet.h \
   wallet/arrayslice.h \
@@ -245,6 +246,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/net.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
+  zphrchain.cpp \
   $(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ

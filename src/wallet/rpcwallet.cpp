@@ -19,7 +19,7 @@
 #include "utilmoneystr.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
-
+#include "zphrchain.h"
 #include <stdint.h>
 
 #include "libzerocoin/Coin.h"

@@ -29,6 +29,7 @@
 #include "utilmoneystr.h"
 #include "bip39.h"
 #include <tuple>
+#include "zphrchain.h"
 
 #include "denomination_functions.h"
 #include "libzerocoin/Denominations.h"
@@ -5974,4 +5975,3 @@ bool CWallet::DatabaseMint(CDeterministicMint& dMint)
     zphrTracker->Add(dMint, true);
     return true;
 }
-

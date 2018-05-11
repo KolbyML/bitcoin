@@ -11,7 +11,7 @@
 #include "swifttx.h"
 #include "timedata.h"
 #include "wallet/wallet.h"
-
+#include "zphrchain.h"
 #include <stdint.h>
 
 /* Return positive answer if transaction should be shown in list.

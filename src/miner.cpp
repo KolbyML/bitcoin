@@ -28,6 +28,8 @@
 #include "masternode-payments.h"
 #include "accumulators.h"
 #include "spork.h"
+#include "invalid.h"
+#include "zphrchain.h"
 
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple.hpp>
