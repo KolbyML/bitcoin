@@ -299,57 +299,56 @@ std::string ReindexZerocoinDB()
         return _("Failed to wipe zerocoinDB");
     }
 
-    CBlockIndex* pindex = chainActive[Params().Zerocoin_StartHeight()];
+    uiInterface.ShowProgress(_("Reindexing zerocoin database..."), 0);
+
+    CBlockIndex *pindex = chainActive[Params().Zerocoin_StartHeight()];
     while (pindex) {
+        uiInterface.ShowProgress(_("Reindexing zerocoin database..."), std::max(1, std::min(99, (int)((double)(pindex->nHeight - Params().Zerocoin_StartHeight()) / (double)(chainActive.Height() - Params().Zerocoin_StartHeight()) * 100))));
+
         if (pindex->nHeight % 1000 == 0)
             LogPrintf("Reindexing zerocoin : block %d...\n", pindex->nHeight);
 
-        CBlockIndex *pindex = chainActive[Params().Zerocoin_StartHeight()];
-        while (pindex) {
-            if (pindex->nHeight % 1000 == 0)
-                LogPrintf("Reindexing zerocoin : block %d...\n", pindex->nHeight);
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindex)) {
+            strLoadError = _("Reindexing zerocoin failed");
+            break;
+        }
 
-            CBlock block;
-            if (!ReadBlockFromDisk(block, pindex)) {
-                strLoadError = _("Reindexing zerocoin failed");
-                break;
-            }
+        for (const CTransaction &tx : block.vtx) {
+            for (unsigned int i = 0; i < tx.vin.size(); i++) {
+                if (tx.IsCoinBase())
+                    break;
 
-            for (const CTransaction &tx : block.vtx) {
-                for (unsigned int i = 0; i < tx.vin.size(); i++) {
-                    if (tx.IsCoinBase())
-                        break;
+                if (tx.ContainsZerocoins()) {
+                    uint256 txid = tx.GetHash();
+                    //Record Serials
+                    if (tx.IsZerocoinSpend()) {
+                        for (auto &in : tx.vin) {
+                            if (!in.scriptSig.IsZerocoinSpend())
+                                continue;
 
-                    if (tx.ContainsZerocoins()) {
-                        uint256 txid = tx.GetHash();
-                        //Record Serials
-                        if (tx.IsZerocoinSpend()) {
-                            for (auto &in : tx.vin) {
-                                if (!in.scriptSig.IsZerocoinSpend())
-                                    continue;
-
-                                libzerocoin::CoinSpend spend = TxInToZerocoinSpend(in);
-                                zerocoinDB->WriteCoinSpend(spend.getCoinSerialNumber(), txid);
-                            }
+                            libzerocoin::CoinSpend spend = TxInToZerocoinSpend(in);
+                            zerocoinDB->WriteCoinSpend(spend.getCoinSerialNumber(), txid);
                         }
+                    }
 
-                        //Record mints
-                        if (tx.IsZerocoinMint()) {
-                            for (auto &out : tx.vout) {
-                                if (!out.IsZerocoinMint())
-                                    continue;
+                    //Record mints
+                    if (tx.IsZerocoinMint()) {
+                        for (auto &out : tx.vout) {
+                            if (!out.IsZerocoinMint())
+                                continue;
 
-                                CValidationState state;
-                                libzerocoin::PublicCoin coin(GetZerocoinParams(pindex->nHeight));
-                                TxOutToPublicCoin(out, coin, state);
-                                zerocoinDB->WriteCoinMint(coin, txid);
-                            }
+                            CValidationState state;
+                            libzerocoin::PublicCoin coin(GetZerocoinParams(pindex->nHeight));
+                            TxOutToPublicCoin(out, coin, state);
+                            zerocoinDB->WriteCoinMint(coin, txid);
                         }
                     }
                 }
             }
-            pindex = chainActive.Next(pindex);
         }
+        pindex = chainActive.Next(pindex);
     }
+    uiInterface.ShowProgress("", 100);
     return "";
 }
