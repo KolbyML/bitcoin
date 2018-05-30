@@ -5690,7 +5690,7 @@ string CWallet::GetUniqueWalletBackupName(bool fzphrAuto) const
     stringstream ssDateTime;
     std::string strWalletBackupName = strprintf("%s", DateTimeStrFormat(".%Y-%m-%d-%H-%M", GetTime()));
     ssDateTime << strWalletBackupName;
-    
+
     return strprintf("wallet%s.dat%s", fzphrAuto ? "-autozphrbackup" : "", DateTimeStrFormat(".%Y-%m-%d-%H-%M", GetTime()));
 }
 
