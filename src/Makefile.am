@@ -113,6 +113,8 @@ BITCOIN_CORE_H = \
   coins.h \
   compat.h \
   compat/cpuid.h \
+  compat/byteswap.h \
+  compat/endian.h \
   compat/sanity.h \
   consensus/merkle.h \
   consensus/validation.h \
