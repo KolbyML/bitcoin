@@ -155,6 +155,9 @@ void WalletModel::pollBalanceChanged()
         if (transactionTableModel) {
             transactionTableModel->updateConfirmations();
         }
+
+        // Address in receive tab may have been used
+        emit notifyReceiveAddressChanged();
     }
 }
 
@@ -790,4 +793,9 @@ bool WalletModel::hdEnabled() const
 OutputType WalletModel::getDefaultAddressType() const
 {
     return g_address_type;
+}
+
+bool WalletModel::isUsed(CTxDestination address)
+{
+    return wallet->IsUsed(address);
 }
