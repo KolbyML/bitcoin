@@ -490,15 +490,6 @@ bool CWallet::UpgradeHdChainEncrypted(const SecureString& strWalletPassphrase, c
 
 bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool anonymizeOnly)
 {
-    SecureString strWalletPassphraseFinal;
-
-    if (!IsLocked()) {
-        fWalletUnlockAnonymizeOnly = anonymizeOnly;
-        return true;
-    }
-
-    strWalletPassphraseFinal = strWalletPassphrase;
-
     CCrypter crypter;
     CKeyingMaterial vMasterKey;
 
