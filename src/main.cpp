@@ -949,12 +949,24 @@ bool ContextualCheckZerocoinMint(const CTransaction& tx, const PublicCoin& coin,
     return true;
 }
 
+bool isBlockBetweenFakeSerialAttackRange(int nHeight){
+    return nHeight >= Params().Zerocoin_Block_FirstFakeSerial() || nHeight <= Params().Zerocoin_Block_EndFakeSerial();
+}
+
 bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend, CBlockIndex* pindex, const uint256& hashBlock) {
     //Check to see if the zPHR is properly signed
     if (pindex->nHeight > Params().Zerocoin_LastOldParams()) {
-        if (!spend.HasValidSignature())
-            return error("%s: V2 zPHR spend does not have a valid signature", __func__);
-
+        try {
+            if (!spend.HasValidSignature())
+                return error("%s: V2 zPHR spend does not have a valid signature", __func__);
+        }catch (libzerocoin::InvalidSerialException &e){
+            std::cout << "ContextualCheckZerocoinSpendNoSerialCheck() invalid serial.." << std::endl;
+            // Check if we are in the range of the attack
+            if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
+                std::cout << "fake serial detected0" << std::endl;
+                return false;
+            }
+        }
         libzerocoin::SpendType expectedType = libzerocoin::SpendType::SPEND;
         if (tx.IsCoinStake())
             expectedType = libzerocoin::SpendType::STAKE;
@@ -970,16 +982,24 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
         return error("%s : zPHR spend with serial %s is already in block %d\n", __func__,
                      spend.getCoinSerialNumber().GetHex(), nHeightTx);
 
-    //Reject serial's that are not in the acceptable value range
-    libzerocoin::ZerocoinParams* paramsToUse = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION ? Params().OldZerocoin_Params() : Params().Zerocoin_Params();
-    if (!spend.HasValidSerial(paramsToUse))
-        return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
-                     spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
-
+    try {
+        //Reject serial's that are not in the acceptable value range
+        libzerocoin::ZerocoinParams* paramsToUse = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION ? Params().OldZerocoin_Params() : Params().Zerocoin_Params();
+        if (!spend.HasValidSerial(paramsToUse))
+            return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
+                         spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
+    }catch (libzerocoin::InvalidSerialException &e){
+        std::cout << "ContextualCheckZerocoinSpendNoSerialCheck()2 invalid serial.." << std::endl;
+        // Check if we are in the range of the attack
+        if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
+            std::cout << "fake serial detected" << std::endl;
+            return false;
+        }
+    }
     return true;
 }
 
-bool CheckZerocoinSpend(const CTransaction tx, bool fVerifySignature, CValidationState& state, int nHeight)
+bool CheckZerocoinSpend(const CTransaction tx, bool fVerifySignature, CValidationState& state, int nHeight, bool fFakeSerialAttack)
 {
     //max needed non-mint outputs should be 2 - one for redemption address and a possible 2nd for change
     if (tx.vout.size() > 2) {
@@ -1037,8 +1057,8 @@ bool CheckZerocoinSpend(const CTransaction tx, bool fVerifySignature, CValidatio
             Accumulator accumulator(GetZerocoinParams(nHeight), newSpend.getDenomination(), bnAccumulatorValue);
 
             //Check that the coin has been accumulated
-            if(!newSpend.Verify(accumulator))
-                return state.DoS(100, error("CheckZerocoinSpend(): zerocoin spend did not verify"));
+            if(!newSpend.Verify(accumulator, !fFakeSerialAttack))
+                    return state.DoS(100, error("CheckZerocoinSpend(): zerocoin spend did not verify"));
         }
 
         if (serials.count(newSpend.getCoinSerialNumber()))
@@ -1058,7 +1078,7 @@ bool CheckZerocoinSpend(const CTransaction tx, bool fVerifySignature, CValidatio
     return fValidated;
 }
 
-bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fRejectBadUTXO, CValidationState& state, bool fWitnessEnabled)
+bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fRejectBadUTXO, CValidationState& state, bool fWitnessEnabled, bool fFakeSerialAttack)
 {
     // Basic checks that don't depend on any context
     if (tx.vin.empty())
@@ -1108,7 +1128,7 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
 
             // Do not require signature verification if this is initial sync and a block over 24 hours old
             bool fVerifySignature = !IsInitialBlockDownload() && (GetTime() - chainActive.Tip()->GetBlockTime() < (60*60*24));
-            if (!CheckZerocoinSpend(tx, fVerifySignature, state, chainActive.Height()))
+            if (!CheckZerocoinSpend(tx, fVerifySignature, state, chainActive.Height(), fFakeSerialAttack))
                 return state.DoS(100, error("CheckTransaction() : invalid zerocoin spend"));
         }
     }
@@ -4398,7 +4418,6 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
 
             // Split height
             splitHeight = prev->nHeight;
-
         }
     }
 

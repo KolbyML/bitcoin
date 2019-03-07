@@ -115,7 +115,7 @@ public:
     SpendType getSpendType() const { return spendType; }
     std::vector<unsigned char> getSignature() const { return vchSig; }
 
-    bool Verify(const Accumulator& a) const;
+    bool Verify(const Accumulator& a, bool verifyParams = true)) const;
     bool HasValidSerial(ZerocoinParams* params) const;
     bool HasValidSignature() const;
     CBigNum CalculateValidSerial(ZerocoinParams* params);

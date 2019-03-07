@@ -178,6 +178,10 @@ public:
 
         nZerocoinStartHeight = 89993;
 
+        // Fake Serial Attack
+        nFakeSerialBlockHeightStart = 1679090;
+        nFakeSerialBlockheightEnd = 1686215;
+
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
          * be spent as it did not originally exist in the database.

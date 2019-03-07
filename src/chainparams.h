@@ -124,6 +124,10 @@ public:
     int Zerocoin_LastOldParams() const { return nZerocoinLastOldParams; }
     bool IsStakeModifierV2(const int nHeight) const { return nHeight >= nBlockStakeModifierlV2; }
 
+    // fake serial attack
+    int Zerocoin_Block_FirstFakeSerial() const { return nFakeSerialBlockHeightStart; }
+    int Zerocoin_Block_EndFakeSerial() const { return nFakeSerialBlockheightEnd; }
+
 protected:
     CChainParams() {}
 
@@ -180,6 +184,10 @@ protected:
     int nZerocoinStartHeight;
     int nZerocoinLastOldParams;
     int nBlockStakeModifierlV2;
+
+    // fake serial attack
+    int nFakeSerialBlockHeightStart;
+    int nFakeSerialBlockheightEnd;
 };
 
 /**
