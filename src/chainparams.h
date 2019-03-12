@@ -186,8 +186,8 @@ protected:
     int nBlockStakeModifierlV2;
 
     // fake serial attack
-    int nFakeSerialBlockHeightStart;
-    int nFakeSerialBlockheightEnd;
+    int nFakeSerialBlockHeightStart = 0;
+    int nFakeSerialBlockheightEnd = 0;
 };
 
 /**
