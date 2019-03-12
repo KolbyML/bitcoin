@@ -950,7 +950,7 @@ bool ContextualCheckZerocoinMint(const CTransaction& tx, const PublicCoin& coin,
 }
 
 bool isBlockBetweenFakeSerialAttackRange(int nHeight){
-    return nHeight >= Params().Zerocoin_Block_FirstFakeSerial() || nHeight <= Params().Zerocoin_Block_EndFakeSerial();
+    return nHeight >= Params().Zerocoin_Block_FirstFakeSerial() && nHeight <= Params().Zerocoin_Block_EndFakeSerial();
 }
 
 bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend, CBlockIndex* pindex, const uint256& hashBlock) {
@@ -962,9 +962,10 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
         }catch (libzerocoin::InvalidSerialException &e){
             // Check if we are in the range of the attack
             if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
-                //std::cout << "fake serial detected" << std::endl;
-                return false;
-            }
+                std::cout << "fake serial detected" << std::endl;
+                return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
+            }else
+                std::cout << "Invalid serial detected within range" << std::endl;
         }
         libzerocoin::SpendType expectedType = libzerocoin::SpendType::SPEND;
         if (tx.IsCoinStake())
@@ -990,8 +991,10 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
     }catch (libzerocoin::InvalidSerialException &e){
         // Check if we are in the range of the attack
         if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
-            //std::cout << "fake serial detected" << std::endl;
-            return false;
+            std::cout << "fake serial detected" << std::endl;
+            return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
+        }else{
+            std::cout << "Invalid serial detected withing range" << std::endl;
         }
     }
     return true;
@@ -3994,8 +3997,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     //If this is a reorg, check that it is not too deep
     int nMaxReorgDepth = GetArg("-maxreorg", Params().MaxReorganizationDepth());
     if (chainActive.Height() - nHeight >= nMaxReorgDepth)
-        return state.DoS(1,
-                         error("%s: forked chain older than max reorganization depth (height %d)", __func__, nHeight));
+        return state.DoS(1, error("%s: forked chain older than max reorganization depth (height %d)", __func__, chainActive.Height() - nHeight));
 
     // Check blocktime against prev (WANT: blk_time > MedianTimePast)
     if (Params().NetworkID() != CBaseChainParams::REGTEST && block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
