@@ -959,13 +959,12 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
         try {
             if (!spend.HasValidSignature())
                 return error("%s: V2 zPHR spend does not have a valid signature", __func__);
-        }catch (libzerocoin::InvalidSerialException &e){
+        } catch (libzerocoin::InvalidSerialException &e) {
             // Check if we are in the range of the attack
-            if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
-                std::cout << "fake serial detected" << std::endl;
+            if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
                 return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
-            }else
-                std::cout << "Invalid serial detected within range" << std::endl;
+            else
+                LogPrintf("%s: Invalid serial detected within range", __func__);
         }
         libzerocoin::SpendType expectedType = libzerocoin::SpendType::SPEND;
         if (tx.IsCoinStake())
@@ -988,14 +987,12 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
         if (!spend.HasValidSerial(paramsToUse))
             return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
                          spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
-    }catch (libzerocoin::InvalidSerialException &e){
+    } catch (libzerocoin::InvalidSerialException &e) {
         // Check if we are in the range of the attack
-        if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
-            std::cout << "fake serial detected" << std::endl;
+        if (!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
             return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
-        }else{
-            std::cout << "Invalid serial detected withing range" << std::endl;
-        }
+        else
+            LogPrintf("%s: Invalid serial detected within range", __func__);
     }
     return true;
 }
