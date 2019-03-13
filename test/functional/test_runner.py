@@ -58,6 +58,7 @@ BASE_SCRIPTS= [
     'segwit.py',
     'test_case_base.py',
     'zerocoin.py',
+    'zerocoin_wrapped_serials.py',
 
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time
