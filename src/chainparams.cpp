@@ -179,7 +179,6 @@ public:
         nZerocoinStartHeight = 89993;
 
         // Fake Serial Attack
-        nFakeSerialBlockHeightStart = 1679090;
         nFakeSerialBlockheightEnd = 1686215;
 
         /**

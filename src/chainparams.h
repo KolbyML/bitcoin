@@ -125,7 +125,6 @@ public:
     bool IsStakeModifierV2(const int nHeight) const { return nHeight >= nBlockStakeModifierlV2; }
 
     // fake serial attack
-    int Zerocoin_Block_FirstFakeSerial() const { return nFakeSerialBlockHeightStart; }
     int Zerocoin_Block_EndFakeSerial() const { return nFakeSerialBlockheightEnd; }
 
 protected:
@@ -186,7 +185,6 @@ protected:
     int nBlockStakeModifierlV2;
 
     // fake serial attack
-    int nFakeSerialBlockHeightStart = 0;
     int nFakeSerialBlockheightEnd = 0;
 };
 
