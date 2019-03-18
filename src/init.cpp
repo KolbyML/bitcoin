@@ -1249,13 +1249,17 @@ bool AppInit2(const std::vector<std::string>& words)
     }  // (!fDisableWallet)
 #endif // ENABLE_WALLET
 
-
+    // Reindex for wrapped serials inflation.
+    bool reindexDueWrappedSerials = false;
     // Wrapped serials inflation check
     if(chainActive.Height() >= Params().Zerocoin_Block_EndFakeSerial()){
         CBlockIndex* pblockindex = chainActive[Params().Zerocoin_Block_EndFakeSerial()];
-        // Supply needs to be exactly 4131563 (last block post attack supply) + GetWrapppedSerialInflationAmount
-        if (pblockindex->GetZerocoinSupply() != (4131563 + GetWrapppedSerialInflationAmount()) ){
-           // Trigger reindex.
+        if(Params().NetworkID() == CBaseChainParams::MAIN) {
+            // Supply needs to be exactly 4131563 (last block post attack supply) + GetWrapppedSerialInflationAmount
+            if (pblockindex->GetZerocoinSupply() != (4131563 + GetWrapppedSerialInflationAmount())) {
+                // Trigger reindex.
+                reindexDueWrappedSerials = true;
+            }
         }
     }
 
@@ -1517,7 +1521,7 @@ bool AppInit2(const std::vector<std::string>& words)
                 }
 
                 // Recalculate money supply for blocks that are impacted by accounting issue after zerocoin activation
-                if (GetBoolArg("-reindexmoneysupply", false)) {
+                if (GetBoolArg("-reindexmoneysupply", false) || reindexDueWrappedSerials) {
                     if (chainActive.Height() > Params().Zerocoin_StartHeight()) {
                         RecalculateZPHRMinted();
                         RecalculateZPHRSpent();
