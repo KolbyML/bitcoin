@@ -1249,20 +1249,6 @@ bool AppInit2(const std::vector<std::string>& words)
     }  // (!fDisableWallet)
 #endif // ENABLE_WALLET
 
-    // Reindex for wrapped serials inflation.
-    bool reindexDueWrappedSerials = false;
-    // Wrapped serials inflation check
-    if(chainActive.Height() >= Params().Zerocoin_Block_EndFakeSerial()){
-        CBlockIndex* pblockindex = chainActive[Params().Zerocoin_Block_EndFakeSerial()];
-        if(Params().NetworkID() == CBaseChainParams::MAIN) {
-            // Supply needs to be exactly 4131563 (last block post attack supply) + GetWrapppedSerialInflationAmount
-            if (pblockindex->GetZerocoinSupply() != (4131563 + GetWrapppedSerialInflationAmount())) {
-                // Trigger reindex.
-                reindexDueWrappedSerials = true;
-            }
-        }
-    }
-
     // ********************************************************* Step 6: network initialization
 
     RegisterNodeSignals(GetNodeSignals());
@@ -1520,17 +1506,34 @@ bool AppInit2(const std::vector<std::string>& words)
                     }
                 }
 
+                // Reindex for wrapped serials inflation.
+                bool reindexDueWrappedSerials = false;
+                // Wrapped serials inflation check
+                int chainHeight = chainActive.Height();
+                if(chainHeight >= Params().Zerocoin_Block_EndFakeSerial()){
+                    CBlockIndex* pblockindex = chainActive[Params().Zerocoin_Block_EndFakeSerial()];
+                    if(Params().NetworkID() == CBaseChainParams::MAIN) {
+                        // Supply needs to be exactly 4131563 (last block post attack supply) + GetWrapppedSerialInflationAmount
+                        LogPrintf("Current GetZerocoinSupply: %d vs %d",pblockindex->GetZerocoinSupply() , ((4131563 * COIN) + GetWrapppedSerialInflationAmount()));
+                        if (pblockindex->GetZerocoinSupply() !=  ((4131563 * COIN) + GetWrapppedSerialInflationAmount()) ) {
+                            // Trigger reindex.
+                            reindexDueWrappedSerials = true;
+                        }
+                    }
+                }
+
                 // Recalculate money supply for blocks that are impacted by accounting issue after zerocoin activation
                 if (GetBoolArg("-reindexmoneysupply", false) || reindexDueWrappedSerials) {
-                    if (chainActive.Height() > Params().Zerocoin_StartHeight()) {
+                    if (chainHeight > Params().Zerocoin_StartHeight()) {
                         RecalculateZPHRMinted();
                         RecalculateZPHRSpent();
                     }
-                    RecalculatePHRSupply(1);
+                    // Recalculate from the zerocoin activation or from scratch.
+                    RecalculatePIVSupply(reindexDueWrappedSerials ? Params().Zerocoin_StartHeight() : 1);
                 }
 
                 // Force recalculation of accumulators.
-                if (GetBoolArg("-reindexaccumulators", false)) {
+                if (GetBoolArg("-reindexaccumulators", false)) {z
                     CBlockIndex* pindex = chainActive[Params().Zerocoin_StartHeight()];
                     while (pindex->nHeight < chainActive.Height()) {
                         if (!count(listAccCheckpointsNoDB.begin(), listAccCheckpointsNoDB.end(), pindex->nAccumulatorCheckpoint))

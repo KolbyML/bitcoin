@@ -2868,8 +2868,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     //Track zPHR money supply in the block index
     if (!UpdateZPHRSupply(block, pindex, fJustCheck))
-        return state.DoS(100, error("%s: Failed to calculate new zPHR supply for block=%s height=%d", __func__,
-                                    block.GetHash().GetHex(), pindex->nHeight), REJECT_INVALID);
+        return state.DoS(100, error("%s: Failed to calculate new zPHR supply for block=%s height=%d", __func__, block.GetHash().GetHex(), pindex->nHeight), REJECT_INVALID);
 
     // track money supply and mint amount info
     CAmount nMoneySupplyPrev = pindex->pprev ? pindex->pprev->nMoneySupply : 0;
