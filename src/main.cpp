@@ -962,41 +962,34 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
     if (pindex->nHeight > Params().Zerocoin_LastOldParams()) {
         try {
             if (!spend.HasValidSignature())
-                return error("%s: V2 zPHR spend does not have a valid signature", __func__);
+                return error("%s: V2 zPHR spend does not have a valid signature\n", __func__);
         } catch (libzerocoin::InvalidSerialException &e) {
             // Check if we are in the range of the attack
             if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
-                return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
+                return error("%s: Invalid serial detected, txid %s\n", __func__, tx.GetHash().GetHex());
             else
-                LogPrintf("%s: Invalid serial detected within range", __func__);
+                LogPrintf("%s: Invalid serial detected within range\n", __func__);
         }
         libzerocoin::SpendType expectedType = libzerocoin::SpendType::SPEND;
         if (tx.IsCoinStake())
             expectedType = libzerocoin::SpendType::STAKE;
         if (spend.getSpendType() != expectedType) {
-            return error("%s: trying to spend zPHR without the correct spend type. txid=%s", __func__,
+            return error("%s: trying to spend zPHR without the correct spend type. txid=%s\n", __func__,
                          tx.GetHash().GetHex());
         }
     }
-
+    
     //Reject serial's that are already in the blockchain
     int nHeightTx = 0;
     if (IsSerialInBlockchain(spend.getCoinSerialNumber(), nHeightTx))
         return error("%s : zPHR spend with serial %s is already in block %d\n", __func__,
                      spend.getCoinSerialNumber().GetHex(), nHeightTx);
-
-    try {
-        //Reject serial's that are not in the acceptable value range
-        libzerocoin::ZerocoinParams* paramsToUse = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION ? Params().OldZerocoin_Params() : Params().Zerocoin_Params();
-        if (!spend.HasValidSerial(paramsToUse))
+    //Reject serial's that are not in the acceptable value range
+    bool fUseV1Params = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION;
+    if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
+        if(!spend.HasValidSerial(Params().Zerocoin_Params(fUseV1Params)))
             return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
-                         spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
-    } catch (libzerocoin::InvalidSerialException &e) {
-        // Check if we are in the range of the attack
-        if (!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
-            return error("%s: Invalid serial detected, txid %s", __func__, tx.GetHash().GetHex());
-        else
-            LogPrintf("%s: Invalid serial detected within range", __func__);
+                     spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
     }
     return true;
 }
