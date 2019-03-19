@@ -986,11 +986,15 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
                      spend.getCoinSerialNumber().GetHex(), nHeightTx);
     //Reject serial's that are not in the acceptable value range
     bool fUseV1Params = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION;
-    if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight)){
-        if(!spend.HasValidSerial(Params().Zerocoin_Params(fUseV1Params)))
+    if(!spend.HasValidSerial(Params().Zerocoin_Params(fUseV1Params)))
+        // Up until this block our chain was not checking serials correctly..
+        if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
             return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
                      spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
-    }
+        else
+            LogPrintf("%s:: HasValidSerial :: Invalid serial detected within range in block %d\n", __func__, pindex->nHeight);
+
+
     return true;
 }
 

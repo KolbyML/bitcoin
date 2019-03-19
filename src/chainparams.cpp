@@ -297,6 +297,9 @@ public:
 
         nZerocoinLastOldParams = 500000;
 
+        // Fake Serial Attack
+        nFakeSerialBlockheightEnd = 0;
+
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1505224800;
         genesis.nNonce = 12346;
@@ -373,6 +376,9 @@ public:
         nZerocoinStartHeight = 100;
 
         nBlockStakeModifierlV2 = std::numeric_limits<int>::max(); // max integer value (never switch on regtest)
+
+        // Fake Serial Attack
+        nFakeSerialBlockheightEnd = 0;
 
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 11773;
