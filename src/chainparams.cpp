@@ -300,6 +300,7 @@ public:
 
         // Fake Serial Attack
         nFakeSerialBlockheightEnd = -1;
+        nSupplyBeforeFakeSerial = 0;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1505224800;
