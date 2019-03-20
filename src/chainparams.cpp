@@ -179,7 +179,8 @@ public:
         nZerocoinStartHeight = 89993;
 
         // Fake Serial Attack
-        nFakeSerialBlockheightEnd = 1686215;
+        nFakeSerialBlockheightEnd = 1686229;
+        nSupplyBeforeFakeSerial = 4131563 * COIN;   // zerocoin supply at block nFakeSerialBlockheightEnd
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -298,7 +299,7 @@ public:
         nZerocoinLastOldParams = 500000;
 
         // Fake Serial Attack
-        nFakeSerialBlockheightEnd = 0;
+        nFakeSerialBlockheightEnd = -1;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1505224800;
@@ -378,7 +379,7 @@ public:
         nBlockStakeModifierlV2 = std::numeric_limits<int>::max(); // max integer value (never switch on regtest)
 
         // Fake Serial Attack
-        nFakeSerialBlockheightEnd = 0;
+        nFakeSerialBlockheightEnd = -1;
 
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 11773;

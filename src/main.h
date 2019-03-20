@@ -403,6 +403,7 @@ bool IsBlockHashInChain(const uint256& hashBlock);
 void RecalculateZPHRSpent();
 void RecalculateZPHRMinted();
 bool RecalculatePHRSupply(int nHeightStart);
+void AddWrappedSerialsInflation();
 bool ReindexAccumulators(list<uint256>& listMissingCheckpoints, string& strError);
 
 // Fake Serial attack Range

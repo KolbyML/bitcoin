@@ -986,13 +986,14 @@ bool ContextualCheckZerocoinSpend(const CTransaction& tx, const CoinSpend& spend
                      spend.getCoinSerialNumber().GetHex(), nHeightTx);
     //Reject serial's that are not in the acceptable value range
     bool fUseV1Params = spend.getVersion() < libzerocoin::PrivateCoin::PUBKEY_VERSION;
-    if(!spend.HasValidSerial(Params().Zerocoin_Params(fUseV1Params)))
+    if (!spend.HasValidSerial(Params().Zerocoin_Params(fUseV1Params))) {
         // Up until this block our chain was not checking serials correctly..
         if(!isBlockBetweenFakeSerialAttackRange(pindex->nHeight))
             return error("%s : zPHR spend with serial %s from tx %s is not in valid range\n", __func__,
                      spend.getCoinSerialNumber().GetHex(), tx.GetHash().GetHex());
         else
             LogPrintf("%s:: HasValidSerial :: Invalid serial detected within range in block %d\n", __func__, pindex->nHeight);
+    }
 
 
     return true;
@@ -2415,8 +2416,12 @@ void RecalculateZPHRSpent()
 {
     CBlockIndex* pindex = chainActive[Params().Zerocoin_StartHeight()];
     while (true) {
-        if (pindex->nHeight % 1000 == 0)
+        // Log Message and feedback message every 1000 blocks
+        if (pindex->nHeight % 1000 == 0) {
             LogPrintf("%s : block %d...\n", __func__, pindex->nHeight);
+            int percent = (int)( (double)(pindex->nHeight - Params().Zerocoin_StartHeight()) / ((chainActive.Height() - Params().Zerocoin_StartHeight()) * 100) );
+            uiInterface.ShowProgress(_("Recalculating spent ZPIV..."), percent);
+        }
 
         //Rewrite zPHR supply
         CBlock block;
@@ -2437,13 +2442,11 @@ void RecalculateZPHRSpent()
         for (auto denom : listDenomsSpent)
             pindex->mapZerocoinSupply.at(denom)--;
 
-        // Wrapped serials inflation.
-        if(pindex->nHeight == Params().Zerocoin_Block_EndFakeSerial()){
-            // Re fill the supply
+        // Add inflation from Wrapped Serials if block is Zerocoin_Block_EndFakeSerial()
+        if (pindex->nHeight == Params().Zerocoin_Block_EndFakeSerial() + 1)
             for (auto denom : libzerocoin::zerocoinDenomList) {
                 pindex->mapZerocoinSupply.at(denom) += GetWrapppedSerialInflation(denom);
             }
-        }
 
         //Rewrite money supply
         assert(pblocktree->WriteBlockIndex(CDiskBlockIndex(pindex)));
@@ -2452,6 +2455,28 @@ void RecalculateZPHRSpent()
             pindex = chainActive.Next(pindex);
         else
             break;
+    }
+}
+
+void AddWrappedSerialsInflation()
+{
+    CBlockIndex* pindex = chainActive[Params().Zerocoin_Block_EndFakeSerial()];
+    while (pindex->nHeight < chainActive.Height()) {
+        // Log Message and feedback message every 1000 blocks
+        if (pindex->nHeight % 1000 == 0) {
+            LogPrintf("%s : block %d...\n", __func__, pindex->nHeight);
+            int percent = (int)( (double)(pindex->nHeight - Params().Zerocoin_Block_EndFakeSerial()) / ((chainActive.Height() - Params().Zerocoin_Block_EndFakeSerial()) * 100) );
+            uiInterface.ShowProgress(_("Adding Wrapped Serials supply..."), percent);
+        }
+
+        // Add inflated denominations to block index mapSupply
+        for (auto denom : libzerocoin::zerocoinDenomList) {
+            pindex->mapZerocoinSupply.at(denom) += GetWrapppedSerialInflation(denom);
+        }
+        // Update current block index to disk
+        assert(pblocktree->WriteBlockIndex(CDiskBlockIndex(pindex)));
+        // next block
+        pindex = chainActive.Next(pindex);
     }
 }
 
@@ -2466,8 +2491,11 @@ bool RecalculatePHRSupply(int nHeightStart)
         nSupplyPrev = CAmount(1880313101204990);
 
     while (true) {
-        if (pindex->nHeight % 1000 == 0)
+        if (pindex->nHeight % 1000 == 0) {
             LogPrintf("%s : block %d...\n", __func__, pindex->nHeight);
+            int percent = (int)( (double)(pindex->nHeight - nHeightStart) / ((chainActive.Height() - nHeightStart) * 100) );
+            uiInterface.ShowProgress(_("Recalculating spent ZPIV..."), percent);
+        }
 
         CBlock block;
         assert(ReadBlockFromDisk(block, pindex));
@@ -2624,6 +2652,12 @@ bool UpdateZPHRSupply(const CBlock& block, CBlockIndex* pindex, bool fJustCheck)
     for (auto& denom : zerocoinDenomList)
         LogPrint("zero", "%s coins for denomination %d pubcoin %s\n", __func__, denom, pindex->mapZerocoinSupply.at(denom));
 
+    // Update Wrapped Serials amount
+    // A one-time event where only the zPIV supply was off (due to serial duplication off-chain on main net)
+    if (Params().NetworkID() == CBaseChainParams::MAIN && pindex->nHeight == Params().Zerocoin_Block_EndFakeSerial() + 1
+            && pindex->GetZerocoinSupply() < Params().GetSupplyBeforeFakeSerial() + GetWrapppedSerialInflationAmount()) {
+        AddWrappedSerialsInflation();
+    }
     return true;
 }
 
@@ -2862,7 +2896,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
     }
-
+    
     //Track zPHR money supply in the block index
     if (!UpdateZPHRSupply(block, pindex, fJustCheck))
         return state.DoS(100, error("%s: Failed to calculate new zPHR supply for block=%s height=%d", __func__, block.GetHash().GetHex(), pindex->nHeight), REJECT_INVALID);
