@@ -1518,12 +1518,12 @@ bool AppInit2(const std::vector<std::string>& words)
 
                     if (pblockindex->GetZerocoinSupply() < zpivSupplyCheckpoint) {
                         // Trigger reindex due wrapping serials
-                        LogPrintf("Current GetZerocoinSupply: %d vs %d", pblockindex->GetZerocoinSupply()/COIN , zpivSupplyCheckpoint/COIN);
+                        LogPrintf("Current GetZerocoinSupply: %d vs %d\n", pblockindex->GetZerocoinSupply()/COIN , zpivSupplyCheckpoint/COIN);
                         reindexDueWrappedSerials = true;
                     } else if (pblockindex->GetZerocoinSupply() > zpivSupplyCheckpoint) {
                         // Trigger global zPIV reindex
                         reindexZerocoin = true;
-                        LogPrintf("Current GetZerocoinSupply: %d vs %d", pblockindex->GetZerocoinSupply()/COIN , zpivSupplyCheckpoint/COIN);
+                        LogPrintf("Current GetZerocoinSupply: %d vs %d\n", pblockindex->GetZerocoinSupply()/COIN , zpivSupplyCheckpoint/COIN);
                     }
 
                 }
