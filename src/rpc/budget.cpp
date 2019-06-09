@@ -2,6 +2,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "activemasternode.h"
+#include "chainparams.h"
 #include "wallet/db.h"
 #include "init.h"
 #include "main.h"

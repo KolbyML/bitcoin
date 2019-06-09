@@ -15,7 +15,7 @@
 #include "miner.h"
 #include "net.h"
 #include "pow.h"
-#include "rpc/server.h"
+#include "server.h"
 #include "util.h"
 #include "validationinterface.h"
 #ifdef ENABLE_WALLET

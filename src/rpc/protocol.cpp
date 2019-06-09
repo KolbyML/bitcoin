@@ -8,7 +8,6 @@
 
 #include "httpserver.h"
 #include "rpc/protocol.h"
-
 #include "random.h"
 #include "tinyformat.h"
 #include "primitives/transaction.h"
