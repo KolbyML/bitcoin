@@ -27,8 +27,6 @@
 #include "wallet/wallet.h"
 #endif // ENABLE_WALLET
 
-#include <openssl/crypto.h>
-
 #include <univalue.h>
 
 #ifdef ENABLE_WALLET
