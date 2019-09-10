@@ -160,6 +160,7 @@ BITCOIN_CORE_H = \
   spork.h \
   sporkdb.h \
   stakeinput.h \
+  sporkid.h \
   streams.h \
   support/cleanse.h \
   sync.h \
