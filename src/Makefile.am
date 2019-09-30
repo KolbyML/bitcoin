@@ -103,6 +103,7 @@ BITCOIN_CORE_H = \
   bech32.h \
   bip38.h \
   bloom.h \
+  blocksignature.h \
   chain.h \
   chainparams.h \
   chainparamsbase.h \
@@ -173,6 +174,7 @@ BITCOIN_CORE_H = \
   support/allocators/zeroafterfree.h \
   spork.h \
   sporkdb.h \
+  stakeinput.h \
   streams.h \
   support/cleanse.h \
   sync.h \
@@ -222,6 +224,7 @@ libbitcoin_server_a_SOURCES = \
   addrman.cpp \
   alert.cpp \
   bloom.cpp \
+  blocksignature.cpp \
   chain.cpp \
   checkpoints.cpp \
   httprpc.cpp \
@@ -283,6 +286,8 @@ libbitcoin_wallet_a_SOURCES = \
   primitives/deterministicmint.cpp \
   primitives/zerocoin.cpp \
   kernel.cpp \
+  wallet_ismine.cpp \
+  stakeinput.cpp \
   zphrwallet.cpp \
   zphrtracker.cpp \
   wallet/crypter.cpp \
