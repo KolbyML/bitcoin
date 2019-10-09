@@ -27,7 +27,6 @@
 #include "validationinterface.h"
 #include "masternode-payments.h"
 #include "accumulators.h"
-#include "blocksignature.h"
 #include "spork.h"
 
 #include <boost/thread.hpp>
@@ -259,6 +258,14 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
             CAmount nTotalIn = 0;
             bool fMissingInputs = false;
             uint256 txid = tx.GetHash();
+
+            // Legacy limits on sigOps:
+            int64_t nTxSigOpsCost = mi->second.GetSigOpCost();
+            if (nBlockSigOpsCost + nTxSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
+                continue;
+
+            nBlockSigOpsCost += nTxSigOpsCost;
+            pblocktemplate->vTxSigOpsCost.push_back(nTxSigOpsCost);
 
             for (const CTxIn& txin : tx.vin) {
                 //zerocoinspend has special vin
@@ -725,7 +732,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
         if (fProofOfStake) {
             LogPrintf("CPUMiner : proof-of-stake block found %s \n", pblock->GetHash().ToString().c_str());
 
-            if (!SignBlock(*pblock, *pwallet)) {
+            if (!pblock->SignBlock(*pwallet)) {
                 LogPrintf("BitcoinMiner(): Signing new block failed \n");
                 continue;
             }

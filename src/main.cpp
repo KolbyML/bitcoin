@@ -11,7 +11,6 @@
 
 #include "accumulators.h"
 #include "addrman.h"
-#include "blocksignature.h"
 #include "alert.h"
 #include "base58.h"
 #include "chainparams.h"
@@ -3273,7 +3272,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         }
     }
 
-    
+
     // delete old entries
     for (auto it = mapStakeSpent.begin(); it != mapStakeSpent.end();) {
         if (it->second < pindex->nHeight - Params().MaxReorganizationDepth()) {
@@ -3284,7 +3283,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             it++;
         }
     }
-    
+
 
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
@@ -4821,7 +4820,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
     // check block
     bool checked = CheckBlock(*pblock, state);
 
-    if (!CheckBlockSignature(*pblock))
+    if (!pblock->CheckBlockSignature())
         return error("ProcessNewBlock() : bad proof-of-stake block signature");
 
     {
