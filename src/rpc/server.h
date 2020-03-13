@@ -210,7 +210,7 @@ extern UniValue submitblock(const UniValue& params, bool fHelp);
 extern UniValue estimatefee(const UniValue& params, bool fHelp);
 extern UniValue estimatepriority(const UniValue& params, bool fHelp);
 
-extern UniValue getnewaddress(const UniValue& params, bool fHelp); // in rpcwallet.cpp
+extern UniValue getnewaddress(const UniValue& params, bool fHelp); // in rpc/wallet.cpp
 extern UniValue getaccountaddress(const UniValue& params, bool fHelp);
 extern UniValue getrawchangeaddress(const UniValue& params, bool fHelp);
 extern UniValue setaccount(const UniValue& params, bool fHelp);
