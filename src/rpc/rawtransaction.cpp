@@ -22,7 +22,6 @@
 #include "swifttx.h"
 #include "uint256.h"
 #include "utilmoneystr.h"
-#ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif
 

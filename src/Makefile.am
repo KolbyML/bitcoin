@@ -234,6 +234,14 @@ libbitcoin_server_a_SOURCES = \
   noui.cpp \
   pow.cpp \
   rest.cpp \
+  rpc/blockchain.cpp \
+  rpc/masternode.cpp \
+  rpc/masternode-budget.cpp \
+  rpc/mining.cpp \
+  rpc/misc.cpp \
+  rpc/net.cpp \
+  rpc/rawtransaction.cpp \
+  rpc/server.cpp \
   script/sigcache.cpp \
   sporkdb.cpp \
   timedata.cpp \
