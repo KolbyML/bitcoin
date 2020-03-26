@@ -822,7 +822,7 @@ void static ThreadBitcoinMiner(void* parg)
         BitcoinMiner(pwallet, false);
         boost::this_thread::interruption_point();
     } catch (const std::exception& e) {
-        LogPrintf("PhoreMiner exception");
+        LogPrintf("ThreadBitcoinMiner() exception");
     } catch (...) {
         LogPrintf("PhoreMiner exception");
     }
