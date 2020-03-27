@@ -134,7 +134,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
     // -promiscuousmempoolflags is used.
     // TODO: replace this with a call to main to assess validity of a mempool
     // transaction (which in most cases can be a no-op).
-    bool fIncludeWitness = IsSporkActive(SPORK_17_SEGWIT_ACTIVATION);
+    bool fIncludeWitness = sporkManager.IsSporkActive(SPORK_17_SEGWIT_ACTIVATION);
 
 
 
@@ -529,7 +529,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
         pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(pblock->vtx[0]);
 
         if (fProofOfStake) {
-            if (! IsSporkActive(SPORK_19_SEGWIT_ON_COINBASE)) {
+            if (!sporkManager.IsSporkActive(SPORK_19_SEGWIT_ON_COINBASE)) {
                 bool fHaveWitness = false;
                 for (size_t t = 1; t < pblock->vtx.size(); t++) {
                     if (!pblock->vtx[t].wit.IsNull()) {
