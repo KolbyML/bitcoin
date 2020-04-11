@@ -47,8 +47,8 @@ public:
     explicit ConfigureMasternodePage(Mode mode, QWidget* parent);
     ~ConfigureMasternodePage();
 
-	void counter(int counter);
-	void MNAliasCache(QString MnAliasCache);
+    void counter(int counter);
+    void MNAliasCache(QString MnAliasCache);
     void loadAlias(QString strAlias);
     void loadIP(QString strIP);
     void loadPrivKey(QString strPrivKey);
@@ -85,8 +85,8 @@ public slots:
 
 private:
     void saveCurrentRow();
-	int counters;
-	QString mnAliasCache;
+    int counters;
+    QString mnAliasCache;
     Ui::ConfigureMasternodePage* ui;
     QDataWidgetMapper* mapper;
     Mode mode;

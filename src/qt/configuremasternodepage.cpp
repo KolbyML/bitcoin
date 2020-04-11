@@ -39,12 +39,12 @@ ConfigureMasternodePage::ConfigureMasternodePage(Mode mode, QWidget* parent) : Q
                                                                    mode(mode)
 {
     ui->setupUi(this);
-	
-	GUIUtil::setupAliasWidget(ui->aliasEdit, this);
-	GUIUtil::setupIPWidget(ui->vpsIpEdit, this);
-	GUIUtil::setupPrivKeyWidget(ui->privKeyEdit, this);
-	GUIUtil::setupTXIDWidget(ui->outputEdit, this);
-	GUIUtil::setupTXIDIndexWidget(ui->outputIdEdit, this);
+
+    GUIUtil::setupAliasWidget(ui->aliasEdit, this);
+    GUIUtil::setupIPWidget(ui->vpsIpEdit, this);
+    GUIUtil::setupPrivKeyWidget(ui->privKeyEdit, this);
+    GUIUtil::setupTXIDWidget(ui->outputEdit, this);
+    GUIUtil::setupTXIDIndexWidget(ui->outputIdEdit, this);
 
     switch (mode) {
     case NewConfigureMasternode:
@@ -105,27 +105,27 @@ void ConfigureMasternodePage::saveCurrentRow()
 
     switch (mode) {
     case NewConfigureMasternode:
-		if(ui->aliasEdit->text().toStdString().empty() || ui->vpsIpEdit->text().toStdString().empty() || ui->privKeyEdit->text().toStdString().empty() || ui->outputEdit->text().toStdString().empty() || ui->outputIdEdit->text().toStdString().empty()) {
-			break;
-		}	
-		masternodeConfig.add(ui->aliasEdit->text().toStdString(), ui->vpsIpEdit->text().toStdString(), ui->privKeyEdit->text().toStdString(), ui->outputEdit->text().toStdString(), ui->outputIdEdit->text().toStdString());
-		masternodeConfig.writeToMasternodeConf();
+        if(ui->aliasEdit->text().toStdString().empty() || ui->vpsIpEdit->text().toStdString().empty() || ui->privKeyEdit->text().toStdString().empty() || ui->outputEdit->text().toStdString().empty() || ui->outputIdEdit->text().toStdString().empty()) {
+            break;
+        }
+        masternodeConfig.add(ui->aliasEdit->text().toStdString(), ui->vpsIpEdit->text().toStdString(), ui->privKeyEdit->text().toStdString(), ui->outputEdit->text().toStdString(), ui->outputIdEdit->text().toStdString());
+        masternodeConfig.writeToMasternodeConf();
         break;
     case EditConfigureMasternode:
-		if(ui->aliasEdit->text().toStdString().empty() || ui->vpsIpEdit->text().toStdString().empty() || ui->privKeyEdit->text().toStdString().empty() || ui->outputEdit->text().toStdString().empty() || ui->outputIdEdit->text().toStdString().empty()) {
-			break;
-		}
-	    
-	    QString MnAlias = getMnAliasCache();
-		ConfigureMasternodePage::updateAlias(ui->aliasEdit->text().toStdString(), ui->vpsIpEdit->text().toStdString(), ui->privKeyEdit->text().toStdString(), ui->outputEdit->text().toStdString(), ui->outputIdEdit->text().toStdString(), MnAlias.toStdString());
-		break;
+        if(ui->aliasEdit->text().toStdString().empty() || ui->vpsIpEdit->text().toStdString().empty() || ui->privKeyEdit->text().toStdString().empty() || ui->outputEdit->text().toStdString().empty() || ui->outputIdEdit->text().toStdString().empty()) {
+            break;
+        }
+
+        QString MnAlias = getMnAliasCache();
+        ConfigureMasternodePage::updateAlias(ui->aliasEdit->text().toStdString(), ui->vpsIpEdit->text().toStdString(), ui->privKeyEdit->text().toStdString(), ui->outputEdit->text().toStdString(), ui->outputIdEdit->text().toStdString(), MnAlias.toStdString());
+        break;
     }
 }
 
 void ConfigureMasternodePage::accept()
 {
-	saveCurrentRow();
-	emit accepted();
+    saveCurrentRow();
+    emit accepted();
     QDialog::accept();
 }
 
@@ -152,8 +152,7 @@ void ConfigureMasternodePage::updateAlias(std::string Alias, std::string IP, std
 			masternodeConfig.writeToMasternodeConf();
 			return;
 		}
-	}	
-
+	}
 }
 
 void ConfigureMasternodePage::on_AutoFillPrivKey_clicked()
@@ -161,7 +160,7 @@ void ConfigureMasternodePage::on_AutoFillPrivKey_clicked()
     CKey secret;
     secret.MakeNewKey(false);
 
-	ui->privKeyEdit->setText(QString::fromStdString(CBitcoinSecret(secret).ToString()));
+    ui->privKeyEdit->setText(QString::fromStdString(CBitcoinSecret(secret).ToString()));
 }
 
 
