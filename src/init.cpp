@@ -1465,6 +1465,9 @@ bool AppInit2(const std::vector<std::string>& words)
                 if (fReindex)
                     pblocktree->WriteReindexing(true);
 
+                // End loop if shutdown was requested
+                if (ShutdownRequested()) break;
+
                 // Phore: load previous sessions sporks if we have them.
                 uiInterface.InitMessage(_("Loading sporks..."));
                 sporkManager.LoadSporksFromDB();
