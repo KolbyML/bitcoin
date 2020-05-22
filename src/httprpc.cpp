@@ -149,8 +149,8 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
 {
     // JSONRPC handles only POST
     if (req->GetRequestMethod() != HTTPRequest::POST) {
-        if (req->GetRequestMethod() == HTTPRequest::OPTIONS and GetArg("-rpccorsdomain", "") != "") {
-            req->WriteHeader("Access-Control-Allow-Origin", GetArg("-rpccorsdomain", ""));
+        if (req->GetRequestMethod() == HTTPRequest::OPTIONS and gArgs.GetArg("-rpccorsdomain", "") != "") {
+            req->WriteHeader("Access-Control-Allow-Origin", gArgs.GetArg("-rpccorsdomain", ""));
             req->WriteHeader("Access-Control-Allow-Headers", "content-type, accept, authorization");
             req->WriteHeader("Access-Control-Allow-Credentials", "true");
             req->WriteReply(HTTP_OK);
@@ -167,8 +167,8 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
         return false;
     }
 
-    if (GetArg("-rpccorsdomain", "") != "") {
-        req->WriteHeader("Access-Control-Allow-Origin", GetArg("-rpccorsdomain", ""));
+    if (gArgs.GetArg("-rpccorsdomain", "") != "") {
+        req->WriteHeader("Access-Control-Allow-Origin", gArgs.GetArg("-rpccorsdomain", ""));
     }
     JSONRPCRequest jreq;
     jreq.peerAddr = req->GetPeer().ToString();
