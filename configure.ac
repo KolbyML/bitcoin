@@ -1359,7 +1359,7 @@ AM_CONDITIONAL([BUILD_BITCOIN_TX], [test x$build_bitgreen_tx = xyes])
 AC_MSG_RESULT($build_bitgreen_tx)
 
 AC_MSG_CHECKING([whether to build bitgreen-wallet])
-AM_CONDITIONAL([BUILD_BITCOIN_WALLET], [test x$build_bitgreen_wallet = xyes])
+AM_CONDITIONAL([BUILD_BITCOIN_WALLET], [test x$build_bitgreen_wallet = xno])
 AC_MSG_RESULT($build_bitgreen_wallet)
 
 AC_MSG_CHECKING([whether to build libraries])
@@ -1461,7 +1461,7 @@ if test x$bitgreen_enable_qt != xno; then
   fi
 
   AC_MSG_CHECKING([whether to build test_bitgreen-qt])
-  if test x$use_gui_tests$bitgreen_enable_qt_test = xyesyes; then
+  if test x$use_gui_tests$bitgreen_enable_qt_test = xno; then
     AC_MSG_RESULT([yes])
     BUILD_TEST_QT="yes"
   else
@@ -1489,7 +1489,7 @@ fi
 AM_CONDITIONAL([ENABLE_ZMQ], [test "x$use_zmq" = "xyes"])
 
 AC_MSG_CHECKING([whether to build test_bitgreen])
-if test x$use_tests = xyes; then
+if test x$use_tests = xno; then
   AC_MSG_RESULT([yes])
   BUILD_TEST="yes"
 else
