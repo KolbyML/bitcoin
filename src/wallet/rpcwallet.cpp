@@ -4210,9 +4210,6 @@ static bool ParseOutput(
             return false;
         }
     }
-    if (o.destStake.type() != typeid(CNoDestination)) {
-        output.pushKV("coldstake_address", EncodeDestination(o.destStake));
-    }
     auto mi = pwallet->mapAddressBook.find(o.destination);
     if (mi != pwallet->mapAddressBook.end()) {
         output.pushKV("label", mi->second.name);
