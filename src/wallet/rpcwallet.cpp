@@ -4497,7 +4497,8 @@ static void ParseRecords(
     } else if (nFrom) {
         category = "sent_to";
     } else if (wtx.tx->IsCoinStake()) {
-        isminetype mine = wallet->IsMine(wtx.tx->vout[i]);
+        //isminetype mine = pwallet->IsMine(wtx.tx->vout[i]);
+        isminetype mine = IsMine(*pwallet, wtx.tx);
 
         if (mine == ISMINE_NO) {
             //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
