@@ -4191,7 +4191,7 @@ static bool ParseOutput(
     std::vector<std::string>  &amounts
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    CTxDestination dest
+    CTxDestination dest;
 
     std::string sKey = strprintf("n%d", o.vout);
     mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
