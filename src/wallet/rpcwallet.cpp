@@ -4499,13 +4499,14 @@ static void ParseRecords(
     } else if (wtx.tx->IsCoinStake()) {
         //isminetype mine = pwallet->IsMine(wtx.tx->vout[i]);
         isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
-
-        if (mine == ISMINE_NO) {
+        
+        CTxDestination address;
+        if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
             //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
             for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
                 CTxDestination outAddress;
                 if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
-                    if (pwallet->getAddress(outAddress, /* name= */ nullptr, &mine, /* purpose= */ nullptr)) {
+                    if (IsMine(*pwallet, outAddress)) {
                         category = "masternode_reward";
                     }
                 }
