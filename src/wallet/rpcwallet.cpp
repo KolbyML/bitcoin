@@ -4416,7 +4416,7 @@ static void ParseRecords(
 
         CBlockIndex* pindex = LookupBlockIndex(wtx.hashBlock);
         if (pindex) {
-            PushTime(entry, "blocktime", pindex->GetBlockTime());
+            entry.__pushKV("blocktime", pindex->GetBlockTime());
         }
 
     } else {
