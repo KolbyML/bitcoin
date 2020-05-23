@@ -4488,7 +4488,6 @@ static void ParseRecords(
 
         // get account name
         if (extracted && !record.scriptPubKey.IsUnspendable()) {
-            addr.Set(dest);
             std::map<CTxDestination, CAddressBookData>::iterator mai;
             mai = pwallet->mapAddressBook.find(dest);
             if (mai != pwallet->mapAddressBook.end() && !mai->second.name.empty()) {
@@ -4524,8 +4523,8 @@ static void ParseRecords(
         if (extracted && dest.type() == typeid(CNoDestination)) {
             output.__pushKV("address", "none");
         } else if (extracted) {
-            output.__pushKV("address", addr.ToString());
-            addresses.push_back(addr.ToString());
+            output.__pushKV("address", EncodeDestination(dest));
+            addresses.push_back(EncodeDestination(dest));
         }
 
         switch (record.nType) {
