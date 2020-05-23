@@ -4204,10 +4204,8 @@ static void ParseOutputs(
     wtx.GetAmounts(
         listReceived,
         listSent,
-        listStaked,
         nFee,
-        ISMINE_ALL,
-        true);
+        ISMINE_ALL);
 
     if (wtx.IsFromMe(ISMINE_WATCH_ONLY) && !(watchonly & ISMINE_WATCH_ONLY)) {
         return;
