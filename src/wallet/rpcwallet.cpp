@@ -4402,8 +4402,6 @@ static void ParseRecords(
     size_t  nWatchOnly  = 0;
     CAmount totalAmount = 0;
 
-    auto locked_chain = pwallet->chain().lock();
-
     int confirmations = wtx.GetDepthInMainChain(locked_chain);
     entry.__pushKV("confirmations", confirmations);
     if (confirmations > 0) {
