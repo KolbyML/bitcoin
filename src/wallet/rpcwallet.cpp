@@ -4319,13 +4319,6 @@ static void ParseOutputs(
                 )) {
                     return ;
                 }
-                if (r.destination.type() == typeid(PKHash)) {
-                    CStealthAddress sx;
-                    CKeyID idK = CKeyID(boost::get<PKHash>(r.destination));
-                    if (pwallet->GetStealthLinked(idK, sx)) {
-                        output.pushKV("stealth_address", sx.Encoded(fBech32));
-                    }
-                }
                 output.pushKV("amount", ValueFromAmount(r.amount));
                 amount += r.amount;
 
@@ -4490,31 +4483,6 @@ static void ParseRecords(
             mai = pwallet->mapAddressBook.find(dest);
             if (mai != pwallet->mapAddressBook.end() && !mai->second.name.empty()) {
                 output.__pushKV("account", mai->second.name);
-            }
-        }
-
-        // stealth addresses
-        CStealthAddress sx;
-        if (record.vPath.size() > 0) {
-            if (record.vPath[0] == ORA_STEALTH) {
-                if (record.vPath.size() < 5) {
-                    LogPrintf("%s: Warning, malformed vPath.\n", __func__);
-                } else {
-                    uint32_t sidx;
-                    memcpy(&sidx, &record.vPath[1], 4);
-                    if (pwallet->GetStealthByIndex(sidx, sx)) {
-                        output.__pushKV("stealth_address", sx.Encoded());
-                        addresses.push_back(sx.Encoded());
-                    }
-                }
-            }
-        } else {
-            if (extracted && dest.type() == typeid(PKHash)) {
-                CKeyID idK = CKeyID(boost::get<PKHash>(dest));
-                if (pwallet->GetStealthLinked(idK, sx)) {
-                    output.__pushKV("stealth_address", sx.Encoded());
-                    addresses.push_back(sx.Encoded());
-                }
             }
         }
 
