@@ -4198,9 +4198,9 @@ static bool ParseOutput(
     if (mvi != wtx.mapValue.end()) {
         output.pushKV("narration", mvi->second);
     }
-    if (addr.Set(o.destination)) {
-        output.pushKV("address", addr.ToString());
-        addresses.push_back(addr.ToString());
+    if (o.destination.which() != 0) {
+        output.pushKV("address", EncodeDestination(o.destination));
+        addresses.push_back(EncodeDestination(o.destination));
     }
     if (o.ismine & ISMINE_WATCH_ONLY) {
         if (watchonly & ISMINE_WATCH_ONLY) {
