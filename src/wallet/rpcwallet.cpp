@@ -4451,7 +4451,7 @@ static void ParseRecords(
         }
 */
         CTxDestination  dest;
-        bool extracted = ExtractDestination(record.scriptPubKey, dest);
+        bool extracted = ExtractDestination(wtx.tx->vout[i].scriptPubKey, dest);
 
         // get account name
         if (extracted && !record.scriptPubKey.IsUnspendable()) {
@@ -4469,26 +4469,16 @@ static void ParseRecords(
             addresses.push_back(EncodeDestination(dest));
         }
 
-        switch (record.nType) {
-            case OUTPUT_STANDARD: ++nStd; break;
-            default: ++nStd = 0;
-        }
-        output.__pushKV("type",
-              record.nType == OUTPUT_STANDARD ? "standard"
-            : "unknown");
+        output.__pushKV("type", "standard");
 
-        if (!record.sNarration.empty()) {
-            output.__pushKV("narration", record.sNarration);
-        }
+        CAmount nCredit = wtx.credit;
+        CAmount nDebit = wtx.debit;
+        CAmount amount = nCredit - nDebit;
 
-        CAmount amount = record.nValue;
-        if (!(record.nFlags & ORF_OWN_ANY)) {
-            amount *= -1;
-        }
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
         output.__pushKV("amount", ValueFromAmount(amount));
-        output.__pushKV("vout", record.n);
+        output.__pushKV("vout", wtx.tx->vout[i]);
         outputs.push_back(output);
     }
 
