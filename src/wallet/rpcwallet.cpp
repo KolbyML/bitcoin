@@ -4228,9 +4228,7 @@ static void ParseOutputs(
     const std::string   &search,
     const std::string   &category_filter,
     bool                 fWithReward,
-    bool                 fBech32,
-    bool                 hide_zero_coinstakes,
-    std::vector<CScript> &vDevFundScripts
+    bool                 fBech32
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     UniValue entry(UniValue::VOBJ);
@@ -4726,7 +4724,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                     strprintf("Invalid sort: %s.", sort));
             }
         }
-        
+
         if (options["from"].isNum()) {
             timeFrom = options["from"].get_int64();
         }
@@ -4765,13 +4763,11 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 search,
                 category,
                 fWithReward,
-                fBech32,
-                hide_zero_coinstakes,
-                vDevFundScripts
+                fBech32
             );
         tit++;
     }
-    int type_i = "standard";
+    int type_i = 0;
     const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
 
     // iterate backwards until we have nCount items to return:
