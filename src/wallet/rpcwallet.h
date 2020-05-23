@@ -10,6 +10,8 @@
 #include <vector>
 
 class CRPCTable;
+class UniValue;
+class CWalletTx;
 class CWallet;
 class JSONRPCRequest;
 class UniValue;
