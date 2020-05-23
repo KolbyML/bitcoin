@@ -4181,8 +4181,6 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     return result;
 }
 
-extern void WalletTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
-
 static void ParseOutputs(
     interfaces::Chain::Lock& locked_chain,
     UniValue            &entries,
