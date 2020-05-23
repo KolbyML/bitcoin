@@ -4392,7 +4392,6 @@ static void ParseRecords(
     interfaces::Chain::Lock    &locked_chain,
     UniValue                   &entries,
     const uint256              &hash,
-    const CTransactionRecord   &rtx,
     CWallet *const            pwallet,
     const isminefilter         &watchonly_filter,
     const std::string          &search,
@@ -4472,14 +4471,10 @@ static void ParseRecords(
 
         switch (record.nType) {
             case OUTPUT_STANDARD: ++nStd; break;
-            case OUTPUT_CT: ++nBlind; break;
-            case OUTPUT_RINGCT: ++nAnon; break;
             default: ++nStd = 0;
         }
         output.__pushKV("type",
               record.nType == OUTPUT_STANDARD ? "standard"
-            : record.nType == OUTPUT_CT       ? "blind"
-            : record.nType == OUTPUT_RINGCT   ? "anon"
             : "unknown");
 
         if (!record.sNarration.empty()) {
@@ -4499,12 +4494,6 @@ static void ParseRecords(
 
     if (type > 0) {
         if (type == OUTPUT_STANDARD && !nStd) {
-            return;
-        }
-        if (type == OUTPUT_CT && !nBlind && !(rtx.nFlags & ORF_BLIND_IN)) {
-            return;
-        }
-        if (type == OUTPUT_RINGCT && !nAnon && !(rtx.nFlags & ORF_ANON_IN)) {
             return;
         }
     }
@@ -4722,9 +4711,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             type = options["type"].get_str();
             std::vector<std::string> types = {
                 "all",
-                "standard",
-                "anon",
-                "blind"
+                "standard"
             };
             auto it = std::find(types.begin(), types.end(), type);
             if (it == types.end()) {
@@ -4770,22 +4757,6 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         if (options["use_bech32"].isBool()) {
             fBech32 = options["use_bech32"].get_bool();
         }
-        if (options["hide_zero_coinstakes"].isBool()) {
-            hide_zero_coinstakes = options["hide_zero_coinstakes"].get_bool();
-        }
-    }
-
-    std::vector<CScript> vDevFundScripts;
-    if (fWithReward) {
-        const auto v = Params().GetDevFundSettings();
-        for (const auto &s : v) {
-            CTxDestination dfDest = CBitcoinAddress(s.second.sDevFundAddresses).Get();
-            if (dfDest.type() == typeid(CNoDestination)) {
-                continue;
-            }
-            CScript script = GetScriptForDestination(dfDest);
-            vDevFundScripts.push_back(script);
-        }
     }
 
     // for transactions and records
@@ -4815,33 +4786,35 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             );
         tit++;
     }
-
     int type_i = type == "standard" ? OUTPUT_STANDARD :
-                 type == "blind" ? OUTPUT_CT :
-                 type == "anon" ? OUTPUT_RINGCT :
                  0;
-    // records processing
-    const RtxOrdered_t &rtxOrdered = pwallet->rtxOrdered;
-    RtxOrdered_t::const_reverse_iterator rit = rtxOrdered.rbegin();
-    while (rit != rtxOrdered.rend()) {
-        const uint256 &hash = rit->second->first;
-        const CTransactionRecord &rtx = rit->second->second;
-        int64_t txTime = rtx.GetTxTime();
+    const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
+
+    // iterate backwards until we have nCount items to return:
+    for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
+    {
+        CWalletTx *const pwtx = (*it).second;
+        int64_t txTime = pwtx->GetTxTime();
+
         if (txTime < timeFrom) break;
         if (txTime <= timeTo)
             ParseRecords(
-                *locked_chain,
-                transactions,
-                hash,
-                rtx,
-                pwallet,
-                watchonly,
-                search,
-                category,
-                type_i
+                    *locked_chain,
+                    transactions,
+                    hash,
+                    rtx,
+                    pwallet,
+                    watchonly,
+                    search,
+                    category,
+                    type_i
             );
-        rit++;
+
+        ListTransactions(*locked_chain, pwallet, *pwtx, 0, true, ret, filter, filter_label);
+        if ((int)ret.size() >= (nCount+nFrom)) break;
     }
+
+
 
     // sort
     std::vector<UniValue> values = transactions.getValues();
