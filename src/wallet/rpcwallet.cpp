@@ -4191,7 +4191,7 @@ static bool ParseOutput(
     std::vector<std::string>  &amounts
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    CBitcoinAddress addr;
+    CTxDestination dest
 
     std::string sKey = strprintf("n%d", o.vout);
     mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
@@ -4483,7 +4483,6 @@ static void ParseRecords(
             nLockedOutputs++;
         }
 
-        CBitcoinAddress addr;
         CTxDestination  dest;
         bool extracted = ExtractDestination(record.scriptPubKey, dest);
 
@@ -5171,7 +5170,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
                         if (!wdb.ReadExtKeyIndex(index, accId)) {
                             entry.pushKV("root", "error");
                         } else {
-                            CBitcoinAddress addr;
+                            CTxDestination dest
                             addr.Set(accId, CChainParams::EXT_ACC_HASH);
                             std::string sTmp = addr.ToString();
                             entry.pushKV("root", sTmp);
