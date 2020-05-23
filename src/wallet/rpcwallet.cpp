@@ -4368,20 +4368,7 @@ static void ParseOutputs(
         CAmount nOutput = wtx.tx->GetValueOut();
         CAmount nInput = 0;
 
-        // Remove dev fund outputs
-        if (wtx.tx->vpout.size() > 2 && wtx.tx->vpout[1]->IsStandardOutput()) {
-            for (const auto &s : vDevFundScripts) {
-                if (s == *wtx.tx->vpout[1]->GetPScriptPubKey()) {
-                    nOutput -= wtx.tx->vpout[1]->GetValue();
-                    break;
-                }
-            }
-        }
-
         for (const auto &vin : wtx.tx->vin) {
-            if (vin.IsAnonInput()) {
-                continue;
-            }
             nInput += pwallet->GetOutputValue(vin.prevout, true);
         }
         entry.pushKV("reward", ValueFromAmount(nOutput - nInput));
@@ -4572,9 +4559,6 @@ static void ParseRecords(
         // Must check against the owned input value
         CAmount nInput = 0;
         for (const auto &vin : rtx.vin) {
-            if (vin.IsAnonInput()) {
-                continue;
-            }
             nInput += pwallet->GetOwnedOutputValue(vin, watchonly_filter);
         }
 
