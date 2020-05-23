@@ -4433,7 +4433,7 @@ static void ParseRecords(
     if (conflicts.size() > 0) {
         entry.__pushKV("walletconflicts", conflicts);
     }
-    entry.__pushKV("time", wtx.nTimeReceived);
+    entry.__pushKV("time", (int64_t)wtx.nTimeReceived);
 
     int nStd = 0;
     size_t nLockedOutputs = 0;
