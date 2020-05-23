@@ -4246,7 +4246,7 @@ static void ParseOutputs(
     if (wtx.IsFromMe(ISMINE_WATCH_ONLY) && !(watchonly & ISMINE_WATCH_ONLY)) {
         return;
     }
-    if (hide_zero_coinstakes && !listStaked.empty() && nFee == 0) {
+    if (nFee == 0) {
         return;
     }
 
@@ -4768,7 +4768,6 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         tit++;
     }
     int type_i = 0;
-    const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
 
     // iterate backwards until we have nCount items to return:
     for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
