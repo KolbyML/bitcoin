@@ -4505,7 +4505,7 @@ static void ParseRecords(
             for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
                 CTxDestination outAddress;
                 if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
-                    if (pwallet.getAddress(outAddress, /* name= */ nullptr, &mine, /* purpose= */ nullptr)) {
+                    if (pwallet->getAddress(outAddress, /* name= */ nullptr, &mine, /* purpose= */ nullptr)) {
                         category = "masternode_reward";
                     }
                 }
