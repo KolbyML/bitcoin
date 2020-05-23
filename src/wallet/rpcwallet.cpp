@@ -4606,7 +4606,7 @@ static bool ParseOutput(
     return true;
 }
 
-extern void WalletTxToJSON(interfaces::Chain& chain, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
+extern void WalletTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
 
 static void ParseOutputs(
     UniValue            &entries,
@@ -4622,6 +4622,8 @@ static void ParseOutputs(
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     UniValue entry(UniValue::VOBJ);
+
+    auto locked_chain = pwallet->chain().lock();
 
     // GetAmounts variables
     std::list<COutputEntry> listReceived, listSent, listStaked;
@@ -4645,7 +4647,7 @@ static void ParseOutputs(
     std::vector<std::string> addresses, amounts;
 
     UniValue outputs(UniValue::VARR);
-    WalletTxToJSON(pwallet->chain(), wtx, entry, true);
+    WalletTxToJSON(pwallet->chain(), *locked_chain, wtx, entry, true);
 
     if (!listStaked.empty() || !listSent.empty()) {
         entry.pushKV("abandoned", wtx.isAbandoned());
