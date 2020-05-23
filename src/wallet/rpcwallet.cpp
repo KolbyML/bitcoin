@@ -4392,6 +4392,7 @@ static void ParseRecords(
     interfaces::Chain::Lock    &locked_chain,
     UniValue                   &entries,
     const uint256              &hash,
+    const CWalletTx             &wtx,
     CWallet *const            pwallet,
     const isminefilter         &watchonly_filter,
     const std::string          &search,
@@ -4407,14 +4408,14 @@ static void ParseRecords(
     size_t  nWatchOnly  = 0;
     CAmount totalAmount = 0;
 
-    int confirmations = pwallet->GetDepthInMainChain(locked_chain, rtx.blockHash);
+    int confirmations = wtx->GetDepthInMainChain(locked_chain);
     entry.__pushKV("confirmations", confirmations);
     if (confirmations > 0) {
-        entry.__pushKV("blockhash", rtx.blockHash.GetHex());
-        entry.__pushKV("blockindex", rtx.nIndex);
-        PushTime(entry, "blocktime", rtx.nBlockTime);
+        entry.__pushKV("blockhash", wtx.blockHash.GetHex());
+        entry.__pushKV("blockindex", wtx.nIndex);
+        PushTime(entry, "blocktime", wtx.nBlockTime);
     } else {
-        entry.__pushKV("trusted", pwallet->IsTrusted(locked_chain, hash, rtx.blockHash));
+        entry.__pushKV("trusted", pwallet->IsTrusted(locked_chain, hash, wtx.blockHash));
     }
 
     entry.__pushKV("txid", hash.ToString());
@@ -4802,7 +4803,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                     *locked_chain,
                     transactions,
                     hash,
-                    rtx,
+                    pwtx,
                     pwallet,
                     watchonly,
                     search,
