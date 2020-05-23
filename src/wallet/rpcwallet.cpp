@@ -4181,434 +4181,10 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     return result;
 }
 
-enum SortCodes
-{
-    SRT_LABEL_ASC,
-    SRT_LABEL_DESC,
-};
-
-class AddressComp {
-public:
-    int nSortCode;
-    AddressComp(int nSortCode_) : nSortCode(nSortCode_) {}
-    bool operator() (
-            const std::map<CTxDestination, CAddressBookData>::iterator a,
-            const std::map<CTxDestination, CAddressBookData>::iterator b) const
-    {
-        switch (nSortCode)
-        {
-            case SRT_LABEL_DESC:
-                return b->second.GetLabel().compare(a->second.GetLabel()) < 0;
-            default:
-                break;
-        };
-        //default: case SRT_LABEL_ASC:
-        return a->second.GetLabel().compare(b->second.GetLabel()) < 0;
-    }
-};
-
-static UniValue filteraddresses(const JSONRPCRequest &request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
-        return NullUniValue;
-
-    RPCHelpMan{"filteraddresses",
-               "\nList addresses.\n"
-               "\nNotes:\n"
-               "filteraddresses offset count will list 'count' addresses starting from 'offset'\n"
-               "filteraddresses -1 will count addresses\n",
-               {
-                       {"offset", RPCArg::Type::NUM, /* default */ "", ""},
-                       {"count", RPCArg::Type::NUM, /* default */ "", "Max no. of addresses to return"},
-                       {"sort_code", RPCArg::Type::NUM, /* default */ "0", "0: sort by label ascending, 1: sort by label descending."},
-                       {"match_str", RPCArg::Type::STR, /* default */ "", "Filter by label."},
-                       {"match_owned", RPCArg::Type::BOOL, /* default */ "0", "0: off, 1: owned, 2: non-owned"},
-                       {"show_path", RPCArg::Type::BOOL, /* default */ "", ""},
-               },
-               RPCResults{},
-               RPCExamples{""},
-    }.Check(request);
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    int nOffset = 0, nCount = 0x7FFFFFFF;
-    if (request.params.size() > 0)
-        nOffset = request.params[0].get_int();
-
-    std::map<CTxDestination, CAddressBookData>::iterator it;
-    if (request.params.size() == 1 && nOffset == -1) {
-        LOCK(pwallet->cs_wallet);
-        // Count addresses
-        UniValue result(UniValue::VOBJ);
-
-        result.pushKV("total", (int)pwallet->m_address_book.size());
-
-        int nReceive = 0, nSend = 0;
-        for (it = pwallet->m_address_book.begin(); it != pwallet->m_address_book.end(); ++it) {
-            if (it->second.nOwned == 0)
-                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
-
-            if (it->second.nOwned == 1)
-                nReceive++;
-            else
-            if (it->second.nOwned == 2)
-                nSend++;
-        }
-
-        result.pushKV("num_receive", nReceive);
-        result.pushKV("num_send", nSend);
-        return result;
-    }
-
-    if (request.params.size() > 1) {
-        nCount = request.params[1].get_int();
-    }
-    if (nOffset < 0) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "offset must be 0 or greater.");
-    }
-    if (nCount < 1) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "count must be 1 or greater.");
-    }
-
-    // TODO: Make better
-    int nSortCode = SRT_LABEL_ASC;
-    if (request.params.size() > 2) {
-        std::string sCode = request.params[2].get_str();
-        if (sCode == "0") {
-            nSortCode = SRT_LABEL_ASC;
-        } else
-        if (sCode == "1") {
-            nSortCode = SRT_LABEL_DESC;
-        } else {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown sort_code.");
-        }
-    }
-
-    int nMatchOwned = 0; // 0 off/all, 1 owned, 2 non-owned
-    int nMatchMode = 0; // 1 contains
-
-
-    std::string sMatch;
-    if (request.params.size() > 3) {
-        sMatch = request.params[3].get_str();
-    }
-
-    if (sMatch != "") {
-        nMatchMode = 1;
-    }
-
-    if (request.params.size() > 4) {
-        std::string s = request.params[4].get_str();
-        if (s != "" && !ParseInt32(s, &nMatchOwned)) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown nMatchOwned.");
-        }
-    }
-
-    int nShowPath = request.params.size() > 5 ? (GetBool(request.params[5]) ? 1 : 0) : 1;
-
-    UniValue result(UniValue::VARR);
-    {
-        LOCK(pwallet->cs_wallet);
-
-        CHDWalletDB wdb(pwallet->GetDBHandle(), "r+");
-
-        if (nOffset >= (int)pwallet->m_address_book.size()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("offset is beyond last address (%d).", nOffset));
-        }
-        std::vector<std::map<CTxDestination, CAddressBookData>::iterator> vitMapAddressBook;
-        vitMapAddressBook.reserve(pwallet->m_address_book.size());
-
-        for (it = pwallet->m_address_book.begin(); it != pwallet->m_address_book.end(); ++it) {
-            if (it->second.nOwned == 0) {
-                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
-            }
-            if (nMatchOwned && it->second.nOwned != nMatchOwned) {
-                continue;
-            }
-            if (nMatchMode) {
-                if (!part::stringsMatchI(it->second.GetLabel(), sMatch, nMatchMode-1)) {
-                    continue;
-                }
-            }
-
-            vitMapAddressBook.push_back(it);
-        }
-
-        std::sort(vitMapAddressBook.begin(), vitMapAddressBook.end(), AddressComp(nSortCode));
-
-        std::map<uint32_t, std::string> mapKeyIndexCache;
-        std::vector<std::map<CTxDestination, CAddressBookData>::iterator>::iterator vit;
-        int nEntries = 0;
-        for (vit = vitMapAddressBook.begin()+nOffset;
-             vit != vitMapAddressBook.end() && nEntries < nCount; ++vit) {
-            auto &item = *vit;
-            UniValue entry(UniValue::VOBJ);
-
-            CBitcoinAddress address(item->first, item->second.fBech32);
-            entry.pushKV("address", address.ToString());
-            entry.pushKV("label", item->second.GetLabel());
-            entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
-
-            if (nShowPath > 0) {
-                if (item->second.vPath.size() > 0) {
-                    uint32_t index = item->second.vPath[0];
-                    std::map<uint32_t, std::string>::iterator mi = mapKeyIndexCache.find(index);
-
-                    if (mi != mapKeyIndexCache.end()) {
-                        entry.pushKV("root", mi->second);
-                    } else {
-                        CKeyID accId;
-                        if (!wdb.ReadExtKeyIndex(index, accId)) {
-                            entry.pushKV("root", "error");
-                        } else {
-                            CBitcoinAddress addr;
-                            addr.Set(accId, CChainParams::EXT_ACC_HASH);
-                            std::string sTmp = addr.ToString();
-                            entry.pushKV("root", sTmp);
-                            mapKeyIndexCache[index] = sTmp;
-                        }
-                    }
-                }
-
-                if (item->second.vPath.size() > 1) {
-                    std::string sPath;
-                    if (0 == PathToString(item->second.vPath, sPath, '\'', 1)) {
-                        entry.pushKV("path", sPath);
-                    }
-                }
-            }
-
-            result.push_back(entry);
-            nEntries++;
-        }
-    } // cs_wallet
-
-    return result;
-}
-
-static UniValue manageaddressbook(const JSONRPCRequest &request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
-        return NullUniValue;
-
-    RPCHelpMan{"manageaddressbook",
-               "\nManage the address book.\n",
-               {
-                       {"action", RPCArg::Type::STR, RPCArg::Optional::NO, "'add/edit/del/info/newsend' The action to take."},
-                       {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to affect."},
-                       {"label", RPCArg::Type::STR, /* default */ "", "Optional label."},
-                       {"purpose", RPCArg::Type::STR, /* default */ "", "Optional purpose label."},
-               },
-               RPCResults{},
-               RPCExamples{""},
-    }.Check(request);
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    std::string sAction = request.params[0].get_str();
-    std::string sAddress = request.params[1].get_str();
-    std::string sLabel, sPurpose;
-
-    if (sAction != "info") {
-        EnsureWalletIsUnlocked(pwallet);
-    }
-
-    bool fHavePurpose = false;
-    if (request.params.size() > 2) {
-        sLabel = request.params[2].get_str();
-    }
-    if (request.params.size() > 3) {
-        sPurpose = request.params[3].get_str();
-        fHavePurpose = true;
-    }
-
-    CBitcoinAddress address(sAddress);
-    CTxDestination dest;
-
-    if (address.IsValid()) {
-        dest = address.Get();
-    } else {
-        // Try decode as segwit address
-        dest = DecodeDestination(sAddress);
-        if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Particl address");
-        }
-    }
-
-    LOCK(pwallet->cs_wallet);
-
-    std::map<CTxDestination, CAddressBookData>::iterator mabi;
-    mabi = pwallet->m_address_book.find(dest);
-
-    std::vector<uint32_t> vPath;
-
-    UniValue objDestData(UniValue::VOBJ);
-
-    if (sAction == "add") {
-        if (mabi != pwallet->m_address_book.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", sAddress));
-        }
-
-        if (!pwallet->SetAddressBook(nullptr, dest, sLabel, sPurpose, vPath, true)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
-        }
-    } else
-    if (sAction == "edit") {
-        if (request.params.size() < 3) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Need a parameter to change.");
-        }
-        if (mabi == pwallet->m_address_book.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
-        }
-
-        if (!pwallet->SetAddressBook(nullptr, dest, sLabel,
-                                     fHavePurpose ? sPurpose : mabi->second.purpose, mabi->second.vPath, true)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
-        }
-
-        sLabel = mabi->second.GetLabel();
-        sPurpose = mabi->second.purpose;
-
-        for (const auto &pair : mabi->second.destdata) {
-            objDestData.pushKV(pair.first, pair.second);
-        }
-    } else
-    if (sAction == "del") {
-        if (mabi == pwallet->m_address_book.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
-        }
-        sLabel = mabi->second.GetLabel();
-        sPurpose = mabi->second.purpose;
-
-        if (!pwallet->DelAddressBook(dest)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "DelAddressBook failed.");
-        }
-    } else
-    if (sAction == "info") {
-        if (mabi == pwallet->m_address_book.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
-        }
-
-        UniValue result(UniValue::VOBJ);
-
-        result.pushKV("action", sAction);
-        result.pushKV("address", sAddress);
-
-        result.pushKV("label", mabi->second.GetLabel());
-        result.pushKV("purpose", mabi->second.purpose);
-
-        if (mabi->second.nOwned == 0) {
-            mabi->second.nOwned = pwallet->HaveAddress(mabi->first) ? 1 : 2;
-        }
-
-        result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
-
-        if (mabi->second.vPath.size() > 1) {
-            std::string sPath;
-            if (0 == PathToString(mabi->second.vPath, sPath, '\'', 1)) {
-                result.pushKV("path", sPath);
-            }
-        }
-
-        for (const auto &pair : mabi->second.destdata) {
-            objDestData.pushKV(pair.first, pair.second);
-        }
-        if (objDestData.size() > 0) {
-            result.pushKV("destdata", objDestData);
-        }
-
-        result.pushKV("result", "success");
-
-        return result;
-    } else
-    if (sAction == "newsend") {
-        // Only update the purpose field if address does not yet exist
-        if (mabi != pwallet->m_address_book.end()) {
-            sPurpose = ""; // "" means don't change purpose
-        }
-
-        if (!pwallet->SetAddressBook(dest, sLabel, sPurpose)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
-        }
-
-        if (mabi != pwallet->m_address_book.end()) {
-            sPurpose = mabi->second.purpose;
-        }
-    } else {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown action, must be one of 'add/edit/del'.");
-    }
-
-    UniValue result(UniValue::VOBJ);
-
-    result.pushKV("action", sAction);
-    result.pushKV("address", sAddress);
-
-    if (sLabel.size() > 0) {
-        result.pushKV("label", sLabel);
-    }
-    if (sPurpose.size() > 0) {
-        result.pushKV("purpose", sPurpose);
-    }
-    if (objDestData.size() > 0) {
-        result.pushKV("destdata", objDestData);
-    }
-
-    result.pushKV("result", "success");
-
-    return result;
-}
-
-static bool ParseOutput(
-    UniValue                  &output,
-    const COutputEntry        &o,
-    const CHDWallet           *pwallet,
-    const CWalletTx           &wtx,
-    const isminefilter        &watchonly,
-    std::vector<std::string>  &addresses,
-    std::vector<std::string>  &amounts
-) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
-{
-    CBitcoinAddress addr;
-
-    std::string sKey = strprintf("n%d", o.vout);
-    mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
-    if (mvi != wtx.mapValue.end()) {
-        output.pushKV("narration", mvi->second);
-    }
-    if (addr.Set(o.destination)) {
-        output.pushKV("address", addr.ToString());
-        addresses.push_back(addr.ToString());
-    }
-    if (o.ismine & ISMINE_WATCH_ONLY) {
-        if (watchonly & ISMINE_WATCH_ONLY) {
-            output.pushKV("involvesWatchonly", true);
-        } else {
-            return false;
-        }
-    }
-    if (o.destStake.type() != typeid(CNoDestination)) {
-        output.pushKV("coldstake_address", EncodeDestination(o.destStake));
-    }
-    auto mi = pwallet->m_address_book.find(o.destination);
-    if (mi != pwallet->m_address_book.end()) {
-        output.pushKV("label", mi->second.GetLabel());
-    }
-    output.pushKV("vout", o.vout);
-    amounts.push_back(ToString(o.amount));
-    return true;
-}
-
 extern void WalletTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
 
 static void ParseOutputs(
+    interfaces::Chain::Lock& locked_chain,
     UniValue            &entries,
     CWalletTx           &wtx,
     const CHDWallet     *pwallet,
@@ -4622,8 +4198,6 @@ static void ParseOutputs(
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     UniValue entry(UniValue::VOBJ);
-
-    auto locked_chain = pwallet->chain().lock();
 
     // GetAmounts variables
     std::list<COutputEntry> listReceived, listSent, listStaked;
@@ -4647,7 +4221,7 @@ static void ParseOutputs(
     std::vector<std::string> addresses, amounts;
 
     UniValue outputs(UniValue::VARR);
-    WalletTxToJSON(pwallet->chain(), *locked_chain, wtx, entry, true);
+    WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry, true);
 
     if (!listStaked.empty() || !listSent.empty()) {
         entry.pushKV("abandoned", wtx.isAbandoned());
@@ -4655,7 +4229,7 @@ static void ParseOutputs(
 
     // staked
     if (!listStaked.empty()) {
-        if (wtx.GetDepthInMainChain() < 1) {
+        if (wtx.GetDepthInMainChain(locked_chain) < 1) {
             entry.pushKV("category", "orphaned_stake");
         } else {
             entry.pushKV("category", "stake");
@@ -4736,9 +4310,9 @@ static void ParseOutputs(
         }
 
         if (wtx.IsCoinBase()) {
-            if (wtx.GetDepthInMainChain() < 1) {
+            if (wtx.GetDepthInMainChain(locked_chain) < 1) {
                 entry.pushKV("category", "orphan");
-            } else if (wtx.GetBlocksToMaturity() > 0) {
+            } else if (wtx.GetBlocksToMaturity(locked_chain) > 0) {
                 entry.pushKV("category", "immature");
             } else {
                 entry.pushKV("category", "coinbase");
@@ -4753,7 +4327,7 @@ static void ParseOutputs(
 
             // Handle txns partially funded by wallet
             if (nFee < 0) {
-                amount = wtx.GetCredit(ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
+                amount = wtx.GetCredit(locked_chain, ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
             } else {
                 entry.pushKV("fee", ValueFromAmount(-nFee));
             }
@@ -4811,6 +4385,7 @@ static void ParseOutputs(
 }
 
 static void ParseRecords(
+    interfaces::Chain::Lock    &locked_chain,
     UniValue                   &entries,
     const uint256              &hash,
     const CTransactionRecord   &rtx,
@@ -4829,14 +4404,14 @@ static void ParseRecords(
     size_t  nWatchOnly  = 0;
     CAmount totalAmount = 0;
 
-    int confirmations = pwallet->GetDepthInMainChain(rtx);
+    int confirmations = pwallet->GetDepthInMainChain(locked_chain, rtx.blockHash);
     entry.__pushKV("confirmations", confirmations);
     if (confirmations > 0) {
         entry.__pushKV("blockhash", rtx.blockHash.GetHex());
         entry.__pushKV("blockindex", rtx.nIndex);
         PushTime(entry, "blocktime", rtx.nBlockTime);
     } else {
-        entry.__pushKV("trusted", pwallet->IsTrusted(hash, rtx));
+        entry.__pushKV("trusted", pwallet->IsTrusted(locked_chain, hash, rtx.blockHash));
     }
 
     entry.__pushKV("txid", hash.ToString());
@@ -4880,9 +4455,9 @@ static void ParseRecords(
         if (extracted && !record.scriptPubKey.IsUnspendable()) {
             addr.Set(dest);
             std::map<CTxDestination, CAddressBookData>::iterator mai;
-            mai = pwallet->m_address_book.find(dest);
-            if (mai != pwallet->m_address_book.end() && !mai->second.GetLabel().empty()) {
-                output.__pushKV("account", mai->second.GetLabel());
+            mai = pwallet->mapAddressBook.find(dest);
+            if (mai != pwallet->mapAddressBook.end() && !mai->second.name.empty()) {
+                output.__pushKV("account", mai->second.name);
             }
         }
 
@@ -4939,7 +4514,7 @@ static void ParseRecords(
             amount *= -1;
         }
         totalAmount += amount;
-        amounts.push_back(ToString(amount));
+        amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
         output.__pushKV("amount", ValueFromAmount(amount));
         output.__pushKV("vout", record.n);
         outputs.push_back(output);
@@ -5015,7 +4590,7 @@ static void ParseRecords(
     } else {
         entry.__pushKV("amount", ValueFromAmount(totalAmount));
     }
-    amounts.push_back(ToString(totalAmount));
+    amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));
 
     if (search != "") {
         // search in addresses
@@ -5109,6 +4684,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
+    auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
     unsigned int count     = 10;
@@ -5269,6 +4845,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         if (txTime < timeFrom) break;
         if (txTime <= timeTo)
             ParseOutputs(
+                *locked_chain,
                 transactions,
                 *pwtx,
                 pwallet,
@@ -5297,6 +4874,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         if (txTime < timeFrom) break;
         if (txTime <= timeTo)
             ParseRecords(
+                *locked_chain,
                 transactions,
                 hash,
                 rtx,
@@ -5369,6 +4947,391 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         retObj.pushKV("collated", stats);
         return retObj;
     }
+
+    return result;
+}
+
+enum SortCodes
+{
+    SRT_LABEL_ASC,
+    SRT_LABEL_DESC,
+};
+
+class AddressComp {
+public:
+    int nSortCode;
+    AddressComp(int nSortCode_) : nSortCode(nSortCode_) {}
+    bool operator() (
+        const std::map<CTxDestination, CAddressBookData>::iterator a,
+        const std::map<CTxDestination, CAddressBookData>::iterator b) const
+    {
+        switch (nSortCode)
+        {
+            case SRT_LABEL_DESC:
+                return b->second.name.compare(a->second.name) < 0;
+            default:
+                break;
+        };
+        //default: case SRT_LABEL_ASC:
+        return a->second.name.compare(b->second.name) < 0;
+    }
+};
+
+static UniValue filteraddresses(const JSONRPCRequest &request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+        return NullUniValue;
+
+            RPCHelpMan{"filteraddresses",
+                "\nList addresses.\n"
+                "\nNotes:\n"
+                "filteraddresses offset count will list 'count' addresses starting from 'offset'\n"
+                "filteraddresses -1 will count addresses\n",
+                {
+                    {"offset", RPCArg::Type::NUM, /* default */ "", ""},
+                    {"count", RPCArg::Type::NUM, /* default */ "", "Max no. of addresses to return"},
+                    {"sort_code", RPCArg::Type::NUM, /* default */ "0", "0: sort by label ascending, 1: sort by label descending."},
+                    {"match_str", RPCArg::Type::STR, /* default */ "", "Filter by label."},
+                    {"match_owned", RPCArg::Type::BOOL, /* default */ "0", "0: off, 1: owned, 2: non-owned"},
+                    {"show_path", RPCArg::Type::BOOL, /* default */ "", ""},
+                },
+                RPCResults{},
+                RPCExamples{""},
+            }.Check(request);
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    int nOffset = 0, nCount = 0x7FFFFFFF;
+    if (request.params.size() > 0)
+        nOffset = request.params[0].get_int();
+
+    std::map<CTxDestination, CAddressBookData>::iterator it;
+    if (request.params.size() == 1 && nOffset == -1) {
+        LOCK(pwallet->cs_wallet);
+        // Count addresses
+        UniValue result(UniValue::VOBJ);
+
+        result.pushKV("total", (int)pwallet->mapAddressBook.size());
+
+        int nReceive = 0, nSend = 0;
+        for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
+            if (it->second.nOwned == 0)
+                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
+
+            if (it->second.nOwned == 1)
+                nReceive++;
+            else
+            if (it->second.nOwned == 2)
+                nSend++;
+        }
+
+        result.pushKV("num_receive", nReceive);
+        result.pushKV("num_send", nSend);
+        return result;
+    }
+
+    if (request.params.size() > 1) {
+        nCount = request.params[1].get_int();
+    }
+    if (nOffset < 0) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "offset must be 0 or greater.");
+    }
+    if (nCount < 1) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "count must be 1 or greater.");
+    }
+
+    // TODO: Make better
+    int nSortCode = SRT_LABEL_ASC;
+    if (request.params.size() > 2) {
+        std::string sCode = request.params[2].get_str();
+        if (sCode == "0") {
+            nSortCode = SRT_LABEL_ASC;
+        } else
+        if (sCode == "1") {
+            nSortCode = SRT_LABEL_DESC;
+        } else {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown sort_code.");
+        }
+    }
+
+    int nMatchOwned = 0; // 0 off/all, 1 owned, 2 non-owned
+    int nMatchMode = 0; // 1 contains
+
+
+    std::string sMatch;
+    if (request.params.size() > 3) {
+        sMatch = request.params[3].get_str();
+    }
+
+    if (sMatch != "") {
+        nMatchMode = 1;
+    }
+
+    if (request.params.size() > 4) {
+        std::string s = request.params[4].get_str();
+        if (s != "" && !ParseInt32(s, &nMatchOwned)) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown nMatchOwned.");
+        }
+    }
+
+    int nShowPath = request.params.size() > 5 ? (GetBool(request.params[5]) ? 1 : 0) : 1;
+
+    UniValue result(UniValue::VARR);
+    {
+        LOCK(pwallet->cs_wallet);
+
+        CHDWalletDB wdb(pwallet->GetDBHandle(), "r+");
+
+        if (nOffset >= (int)pwallet->mapAddressBook.size()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("offset is beyond last address (%d).", nOffset));
+        }
+        std::vector<std::map<CTxDestination, CAddressBookData>::iterator> vitMapAddressBook;
+        vitMapAddressBook.reserve(pwallet->mapAddressBook.size());
+
+        for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
+            if (it->second.nOwned == 0) {
+                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
+            }
+            if (nMatchOwned && it->second.nOwned != nMatchOwned) {
+                continue;
+            }
+            if (nMatchMode) {
+                if (!part::stringsMatchI(it->second.name, sMatch, nMatchMode-1)) {
+                    continue;
+                }
+            }
+
+            vitMapAddressBook.push_back(it);
+        }
+
+        std::sort(vitMapAddressBook.begin(), vitMapAddressBook.end(), AddressComp(nSortCode));
+
+        std::map<uint32_t, std::string> mapKeyIndexCache;
+        std::vector<std::map<CTxDestination, CAddressBookData>::iterator>::iterator vit;
+        int nEntries = 0;
+        for (vit = vitMapAddressBook.begin()+nOffset;
+            vit != vitMapAddressBook.end() && nEntries < nCount; ++vit) {
+            auto &item = *vit;
+            UniValue entry(UniValue::VOBJ);
+
+            CBitcoinAddress address(item->first, item->second.fBech32);
+            entry.pushKV("address", address.ToString());
+            entry.pushKV("label", item->second.name);
+            entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
+
+            if (nShowPath > 0) {
+                if (item->second.vPath.size() > 0) {
+                    uint32_t index = item->second.vPath[0];
+                    std::map<uint32_t, std::string>::iterator mi = mapKeyIndexCache.find(index);
+
+                    if (mi != mapKeyIndexCache.end()) {
+                        entry.pushKV("root", mi->second);
+                    } else {
+                        CKeyID accId;
+                        if (!wdb.ReadExtKeyIndex(index, accId)) {
+                            entry.pushKV("root", "error");
+                        } else {
+                            CBitcoinAddress addr;
+                            addr.Set(accId, CChainParams::EXT_ACC_HASH);
+                            std::string sTmp = addr.ToString();
+                            entry.pushKV("root", sTmp);
+                            mapKeyIndexCache[index] = sTmp;
+                        }
+                    }
+                }
+
+                if (item->second.vPath.size() > 1) {
+                    std::string sPath;
+                    if (0 == PathToString(item->second.vPath, sPath, '\'', 1)) {
+                        entry.pushKV("path", sPath);
+                    }
+                }
+            }
+
+            result.push_back(entry);
+            nEntries++;
+        }
+    } // cs_wallet
+
+    return result;
+}
+
+static UniValue manageaddressbook(const JSONRPCRequest &request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+        return NullUniValue;
+
+            RPCHelpMan{"manageaddressbook",
+                "\nManage the address book.\n",
+                {
+                    {"action", RPCArg::Type::STR, RPCArg::Optional::NO, "'add/edit/del/info/newsend' The action to take."},
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to affect."},
+                    {"label", RPCArg::Type::STR, /* default */ "", "Optional label."},
+                    {"purpose", RPCArg::Type::STR, /* default */ "", "Optional purpose label."},
+                },
+                RPCResults{},
+                RPCExamples{""},
+            }.Check(request);
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    std::string sAction = request.params[0].get_str();
+    std::string sAddress = request.params[1].get_str();
+    std::string sLabel, sPurpose;
+
+    if (sAction != "info") {
+        EnsureWalletIsUnlocked(pwallet);
+    }
+
+    bool fHavePurpose = false;
+    if (request.params.size() > 2) {
+        sLabel = request.params[2].get_str();
+    }
+    if (request.params.size() > 3) {
+        sPurpose = request.params[3].get_str();
+        fHavePurpose = true;
+    }
+
+    CBitcoinAddress address(sAddress);
+    CTxDestination dest;
+
+    if (address.IsValid()) {
+        dest = address.Get();
+    } else {
+        // Try decode as segwit address
+        dest = DecodeDestination(sAddress);
+        if (!IsValidDestination(dest)) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Particl address");
+        }
+    }
+
+    LOCK(pwallet->cs_wallet);
+
+    std::map<CTxDestination, CAddressBookData>::iterator mabi;
+    mabi = pwallet->mapAddressBook.find(dest);
+
+    std::vector<uint32_t> vPath;
+
+    UniValue objDestData(UniValue::VOBJ);
+
+    if (sAction == "add") {
+        if (mabi != pwallet->mapAddressBook.end()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", sAddress));
+        }
+
+        if (!pwallet->SetAddressBook(nullptr, dest, sLabel, sPurpose, vPath, true)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
+        }
+    } else
+    if (sAction == "edit") {
+        if (request.params.size() < 3) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Need a parameter to change.");
+        }
+        if (mabi == pwallet->mapAddressBook.end()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+        }
+
+        if (!pwallet->SetAddressBook(nullptr, dest, sLabel,
+            fHavePurpose ? sPurpose : mabi->second.purpose, mabi->second.vPath, true)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
+        }
+
+        sLabel = mabi->second.name;
+        sPurpose = mabi->second.purpose;
+
+        for (const auto &pair : mabi->second.destdata) {
+            objDestData.pushKV(pair.first, pair.second);
+        }
+    } else
+    if (sAction == "del") {
+        if (mabi == pwallet->mapAddressBook.end()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+        }
+        sLabel = mabi->second.name;
+        sPurpose = mabi->second.purpose;
+
+        if (!pwallet->DelAddressBook(dest)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "DelAddressBook failed.");
+        }
+    } else
+    if (sAction == "info") {
+        if (mabi == pwallet->mapAddressBook.end()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+        }
+
+        UniValue result(UniValue::VOBJ);
+
+        result.pushKV("action", sAction);
+        result.pushKV("address", sAddress);
+
+        result.pushKV("label", mabi->second.name);
+        result.pushKV("purpose", mabi->second.purpose);
+
+        if (mabi->second.nOwned == 0) {
+            mabi->second.nOwned = pwallet->HaveAddress(mabi->first) ? 1 : 2;
+        }
+
+        result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
+
+        if (mabi->second.vPath.size() > 1) {
+            std::string sPath;
+            if (0 == PathToString(mabi->second.vPath, sPath, '\'', 1)) {
+                result.pushKV("path", sPath);
+            }
+        }
+
+        for (const auto &pair : mabi->second.destdata) {
+            objDestData.pushKV(pair.first, pair.second);
+        }
+        if (objDestData.size() > 0) {
+            result.pushKV("destdata", objDestData);
+        }
+
+        result.pushKV("result", "success");
+
+        return result;
+    } else
+    if (sAction == "newsend") {
+        // Only update the purpose field if address does not yet exist
+        if (mabi != pwallet->mapAddressBook.end()) {
+            sPurpose = ""; // "" means don't change purpose
+        }
+
+        if (!pwallet->SetAddressBook(dest, sLabel, sPurpose)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
+        }
+
+        if (mabi != pwallet->mapAddressBook.end()) {
+            sPurpose = mabi->second.purpose;
+        }
+    } else {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown action, must be one of 'add/edit/del'.");
+    }
+
+    UniValue result(UniValue::VOBJ);
+
+    result.pushKV("action", sAction);
+    result.pushKV("address", sAddress);
+
+    if (sLabel.size() > 0) {
+        result.pushKV("label", sLabel);
+    }
+    if (sPurpose.size() > 0) {
+        result.pushKV("purpose", sPurpose);
+    }
+    if (objDestData.size() > 0) {
+        result.pushKV("destdata", objDestData);
+    }
+
+    result.pushKV("result", "success");
 
     return result;
 }
