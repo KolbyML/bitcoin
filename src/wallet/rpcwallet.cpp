@@ -4413,9 +4413,12 @@ static void ParseRecords(
     if (confirmations > 0) {
         entry.__pushKV("blockhash", wtx.hashBlock.GetHex());
         entry.__pushKV("blockindex", wtx.nIndex);
-        PushTime(entry, "blocktime", wtx.nBlockTime);
+        int64_t block_time;
+        bool found_block = chain.findBlock(wtx.hashBlock, nullptr /* block */, &block_time);
+        assert(found_block);
+        PushTime(entry, "blocktime", block_time);
     } else {
-        entry.__pushKV("trusted", pwallet->IsTrusted(locked_chain, hash, wtx.blockHash));
+        entry.__pushKV("trusted", pwallet->IsTrusted(locked_chain, hash, wtx.hashBlock));
     }
 
     entry.__pushKV("txid", hash.ToString());
