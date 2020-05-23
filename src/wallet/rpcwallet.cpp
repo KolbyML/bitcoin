@@ -4475,16 +4475,16 @@ static void ParseRecords(
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
         output.__pushKV("amount", ValueFromAmount(amount));
-        output.__pushKV("vout", wtx.tx->vout[i]);
+        output.__pushKV("vout", wtx.tx->vout);
         outputs.push_back(output);
     }
     CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
-    CAmount nDebit = wtx.GetDebit(filter);
+    CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
-    CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
+    CAmount nFee = (wtx.IsFromMe(ISMINE_ALL) ? wtx.tx->GetValueOut() - nDebit : 0);
 
     entry.pushKV("amount", ValueFromAmount(nNet - nFee));
-    if (wtx.IsFromMe(filter)) {
+    if (wtx.IsFromMe(ISMINE_ALL)) {
         entry.__pushKV("abandoned", wtx.isAbandoned());
         entry.pushKV("fee", ValueFromAmount(-nFee));
     }
