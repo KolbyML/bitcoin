@@ -4337,20 +4337,14 @@ static void ParseOutputs(
         }
 
         if (wtx.IsCoinBase()) {
-            if (wtx.GetDepthInMainChain(locked_chain) < 1) {
-                entry.pushKV("category", "orphan");
-            } else if (wtx.GetBlocksToMaturity(locked_chain) > 0) {
-                entry.pushKV("category", "immature");
-            } else {
-                entry.pushKV("category", "coinbase");
-            }
+            entry.pushKV("category", "mined");
         } else if (!nFee) {
             entry.pushKV("category", "receive");
         } else if (amount == 0) {
             entry.pushKV("fee", ValueFromAmount(-nFee));
-            entry.pushKV("category", "internal_transfer");
+            entry.pushKV("category", "payment_to_yourself");
         } else {
-            entry.pushKV("category", "send");
+            entry.pushKV("category", "send_to");
 
             // Handle txns partially funded by wallet
             if (nFee < 0) {
@@ -4437,7 +4431,7 @@ static void ParseRecords(
 
     int nStd = 0;
     size_t nLockedOutputs = 0;
-    for (auto &record : wtx.vout) {
+    for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
         UniValue output(UniValue::VOBJ);
 /*
         if (record.nFlags & ORF_CHANGE) {
@@ -4505,17 +4499,35 @@ static void ParseRecords(
     }
 
     if (nFrom > 0) {
-        entry.__pushKV("abandoned", rtx.IsAbandoned());
-        entry.__pushKV("fee", ValueFromAmount(-rtx.nFee));
+        entry.__pushKV("abandoned", wtx.IsAbandoned());
+        entry.__pushKV("fee", ValueFromAmount(-wtx.nFee));
     }
 
     std::string category;
     if (nFrom) {
-        category = "internal_transfer";
+        category = "payment_to_yourself";
     } else if (!nFrom) {
-        category = "receive";
+        category = "received_with";
     } else if (nFrom) {
-        category = "send";
+        category = "sent_to";
+    } else if (wtx.tx->IsCoinStake()) {
+        isminetype mine = wtx.txout_address_is_mine[1];
+
+        if (mine == ISMINE_NO) {
+            //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
+            for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
+                CTxDestination outAddress;
+                if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
+                    if (wallet.getAddress(outAddress, /* name= */ nullptr, &mine, /* purpose= */ nullptr)) {
+                        category = "masternode_reward";
+                    }
+                }
+            }
+        } else {
+            // stake reward
+            category = "mint_by_stake";
+        }
+        parts.append(sub);
     } else {
         category = "unknown";
     }
@@ -4559,14 +4571,8 @@ static void ParseRecords(
 
 static std::string getAddress(UniValue const & transaction)
 {
-    if (transaction["stealth_address"].getType() != 0) {
-        return transaction["stealth_address"].get_str();
-    }
     if (transaction["address"].getType() != 0) {
         return transaction["address"].get_str();
-    }
-    if (transaction["outputs"][0]["stealth_address"].getType() != 0) {
-        return transaction["outputs"][0]["stealth_address"].get_str();
     }
     if (transaction["outputs"][0]["address"].getType() != 0) {
         return transaction["outputs"][0]["address"].get_str();
@@ -4691,14 +4697,13 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             category = options["category"].get_str();
             std::vector<std::string> categories = {
                 "all",
-                "send",
-                "orphan",
-                "immature",
-                "coinbase",
-                "receive",
-                "orphaned_stake",
-                "stake",
-                "internal_transfer"
+                "received_with",
+                "received_from",
+                "sent_to",
+                "payment_to_yourself",
+                "mined",
+                "mint_by_stake",
+                "masternode_reward"
             };
             auto it = std::find(categories.begin(), categories.end(), category);
             if (it == categories.end()) {
