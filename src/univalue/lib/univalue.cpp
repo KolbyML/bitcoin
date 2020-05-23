@@ -220,8 +220,7 @@ UniValue& UniValue::get(const std::string& key)
 {
     if (typ != VOBJ)
         throw std::runtime_error("Not an object.");
-
-    size_t idx;
+    
     size_t index = 0;
     if (!findKey(key, index))
         throw std::runtime_error("Key not found.");
