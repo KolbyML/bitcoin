@@ -4470,7 +4470,7 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount amount = wtx.tx->vout[i].GetValueOut();
+        CAmount amount = = wtx.GetCredit(*locked_chain, filter)
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
@@ -4478,10 +4478,15 @@ static void ParseRecords(
         output.__pushKV("vout", wtx.tx->vout[i]);
         outputs.push_back(output);
     }
+    CAmount nCredit = wtx.GetCredit(*locked_chain, filter);
+    CAmount nDebit = wtx.GetDebit(filter);
+    CAmount nNet = nCredit - nDebit;
+    CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
 
-    if (nFrom > 0) {
-        entry.__pushKV("abandoned", wtx.IsAbandoned());
-        entry.__pushKV("fee", ValueFromAmount(-wtx.nFee));
+    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
+    if (wtx.IsFromMe(filter)) {
+        entry.__pushKV("abandoned", wtx.isAbandoned());
+        entry.pushKV("fee", ValueFromAmount(-nFee));
     }
 
     std::string category;
