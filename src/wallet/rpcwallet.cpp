@@ -4185,7 +4185,7 @@ static void ParseOutputs(
     interfaces::Chain::Lock& locked_chain,
     UniValue            &entries,
     CWalletTx           &wtx,
-    const CHDWallet     *pwallet,
+    const CWallet     *pwallet,
     const isminefilter  &watchonly,
     const std::string   &search,
     const std::string   &category_filter,
@@ -4387,7 +4387,7 @@ static void ParseRecords(
     UniValue                   &entries,
     const uint256              &hash,
     const CTransactionRecord   &rtx,
-    CHDWallet *const            pwallet,
+    CWallet *const            pwallet,
     const isminefilter         &watchonly_filter,
     const std::string          &search,
     const std::string          &category_filter,
@@ -4631,7 +4631,7 @@ static std::string getAddress(UniValue const & transaction)
 static UniValue filtertransactions(const JSONRPCRequest &request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
@@ -4834,7 +4834,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     UniValue transactions(UniValue::VARR);
 
     // transaction processing
-    const CHDWallet::TxItems &txOrdered = pwallet->wtxOrdered;
+    const CWallet::TxItems &txOrdered = pwallet->wtxOrdered;
     CWallet::TxItems::const_reverse_iterator tit = txOrdered.rbegin();
     if (type == "all" || type == "standard")
     while (tit != txOrdered.rend()) {
@@ -4978,7 +4978,7 @@ public:
 static UniValue filteraddresses(const JSONRPCRequest &request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
@@ -5161,7 +5161,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 static UniValue manageaddressbook(const JSONRPCRequest &request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CHDWallet *const pwallet = GetParticlWallet(wallet.get());
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
