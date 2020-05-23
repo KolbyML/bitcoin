@@ -4475,7 +4475,7 @@ static void ParseRecords(
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
         output.__pushKV("amount", ValueFromAmount(amount));
-        output.__pushKV("vout", wtx.tx->vout);
+        output.__pushKV("vout", wtx.tx->vout[i].prevout.n);
         outputs.push_back(output);
     }
     CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
