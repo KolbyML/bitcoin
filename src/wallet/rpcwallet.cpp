@@ -4470,7 +4470,7 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount amount = wtx.GetCredit(locked_chain, filter);
+        CAmount amount = wtx.GetCredit(locked_chain, ISMINE_ALL);
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
@@ -4478,7 +4478,7 @@ static void ParseRecords(
         output.__pushKV("vout", wtx.tx->vout[i]);
         outputs.push_back(output);
     }
-    CAmount nCredit = wtx.GetCredit(locked_chain, filter);
+    CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
     CAmount nDebit = wtx.GetDebit(filter);
     CAmount nNet = nCredit - nDebit;
     CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
