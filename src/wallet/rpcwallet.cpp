@@ -4433,13 +4433,13 @@ static void ParseRecords(
     if (conflicts.size() > 0) {
         entry.__pushKV("walletconflicts", conflicts);
     }
-    PushTime(entry, "time", rtx.nTimeReceived);
+    entry.__pushKV("time", wtx.nTimeReceived);
 
-    int nStd = 0, nBlind = 0, nAnon = 0;
+    int nStd = 0;
     size_t nLockedOutputs = 0;
-    for (auto &record : rtx.vout) {
+    for (auto &record : wtx.vout) {
         UniValue output(UniValue::VOBJ);
-
+/*
         if (record.nFlags & ORF_CHANGE) {
             continue ;
         }
@@ -4455,7 +4455,7 @@ static void ParseRecords(
         if (record.nFlags & ORF_LOCKED) {
             nLockedOutputs++;
         }
-
+*/
         CTxDestination  dest;
         bool extracted = ExtractDestination(record.scriptPubKey, dest);
 
@@ -4510,9 +4510,9 @@ static void ParseRecords(
     }
 
     std::string category;
-    if (nOwned && nFrom) {
+    if (nFrom) {
         category = "internal_transfer";
-    } else if (nOwned && !nFrom) {
+    } else if (!nFrom) {
         category = "receive";
     } else if (nFrom) {
         category = "send";
@@ -4523,13 +4523,6 @@ static void ParseRecords(
         return;
     }
     entry.__pushKV("category", category);
-
-    if (rtx.nFlags & ORF_ANON_IN) {
-        entry.__pushKV("type_in", "anon");
-    } else
-    if (rtx.nFlags & ORF_BLIND_IN) {
-        entry.__pushKV("type_in", "blind");
-    }
 
     if (nLockedOutputs) {
         entry.__pushKV("requires_unlock", "true");
