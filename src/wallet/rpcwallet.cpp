@@ -4726,16 +4726,10 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                     strprintf("Invalid sort: %s.", sort));
             }
         }
-
-        if (options["from"].isStr()) {
-            timeFrom = part::strToEpoch(options["from"].get_str().c_str());
-        } else
+        
         if (options["from"].isNum()) {
             timeFrom = options["from"].get_int64();
         }
-        if (options["to"].isStr()) {
-            timeTo = part::strToEpoch(options["to"].get_str().c_str(), true);
-        } else
         if (options["to"].isNum()) {
             timeTo = options["to"].get_int64();
         }
