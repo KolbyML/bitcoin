@@ -4499,7 +4499,7 @@ static void ParseRecords(
     } else if (wtx.tx->IsCoinStake()) {
         //isminetype mine = pwallet->IsMine(wtx.tx->vout[i]);
         isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
-        
+
         CTxDestination address;
         if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
             //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
@@ -4515,7 +4515,6 @@ static void ParseRecords(
             // stake reward
             category = "mint_by_stake";
         }
-        parts.append(sub);
     } else {
         category = "unknown";
     }
