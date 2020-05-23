@@ -4772,7 +4772,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     // iterate backwards until we have nCount items to return:
     for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
     {
-        const uint256 &hash = it->second->first;
+        const uint256 &hash = it->second;
         CWalletTx *const pwtx = (*it).second;
         int64_t txTime = pwtx->GetTxTime();
 
