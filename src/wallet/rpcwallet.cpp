@@ -4453,7 +4453,7 @@ static void ParseRecords(
         bool extracted = ExtractDestination(wtx.tx->vout[i].scriptPubKey, dest);
 
         // get account name
-        if (extracted && !wtx.tx->vout[i]scriptPubKey.IsUnspendable()) {
+        if (extracted && !wtx.tx->vout[i].scriptPubKey.IsUnspendable()) {
             std::map<CTxDestination, CAddressBookData>::iterator mai;
             mai = pwallet->mapAddressBook.find(dest);
             if (mai != pwallet->mapAddressBook.end() && !mai->second.name.empty()) {
@@ -4470,7 +4470,7 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount amount = wtx.tx->vout[i]GetValueOut();
+        CAmount amount = wtx.tx->vout[i].GetValueOut();
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
