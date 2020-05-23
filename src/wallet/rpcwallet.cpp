@@ -4411,7 +4411,7 @@ static void ParseRecords(
     int confirmations = wtx.GetDepthInMainChain(locked_chain);
     entry.__pushKV("confirmations", confirmations);
     if (confirmations > 0) {
-        entry.__pushKV("blockhash", wtx.blockHash.GetHex());
+        entry.__pushKV("blockhash", wtx.hashBlock.GetHex());
         entry.__pushKV("blockindex", wtx.nIndex);
         PushTime(entry, "blocktime", wtx.nBlockTime);
     } else {
