@@ -4364,16 +4364,6 @@ static void ParseOutputs(
     entry.pushKV("outputs", outputs);
     entry.pushKV("amount", ValueFromAmount(amount));
 
-    if (fWithReward && !listStaked.empty()) {
-        CAmount nOutput = wtx.tx->GetValueOut();
-        CAmount nInput = 0;
-
-        for (const auto &vin : wtx.tx->vin) {
-            nInput += pwallet->GetOutputValue(vin.prevout, true);
-        }
-        entry.pushKV("reward", ValueFromAmount(nOutput - nInput));
-    }
-
     if (category_filter != "all" && category_filter != entry["category"].get_str()) {
         return;
     }
@@ -4555,25 +4545,7 @@ static void ParseRecords(
 
     entry.__pushKV("outputs", outputs);
 
-    if (nOwned && nFrom && nOwned != outputs.size()) {
-        // Must check against the owned input value
-        CAmount nInput = 0;
-        for (const auto &vin : rtx.vin) {
-            nInput += pwallet->GetOwnedOutputValue(vin, watchonly_filter);
-        }
-
-        CAmount nOutput = 0;
-        for (auto &record : rtx.vout) {
-            if ((record.nFlags & ORF_OWNED && watchonly_filter & ISMINE_SPENDABLE)
-                || (record.nFlags & ORF_OWN_WATCH && watchonly_filter & ISMINE_WATCH_ONLY)) {
-                nOutput += record.nValue;
-            }
-        }
-
-        entry.__pushKV("amount", ValueFromAmount(nOutput-nInput));
-    } else {
-        entry.__pushKV("amount", ValueFromAmount(totalAmount));
-    }
+    entry.__pushKV("amount", ValueFromAmount(totalAmount));
     amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));
 
     if (search != "") {
