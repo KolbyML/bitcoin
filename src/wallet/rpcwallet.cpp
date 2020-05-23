@@ -4429,7 +4429,6 @@ static void ParseRecords(
     }
     entry.__pushKV("time", (int64_t)wtx.nTimeReceived);
 
-    int nStd = 0;
     size_t nLockedOutputs = 0;
     for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
         UniValue output(UniValue::VOBJ);
@@ -4454,7 +4453,7 @@ static void ParseRecords(
         bool extracted = ExtractDestination(wtx.tx->vout[i].scriptPubKey, dest);
 
         // get account name
-        if (extracted && !record.scriptPubKey.IsUnspendable()) {
+        if (extracted && !wtx.tx->vout[i]scriptPubKey.IsUnspendable()) {
             std::map<CTxDestination, CAddressBookData>::iterator mai;
             mai = pwallet->mapAddressBook.find(dest);
             if (mai != pwallet->mapAddressBook.end() && !mai->second.name.empty()) {
@@ -4471,21 +4470,13 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount nCredit = wtx.credit;
-        CAmount nDebit = wtx.debit;
-        CAmount amount = nCredit - nDebit;
+        CAmount amount = wtx.tx->vout[i]GetValueOut();
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
         output.__pushKV("amount", ValueFromAmount(amount));
         output.__pushKV("vout", wtx.tx->vout[i]);
         outputs.push_back(output);
-    }
-
-    if (type > 0) {
-        if (type == OUTPUT_STANDARD && !nStd) {
-            return;
-        }
     }
 
     if (nFrom > 0) {
@@ -4780,8 +4771,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             );
         tit++;
     }
-    int type_i = type == "standard" ? OUTPUT_STANDARD :
-                 0;
+    int type_i = "standard";
     const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
 
     // iterate backwards until we have nCount items to return:
