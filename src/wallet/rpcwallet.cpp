@@ -4192,6 +4192,7 @@ static bool ParseOutput(
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CTxDestination dest;
+    isminetype mine = IsMine(*pwallet, o.destination);
 
     std::string sKey = strprintf("n%d", o.vout);
     mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
@@ -4202,7 +4203,7 @@ static bool ParseOutput(
         output.pushKV("address", EncodeDestination(o.destination));
         addresses.push_back(EncodeDestination(o.destination));
     }
-    if (o.ismine & ISMINE_WATCH_ONLY) {
+    if (mine & ISMINE_WATCH_ONLY) {
         if (watchonly & ISMINE_WATCH_ONLY) {
             output.pushKV("involvesWatchonly", true);
         } else {
