@@ -4470,7 +4470,7 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount amount = = wtx.GetCredit(*locked_chain, filter)
+        CAmount amount = = wtx.GetCredit(*locked_chain, filter);
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
