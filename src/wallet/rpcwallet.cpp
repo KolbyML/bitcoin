@@ -4181,6 +4181,46 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     return result;
 }
 
+static bool ParseOutput(
+    UniValue                  &output,
+    const COutputEntry        &o,
+    const CWallet           *pwallet,
+    const CWalletTx           &wtx,
+    const isminefilter        &watchonly,
+    std::vector<std::string>  &addresses,
+    std::vector<std::string>  &amounts
+) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+{
+    CBitcoinAddress addr;
+
+    std::string sKey = strprintf("n%d", o.vout);
+    mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
+    if (mvi != wtx.mapValue.end()) {
+        output.pushKV("narration", mvi->second);
+    }
+    if (addr.Set(o.destination)) {
+        output.pushKV("address", addr.ToString());
+        addresses.push_back(addr.ToString());
+    }
+    if (o.ismine & ISMINE_WATCH_ONLY) {
+        if (watchonly & ISMINE_WATCH_ONLY) {
+            output.pushKV("involvesWatchonly", true);
+        } else {
+            return false;
+        }
+    }
+    if (o.destStake.type() != typeid(CNoDestination)) {
+        output.pushKV("coldstake_address", EncodeDestination(o.destStake));
+    }
+    auto mi = pwallet->mapAddressBook.find(o.destination);
+    if (mi != pwallet->mapAddressBook.end()) {
+        output.pushKV("label", mi->second.name);
+    }
+    output.pushKV("vout", o.vout);
+    amounts.push_back(std::to_string(o.amount));
+    return true;
+}
+
 static void ParseOutputs(
     interfaces::Chain::Lock& locked_chain,
     UniValue            &entries,
@@ -5080,7 +5120,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
     {
         LOCK(pwallet->cs_wallet);
 
-        CHDWalletDB wdb(pwallet->GetDBHandle(), "r+");
+        CWalletDB wdb(pwallet->GetDBHandle(), "r+");
 
         if (nOffset >= (int)pwallet->mapAddressBook.size()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("offset is beyond last address (%d).", nOffset));
