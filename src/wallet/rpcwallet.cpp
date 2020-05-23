@@ -4408,7 +4408,7 @@ static void ParseRecords(
     size_t  nWatchOnly  = 0;
     CAmount totalAmount = 0;
 
-    int confirmations = wtx->GetDepthInMainChain(locked_chain);
+    int confirmations = wtx.GetDepthInMainChain(locked_chain);
     entry.__pushKV("confirmations", confirmations);
     if (confirmations > 0) {
         entry.__pushKV("blockhash", wtx.blockHash.GetHex());
