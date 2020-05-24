@@ -1291,15 +1291,16 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
                 {},
                 RPCResult{
             "{\n"
-            "  \"chain\": \"xxxx\",              (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"chain\": \"xxxx\",            (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"blocks\": xxxxxx,             (numeric) the height of the most-work fully-validated chain. The genesis block has height 0\n"
             "  \"headers\": xxxxxx,            (numeric) the current number of headers we have validated\n"
-            "  \"bestblockhash\": \"...\",       (string) the hash of the currently best block\n"
+            "  \"bestblockhash\": \"...\",     (string) the hash of the currently best block\n"
             "  \"difficulty\": xxxxxx,         (numeric) the current difficulty\n"
             "  \"mediantime\": xxxxxx,         (numeric) median time for the current best block\n"
             "  \"verificationprogress\": xxxx, (numeric) estimate of verification progress [0..1]\n"
             "  \"initialblockdownload\": xxxx, (bool) (debug information) estimate of whether this node is in Initial Block Download mode.\n"
-            "  \"chainwork\": \"xxxx\"           (string) total amount of work in active chain, in hexadecimal\n"
+            "  \"chainwork\": \"xxxx\"         (string) total amount of work in active chain, in hexadecimal\n"
+            "  \"moneysupply\": \"supply\"     (numeric) The money supply when this block was added to the blockchain\\n"
             "  \"size_on_disk\": xxxxxx,       (numeric) the estimated size of the block and undo files on disk\n"
             "  \"pruned\": xx,                 (boolean) if the blocks are subject to pruning\n"
             "  \"pruneheight\": xxxxxx,        (numeric) lowest-height complete block stored (only present if pruning is enabled)\n"
@@ -1352,6 +1353,7 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
     obj.pushKV("verificationprogress",  GuessVerificationProgress(Params().TxData(), tip));
     obj.pushKV("initialblockdownload",  ::ChainstateActive().IsInitialBlockDownload());
     obj.pushKV("chainwork",             tip->nChainWork.GetHex());
+    obj.pushKV("moneysupply",ValueFromAmount(tip->nMoneySupply));
     obj.pushKV("size_on_disk",          CalculateCurrentUsage());
     obj.pushKV("pruned",                fPruneMode);
     if (fPruneMode) {
