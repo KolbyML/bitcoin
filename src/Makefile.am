@@ -260,6 +260,7 @@ BITCOIN_CORE_H = \
   util/fees.h \
   util/init.h \
   util/system.h \
+  util/string.h \
   util/memory.h \
   util/moneystr.h \
   util/rbf.h \
@@ -703,6 +704,7 @@ libbitgreen_util_a_SOURCES = \
   util/rbf.cpp \
   util/threadnames.cpp \
   util/strencodings.cpp \
+  util/string.cpp \
   util/time.cpp \
   util/url.cpp \
   util/validation.cpp \

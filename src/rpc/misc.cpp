@@ -18,6 +18,7 @@
 
 #include <masternodes/sync.h>
 
+#include <rpc/rpcutil.h>
 #include <rpc/client.h>
 
 #include <stdint.h>
