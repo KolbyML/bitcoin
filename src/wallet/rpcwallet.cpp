@@ -5136,7 +5136,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
         UniValue result(UniValue::VOBJ);
 
         result.pushKV("action", sAction);
-        result.pushKV("address", saddress);
+        result.pushKV("address", EncodeDestination(saddress));
 
         result.pushKV("label", mabi->second.name);
         result.pushKV("purpose", mabi->second.purpose);
@@ -5179,7 +5179,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     UniValue result(UniValue::VOBJ);
 
     result.pushKV("action", sAction);
-    result.pushKV("address", saddress);
+    result.pushKV("address", EncodeDestination(saddress));
 
     if (sLabel.size() > 0) {
         result.pushKV("label", sLabel);
