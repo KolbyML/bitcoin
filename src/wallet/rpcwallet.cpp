@@ -5076,7 +5076,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
     CTxDestination saddress = DecodeDestination(request.params[1].get_str());
 
-    if (!IsValidDestination(request.params[1].get_str())) {
+    if (!IsValidDestinationString(request.params[1].get_str())) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Particl address");
     }
 
