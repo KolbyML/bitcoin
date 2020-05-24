@@ -5090,7 +5090,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
     if (sAction == "add") {
         if (mabi != pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", sAddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", saddress));
         }
 
         if (!pwallet->SetAddressBook(nullptr, saddress, sLabel, sPurpose, true)) {
