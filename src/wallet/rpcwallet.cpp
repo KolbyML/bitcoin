@@ -5023,35 +5023,9 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             auto &item = *vit;
             UniValue entry(UniValue::VOBJ);
 
-            CBitcoinAddress address(item->first, item->second.fBech32);
-            entry.pushKV("address", address.ToString());
+            entry.pushKV("address", EncodeDestination(CTxDestination(item->first));
             entry.pushKV("label", item->second.name);
             //entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
-
-            if (nShowPath > 0) {
-                if (item->second.vPath.size() > 0) {
-                    uint32_t index = item->second.vPath[0];
-                    std::map<uint32_t, std::string>::iterator mi = mapKeyIndexCache.find(index);
-
-                    if (mi != mapKeyIndexCache.end()) {
-                        entry.pushKV("root", mi->second);
-                    } else {
-                        CKeyID accId;
-                        CTxDestination dest
-                        addr.Set(accId, CChainParams::EXT_ACC_HASH);
-                        std::string sTmp = addr.ToString();
-                        entry.pushKV("root", sTmp);
-                        mapKeyIndexCache[index] = sTmp;
-                    }
-                }
-
-                if (item->second.vPath.size() > 1) {
-                    std::string sPath;
-                    if (0 == PathToString(item->second.vPath, sPath, '\'', 1)) {
-                        entry.pushKV("path", sPath);
-                    }
-                }
-            }
 
             result.push_back(entry);
             nEntries++;
@@ -5119,7 +5093,6 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     std::map<CTxDestination, CAddressBookData>::iterator mabi;
     mabi = pwallet->mapAddressBook.find(dest);
 
-    std::vector<uint32_t> vPath;
 
     UniValue objDestData(UniValue::VOBJ);
 
@@ -5128,7 +5101,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", sAddress));
         }
 
-        if (!pwallet->SetAddressBook(nullptr, dest, sLabel, sPurpose, vPath, true)) {
+        if (!pwallet->SetAddressBook(nullptr, dest, sLabel, sPurpose, true)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
     } else
@@ -5141,7 +5114,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
         }
 
         if (!pwallet->SetAddressBook(nullptr, dest, sLabel,
-            fHavePurpose ? sPurpose : mabi->second.purpose, mabi->second.vPath, true)) {
+            fHavePurpose ? sPurpose : mabi->second.purpose, true)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
 
@@ -5182,12 +5155,6 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
         result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
 */
-        if (mabi->second.vPath.size() > 1) {
-            std::string sPath;
-            if (0 == PathToString(mabi->second.vPath, sPath, '\'', 1)) {
-                result.pushKV("path", sPath);
-            }
-        }
 
         for (const auto &pair : mabi->second.destdata) {
             objDestData.pushKV(pair.first, pair.second);
