@@ -4924,6 +4924,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
         result.pushKV("total", (int)pwallet->mapAddressBook.size());
 
         int nReceive = 0, nSend = 0;
+        /*
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0)
                 it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
@@ -4933,7 +4934,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             else
             if (it->second.nOwned == 2)
                 nSend++;
-        }
+        }*/
 
         result.pushKV("num_receive", nReceive);
         result.pushKV("num_send", nSend);
@@ -4997,7 +4998,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
         }
         std::vector<std::map<CTxDestination, CAddressBookData>::iterator> vitMapAddressBook;
         vitMapAddressBook.reserve(pwallet->mapAddressBook.size());
-
+/*
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0) {
                 it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
@@ -5013,7 +5014,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
             vitMapAddressBook.push_back(it);
         }
-
+*/
         std::sort(vitMapAddressBook.begin(), vitMapAddressBook.end(), AddressComp(nSortCode));
 
         std::map<uint32_t, std::string> mapKeyIndexCache;
@@ -5027,7 +5028,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             CBitcoinAddress address(item->first, item->second.fBech32);
             entry.pushKV("address", address.ToString());
             entry.pushKV("label", item->second.name);
-            entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
+            //entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
 
             if (nShowPath > 0) {
                 if (item->second.vPath.size() > 0) {
@@ -5180,13 +5181,13 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
         result.pushKV("label", mabi->second.name);
         result.pushKV("purpose", mabi->second.purpose);
-
+/*
         if (mabi->second.nOwned == 0) {
             mabi->second.nOwned = pwallet->HaveAddress(mabi->first) ? 1 : 2;
         }
 
         result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
-
+*/
         if (mabi->second.vPath.size() > 1) {
             std::string sPath;
             if (0 == PathToString(mabi->second.vPath, sPath, '\'', 1)) {
