@@ -376,6 +376,7 @@ libbitgreen_server_a_SOURCES = \
   rpc/quorum.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
+  rpc/client.cpp \
   rpc/rpcutil.cpp \
   rpc/special.cpp \
   special/cbtx.cpp \
