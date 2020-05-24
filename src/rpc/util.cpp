@@ -264,11 +264,7 @@ bool GetBool(const UniValue &uv)
     if (!uv.isStr()) {
         throw std::runtime_error("Not a boolean or string value.");
     }
-    bool rv;
-    if (!part::GetStringBool(uv.get_str(), rv)) {
-        throw std::runtime_error("String not a boolean value.");
-    }
-    return rv;
+    return true;
 }
 
 RPCErrorCode RPCErrorFromTransactionError(TransactionError terr)
