@@ -18,6 +18,8 @@
 
 #include <masternodes/sync.h>
 
+#include <rpc/client.h>
+
 #include <stdint.h>
 #include <tuple>
 #ifdef HAVE_MALLOC_INFO
