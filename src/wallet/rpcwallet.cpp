@@ -5093,7 +5093,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", saddress));
         }
 
-        if (!pwallet->SetAddressBook(nullptr, saddress, sLabel, sPurpose, true)) {
+        if (!pwallet->SetAddressBook(saddress, sLabel, sPurpose)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
     } else
@@ -5105,8 +5105,8 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
         }
 
-        if (!pwallet->SetAddressBook(nullptr, saddress, sLabel,
-            fHavePurpose ? sPurpose : mabi->second.purpose, true)) {
+        if (!pwallet->SetAddressBook(saddress, sLabel,
+            fHavePurpose ? sPurpose : mabi->second.purpose)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
 
