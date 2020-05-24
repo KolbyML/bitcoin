@@ -5059,7 +5059,6 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     pwallet->BlockUntilSyncedToCurrentChain();
 
     std::string sAction = request.params[0].get_str();
-    std::string sAddress = request.params[1].get_str();
     std::string sLabel, sPurpose;
 
     if (sAction != "info") {
@@ -5075,23 +5074,16 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
         fHavePurpose = true;
     }
 
-    CBitcoinAddress address(sAddress);
-    CTxDestination dest;
+    CTxDestination saddress = DecodeDestination(request.params[1].get_str());
 
-    if (address.IsValid()) {
-        dest = address.Get();
-    } else {
-        // Try decode as segwit address
-        dest = DecodeDestination(sAddress);
-        if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Particl address");
-        }
+    if (!IsValidDestination(request.params[1].get_str())) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Particl address");
     }
 
     LOCK(pwallet->cs_wallet);
 
     std::map<CTxDestination, CAddressBookData>::iterator mabi;
-    mabi = pwallet->mapAddressBook.find(dest);
+    mabi = pwallet->mapAddressBook.find(saddress);
 
 
     UniValue objDestData(UniValue::VOBJ);
@@ -5101,7 +5093,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", sAddress));
         }
 
-        if (!pwallet->SetAddressBook(nullptr, dest, sLabel, sPurpose, true)) {
+        if (!pwallet->SetAddressBook(nullptr, saddress, sLabel, sPurpose, true)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
     } else
@@ -5113,7 +5105,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
         }
 
-        if (!pwallet->SetAddressBook(nullptr, dest, sLabel,
+        if (!pwallet->SetAddressBook(nullptr, saddress, sLabel,
             fHavePurpose ? sPurpose : mabi->second.purpose, true)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
@@ -5132,7 +5124,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
         sLabel = mabi->second.name;
         sPurpose = mabi->second.purpose;
 
-        if (!pwallet->DelAddressBook(dest)) {
+        if (!pwallet->DelAddressBook(saddress)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "DelAddressBook failed.");
         }
     } else
@@ -5173,7 +5165,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             sPurpose = ""; // "" means don't change purpose
         }
 
-        if (!pwallet->SetAddressBook(dest, sLabel, sPurpose)) {
+        if (!pwallet->SetAddressBook(saddress, sLabel, sPurpose)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "SetAddressBook failed.");
         }
 
