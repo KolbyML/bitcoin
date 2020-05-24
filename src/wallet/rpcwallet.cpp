@@ -4789,9 +4789,6 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                     category,
                     type_i
             );
-
-        ListTransactions(*locked_chain, pwallet, *pwtx, 0, true, ret, filter, filter_label);
-        if ((int)ret.size() >= (nCount+nFrom)) break;
     }
 
 
