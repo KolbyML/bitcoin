@@ -4991,8 +4991,6 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
     {
         LOCK(pwallet->cs_wallet);
 
-        CWalletDB wdb(pwallet->GetDBHandle(), "r+");
-
         if (nOffset >= (int)pwallet->mapAddressBook.size()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("offset is beyond last address (%d).", nOffset));
         }
@@ -5039,15 +5037,11 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
                         entry.pushKV("root", mi->second);
                     } else {
                         CKeyID accId;
-                        if (!wdb.ReadExtKeyIndex(index, accId)) {
-                            entry.pushKV("root", "error");
-                        } else {
-                            CTxDestination dest
-                            addr.Set(accId, CChainParams::EXT_ACC_HASH);
-                            std::string sTmp = addr.ToString();
-                            entry.pushKV("root", sTmp);
-                            mapKeyIndexCache[index] = sTmp;
-                        }
+                        CTxDestination dest
+                        addr.Set(accId, CChainParams::EXT_ACC_HASH);
+                        std::string sTmp = addr.ToString();
+                        entry.pushKV("root", sTmp);
+                        mapKeyIndexCache[index] = sTmp;
                     }
                 }
 
