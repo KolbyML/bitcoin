@@ -5023,7 +5023,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             auto &item = *vit;
             UniValue entry(UniValue::VOBJ);
 
-            entry.pushKV("address", EncodeDestination(item->first);
+            entry.pushKV("address", EncodeDestination(item->first));
             entry.pushKV("label", item->second.name);
             //entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
 
