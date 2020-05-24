@@ -217,6 +217,7 @@ BITCOIN_CORE_H = \
   rpc/request.h \
   rpc/server.h \
   rpc/util.h \
+  rpc/rpcutil.h \
   saltedhasher.h \
   special/cbtx.h \
   special/deterministicmns.h \
@@ -374,6 +375,7 @@ libbitgreen_server_a_SOURCES = \
   rpc/quorum.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
+  rpc/rpcutil.cpp \
   rpc/special.cpp \
   special/cbtx.cpp \
   special/deterministicmns.cpp \
