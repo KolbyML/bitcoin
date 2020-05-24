@@ -4782,7 +4782,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                     *locked_chain,
                     transactions,
                     hash,
-                    pwtx,
+                    *pwtx,
                     pwallet,
                     watchonly,
                     search,
