@@ -5102,7 +5102,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Need a parameter to change.");
         }
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
         }
 
         if (!pwallet->SetAddressBook(nullptr, saddress, sLabel,
@@ -5119,7 +5119,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     } else
     if (sAction == "del") {
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
         }
         sLabel = mabi->second.name;
         sPurpose = mabi->second.purpose;
@@ -5130,13 +5130,13 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     } else
     if (sAction == "info") {
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", sAddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
         }
 
         UniValue result(UniValue::VOBJ);
 
         result.pushKV("action", sAction);
-        result.pushKV("address", sAddress);
+        result.pushKV("address", saddress);
 
         result.pushKV("label", mabi->second.name);
         result.pushKV("purpose", mabi->second.purpose);
@@ -5179,7 +5179,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     UniValue result(UniValue::VOBJ);
 
     result.pushKV("action", sAction);
-    result.pushKV("address", sAddress);
+    result.pushKV("address", saddress);
 
     if (sLabel.size() > 0) {
         result.pushKV("label", sLabel);
