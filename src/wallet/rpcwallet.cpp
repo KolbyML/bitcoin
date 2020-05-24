@@ -4774,7 +4774,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     {
         CWalletTx *const pwtx = (*it).second;
         int64_t txTime = pwtx->GetTxTime();
-        const uint256 &hash = pwtx.hashBlock;
+        const uint256 &hash = pwtx->hashBlock;
 
         if (txTime < timeFrom) break;
         if (txTime <= timeTo)
