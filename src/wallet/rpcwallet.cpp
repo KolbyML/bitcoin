@@ -5090,7 +5090,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
     if (sAction == "add") {
         if (mabi != pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", saddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is recorded in the address book.", EncodeDestination(saddress)));
         }
 
         if (!pwallet->SetAddressBook(saddress, sLabel, sPurpose)) {
@@ -5102,7 +5102,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Need a parameter to change.");
         }
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", EncodeDestination(saddress)));
         }
 
         if (!pwallet->SetAddressBook(saddress, sLabel,
@@ -5119,7 +5119,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     } else
     if (sAction == "del") {
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", EncodeDestination(saddress)));
         }
         sLabel = mabi->second.name;
         sPurpose = mabi->second.purpose;
@@ -5130,7 +5130,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
     } else
     if (sAction == "info") {
         if (mabi == pwallet->mapAddressBook.end()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", saddress));
+            throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Address '%s' is not in the address book.", EncodeDestination(saddress)));
         }
 
         UniValue result(UniValue::VOBJ);
