@@ -3501,6 +3501,89 @@ static CBlockIndex* GetLastCheckpoint(const CCheckpointData& data) EXCLUSIVE_LOC
     return nullptr;
 }
 
+class HeightEntry {
+public:
+    HeightEntry(int height, NodeId id, int64_t time) : m_height(height), m_id(id), m_time(time)  {};
+    int m_height;
+    NodeId m_id;
+    int64_t m_time;
+};
+static std::atomic_int nPeerBlocks(std::numeric_limits<int>::max());
+static std::atomic_int nPeers(0);
+static std::list<HeightEntry> peer_blocks;
+const size_t max_peer_blocks = 9;
+
+void UpdateNumPeers(int num_peers)
+{
+    nPeers = num_peers;
+}
+
+int GetNumPeers()
+{
+    return nPeers;
+}
+
+void UpdateNumBlocksOfPeers(NodeId id, int height) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+        {
+                // Select median value. Only one sample per peer. Remove oldest sample.
+                int new_value = 0;
+
+        bool inserted = false;
+        size_t num_elements = 0;
+        std::list<HeightEntry>::iterator oldest = peer_blocks.end();
+        for (auto it = peer_blocks.begin(); it != peer_blocks.end(); ) {
+            if (id == it->m_id) {
+                if (height == it->m_height) {
+                    inserted = true;
+                } else {
+                    it = peer_blocks.erase(it);
+                    continue;
+                }
+            }
+            if (!inserted && it->m_height > height) {
+                peer_blocks.emplace(it, height, id, GetTime());
+                inserted = true;
+            }
+            if (oldest == peer_blocks.end() || oldest->m_time > it->m_time) {
+                oldest = it;
+            }
+            it++;
+            num_elements++;
+        }
+
+        if (!inserted) {
+            peer_blocks.emplace_back(height, id, GetTime());
+            num_elements++;
+        }
+        if (num_elements > max_peer_blocks && oldest != peer_blocks.end()) {
+            peer_blocks.erase(oldest);
+            num_elements--;
+        }
+
+        size_t stop = num_elements / 2;
+        num_elements = 0;
+        for (auto it = peer_blocks.begin(); it != peer_blocks.end(); ++it) {
+            if (num_elements >= stop) {
+                new_value = it->m_height;
+                break;
+            }
+            num_elements++;
+        }
+
+        static const CBlockIndex *pcheckpoint = GetLastCheckpoint(Params().Checkpoints());
+        if (pcheckpoint) {
+            if (new_value < pcheckpoint->nHeight) {
+                new_value = std::numeric_limits<int>::max();
+            }
+        }
+        nPeerBlocks = new_value;
+        }
+
+int GetNumBlocksOfPeers()
+{
+    return nPeerBlocks;
+}
+
 static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash)
 {
     if (*pindexPrev->phashBlock == chainparams.GetConsensus().hashGenesisBlock)
