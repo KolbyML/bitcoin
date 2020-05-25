@@ -2292,6 +2292,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         int nSendVersion;
         std::string cleanSubVer;
         int nStartingHeight = -1;
+        int nChainHeight = -1;
         bool fRelay = true;
 
         vRecv >> nVersion >> nServiceInt >> nTime >> addrMe;
@@ -2366,14 +2367,18 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::VERACK));
 
+        pfrom->nStartingHeight = nStartingHeight;
+        pfrom->nChainHeight = nStartingHeight;
+        {
+            LOCK(cs_main);
+            UpdateNumBlocksOfPeers(pfrom->GetId(), nStartingHeight);
+        }
         pfrom->nServices = nServices;
         pfrom->SetAddrLocal(addrMe);
         {
             LOCK(pfrom->cs_SubVer);
             pfrom->cleanSubVer = cleanSubVer;
         }
-        pfrom->nStartingHeight = nStartingHeight;
-
         // set nodes not relaying blocks and tx and not serving (parts) of the historical blockchain as "clients"
         pfrom->fClient = (!(nServices & NODE_NETWORK) && !(nServices & NODE_NETWORK_LIMITED));
 
@@ -3508,6 +3513,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         {
             uint64_t nonce = 0;
             vRecv >> nonce;
+
+            int nChainHeight;
+            vRecv >> nChainHeight;
+            pfrom->nChainHeight = nChainHeight;
+            {
+                LOCK(cs_main);
+                UpdateNumBlocksOfPeers(pfrom->GetId(), nChainHeight);
+            }
+
             // Echo the message back with the nonce. This allows for two useful features:
             //
             // 1) A remote node can quickly check if the connection is operational
@@ -4086,14 +4100,14 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
             }
             pto->fPingQueued = false;
             pto->nPingUsecStart = GetTimeMicros();
-            if (pto->nVersion > BIP0031_VERSION) {
-                pto->nPingNonceSent = nonce;
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::PING, nonce));
-            } else {
-                // Peer is too old to support ping command with nonce, pong will never arrive.
-                pto->nPingNonceSent = 0;
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::PING));
+            int nChainHeight;
+            {
+                LOCK(cs_main);
+                nChainHeight = (int)::ChainActive().Height();
             }
+            // BIP0031_VERSION
+            pto->nPingNonceSent = nonce;
+            connman->PushMessage(pto, msgMaker.Make(NetMsgType::PING, nonce, nChainHeight));
         }
 
         TRY_LOCK(cs_main, lockMain); // Acquire cs_main for IsInitialBlockDownload() and CNodeState()

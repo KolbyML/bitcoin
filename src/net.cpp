@@ -521,6 +521,11 @@ void CNode::copyStats(CNodeStats &stats)
     X(fInbound);
     X(m_manual_connection);
     X(nStartingHeight);
+    X(nChainHeight);
+    X(nSendBytes);
+    X(mapSendBytesPerMsgCmd);
+    X(nRecvBytes);
+    X(mapRecvBytesPerMsgCmd);
     {
         LOCK(cs_vSend);
         X(mapSendBytesPerMsgCmd);

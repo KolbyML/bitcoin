@@ -584,6 +584,7 @@ public:
     bool fInbound;
     bool m_manual_connection;
     int nStartingHeight;
+    int nChainHeight; // updated from ping messages
     uint64_t nSendBytes;
     mapMsgCmdSize mapSendBytesPerMsgCmd;
     uint64_t nRecvBytes;
