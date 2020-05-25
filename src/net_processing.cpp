@@ -2371,7 +2371,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         pfrom->nChainHeight = nStartingHeight;
         {
             LOCK(cs_main);
-            UpdateNumBlocksOfPeers(pfrom->GetId(), nStartingHeight);
+            connman->cPeerBlockCounts.input(pfrom->nChainHeight);
         }
         pfrom->nServices = nServices;
         pfrom->SetAddrLocal(addrMe);
@@ -3519,7 +3519,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pfrom->nChainHeight = nChainHeight;
             {
                 LOCK(cs_main);
-                UpdateNumBlocksOfPeers(pfrom->GetId(), nChainHeight);
+                connman->cPeerBlockCounts.input(nChainHeight);
             }
 
             // Echo the message back with the nonce. This allows for two useful features:
