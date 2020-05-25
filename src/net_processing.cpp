@@ -2294,7 +2294,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         int nSendVersion;
         std::string cleanSubVer;
         int nStartingHeight = -1;
-        int nChainHeight = -1;
         bool fRelay = true;
 
         vRecv >> nVersion >> nServiceInt >> nTime >> addrMe;

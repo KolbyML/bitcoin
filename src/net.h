@@ -729,6 +729,7 @@ protected:
 public:
     uint256 hashContinue;
     std::atomic<int> nStartingHeight{-1};
+    std::atomic<int> nChainHeight{-1}; // updated from ping messages
 
     // flood relay
     std::vector<CAddress> vAddrToSend;
