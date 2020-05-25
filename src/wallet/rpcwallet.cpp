@@ -4491,7 +4491,7 @@ static void ParseRecords(
     if (nFrom) {
         category = "payment_to_yourself";
     } else if (!nFrom) {
-        category = "received_with";
+        category = "receive";
     } else if (nFrom) {
         category = "sent_to";
     } else if (wtx.tx->IsCoinStake()) {
@@ -4682,8 +4682,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             category = options["category"].get_str();
             std::vector<std::string> categories = {
                 "all",
-                "received_with",
-                "received_from",
+                "receive",
                 "sent_to",
                 "payment_to_yourself",
                 "mined",
