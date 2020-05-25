@@ -96,6 +96,7 @@ static UniValue getpeerinfo(const JSONRPCRequest& request)
             "    \"inbound\": true|false,     (boolean) Inbound (true) or Outbound (false)\n"
             "    \"addnode\": true|false,     (boolean) Whether connection was due to addnode/-connect or if it was an automatic/inbound connection\n"
             "    \"startingheight\": n,       (numeric) The starting height (block) of the peer\n"
+            "    \"currentheight\": n,       (numeric) The current height (block) reported by the peer\n"
             "    \"banscore\": n,             (numeric) The ban score\n"
             "    \"synced_headers\": n,       (numeric) The last header we have in common with this peer\n"
             "    \"synced_blocks\": n,        (numeric) The last block we have in common with this peer\n"
@@ -167,6 +168,7 @@ static UniValue getpeerinfo(const JSONRPCRequest& request)
         obj.pushKV("inbound", stats.fInbound);
         obj.pushKV("addnode", stats.m_manual_connection);
         obj.pushKV("startingheight", stats.nStartingHeight);
+        obj.pushKV("currentheight", stats.nChainHeight);
         if (fStateStats) {
             obj.pushKV("banscore", statestats.nMisbehavior);
             obj.pushKV("synced_headers", statestats.nSyncHeight);
