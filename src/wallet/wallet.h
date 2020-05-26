@@ -339,6 +339,8 @@ public:
 
     CAddressBookData() : purpose("unknown") {}
 
+    mutable uint8_t nOwned = 0; // 0 unknown, 1 yes, 2 no
+
     typedef std::map<std::string, std::string> StringMap;
     StringMap destdata;
 };

@@ -4923,7 +4923,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
         result.pushKV("total", (int)pwallet->mapAddressBook.size());
 
         int nReceive = 0, nSend = 0;
-        /*
+
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0)
                 it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
@@ -4933,7 +4933,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             else
             if (it->second.nOwned == 2)
                 nSend++;
-        }*/
+        }
 
         result.pushKV("num_receive", nReceive);
         result.pushKV("num_send", nSend);
