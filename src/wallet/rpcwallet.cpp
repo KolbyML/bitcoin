@@ -4925,8 +4925,12 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
         int nReceive = 0, nSend = 0;
 
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
-            if (it->second.nOwned == 0)
-                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
+            if (it->second.nOwned == 0) {
+                CKeyID256 id256 = boost::get<CKeyID256>(it->first);
+                CKeyID id(id256);
+                it->second.nOwned = pwallet->IsMine(id) ? 1 : 2;
+            }
+
 
             if (it->second.nOwned == 1)
                 nReceive++;
