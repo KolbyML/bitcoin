@@ -24,6 +24,7 @@
 #include <util/bip32.h>
 #include <util/fees.h>
 #include <util/moneystr.h>
+#include <util/string.h>
 #include <util/system.h>
 #include <util/url.h>
 #include <util/validation.h>
@@ -5143,7 +5144,7 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
         result.pushKV("purpose", mabi->second.purpose);
 
         if (mabi->second.nOwned == 0) {
-            mabi->second.nOwned = IsMine(*pwallet, it->first) ? 1 : 2;
+            mabi->second.nOwned = IsMine(*pwallet, mabi->first) ? 1 : 2;
         }
 
         result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
