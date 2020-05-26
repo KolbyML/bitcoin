@@ -4926,8 +4926,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0) {
-                CKeyID id = CKeyID(boost::get<PKHash>(it->first));
-                it->second.nOwned = pwallet->IsMine(id) ? 1 : 2;
+                it->second.nOwned = IsMine(pwallet, it->first) ? 1 : 2;
             }
 
 
