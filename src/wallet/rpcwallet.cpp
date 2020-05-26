@@ -5000,7 +5000,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0) {
-                it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
+                it->second.nOwned = IsMine(*pwallet, it->first) ? 1 : 2;
             }
             if (nMatchOwned && it->second.nOwned != nMatchOwned) {
                 continue;
@@ -5141,13 +5141,13 @@ static UniValue manageaddressbook(const JSONRPCRequest &request)
 
         result.pushKV("label", mabi->second.name);
         result.pushKV("purpose", mabi->second.purpose);
-/*
+
         if (mabi->second.nOwned == 0) {
-            mabi->second.nOwned = pwallet->HaveAddress(mabi->first) ? 1 : 2;
+            mabi->second.nOwned = IsMine(*pwallet, it->first) ? 1 : 2;
         }
 
         result.pushKV("owned", mabi->second.nOwned == 1 ? "true" : "false");
-*/
+
 
         for (const auto &pair : mabi->second.destdata) {
             objDestData.pushKV(pair.first, pair.second);
