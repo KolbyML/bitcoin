@@ -4997,7 +4997,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
         }
         std::vector<std::map<CTxDestination, CAddressBookData>::iterator> vitMapAddressBook;
         vitMapAddressBook.reserve(pwallet->mapAddressBook.size());
-/*
+
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0) {
                 it->second.nOwned = pwallet->HaveAddress(it->first) ? 1 : 2;
@@ -5013,7 +5013,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
             vitMapAddressBook.push_back(it);
         }
-*/
+
         std::sort(vitMapAddressBook.begin(), vitMapAddressBook.end(), AddressComp(nSortCode));
 
         std::map<uint32_t, std::string> mapKeyIndexCache;
@@ -5026,7 +5026,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
             entry.pushKV("address", EncodeDestination(item->first));
             entry.pushKV("label", item->second.name);
-            //entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
+            entry.pushKV("owned", item->second.nOwned == 1 ? "true" : "false");
 
             result.push_back(entry);
             nEntries++;
