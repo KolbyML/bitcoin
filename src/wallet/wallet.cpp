@@ -1501,9 +1501,6 @@ isminetype CWallet::IsMine(const CKeyID &address) const
         if (spk_man->mapCryptedKeys.count(address) > 0) {
             return ISMINE_SPENDABLE;
         }
-        if (spk_man->mapWatchKeys.count(address) > 0) {
-            return ISMINE_WATCH_ONLY_;
-        }
     }
     return ISMINE_NO;
 }
