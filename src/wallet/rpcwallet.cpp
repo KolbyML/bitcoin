@@ -4926,7 +4926,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
 
         for (it = pwallet->mapAddressBook.begin(); it != pwallet->mapAddressBook.end(); ++it) {
             if (it->second.nOwned == 0) {
-                it->second.nOwned = IsMine(pwallet, it->first) ? 1 : 2;
+                it->second.nOwned = IsMine(*pwallet, it->first) ? 1 : 2;
             }
 
 
