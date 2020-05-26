@@ -1490,6 +1490,23 @@ void CWallet::BlockUntilSyncedToCurrentChain() {
     chain().waitForNotificationsIfNewBlocksConnected(last_block_hash);
 }
 
+isminetype CWallet::IsMine(const CKeyID &address) const
+{
+    auto spk_man = GetLegacyScriptPubKeyMan();
+    if (spk_man) {
+        LOCK(spk_man->cs_KeyStore);
+        if (!IsCrypted()) {
+            return spk_man->FillableSigningProvider::IsMine(address);
+        }
+        if (spk_man->mapCryptedKeys.count(address) > 0) {
+            return ISMINE_SPENDABLE;
+        }
+        if (spk_man->mapWatchKeys.count(address) > 0) {
+            return ISMINE_WATCH_ONLY_;
+        }
+    }
+    return ISMINE_NO;
+}
 
 isminetype CWallet::IsMine(const CTxIn &txin) const
 {
