@@ -4928,7 +4928,7 @@ static UniValue filteraddresses(const JSONRPCRequest &request)
             if (it->second.nOwned == 0) {
                 CKeyID256 id256 = boost::get<CKeyID256>(it->first);
                 CKeyID id(id256);
-                it->second.nOwned = pwallet->IsMine(id) ? 1 : 2;
+                it->second.nOwned = pwallet->IsMine(it->first) ? 1 : 2;
             }
 
 
