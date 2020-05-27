@@ -2462,6 +2462,7 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
             "  \"keypoololdest\": xxxxxx,           (numeric) the timestamp (seconds since Unix epoch) of the oldest pre-generated key in the key pool\n"
             "  \"keypoolsize\": xxxx,               (numeric) how many new keys are pre-generated (only counts external keys)\n"
             "  \"keypoolsize_hd_internal\": xxxx,   (numeric) how many new keys are pre-generated for internal use (used for change outputs, only appears if the wallet is using this feature, otherwise external keys are used)\n"
+            "  \"encryptionstatus\": ttt,             (numeric) the encryption status of this wallet: unencrypted/locked/unlocked\"\n"
             "  \"unlocked_until\": ttt,             (numeric) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked\n"
             "  \"unlocked_staking\": true|false     (boolean) whether the wallet is unlocked for staking only\n"
             "  \"paytxfee\": x.xxxx,                (numeric) the transaction fee configuration, set in " + CURRENCY_UNIT + "/kB\n"
@@ -2504,6 +2505,8 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
     if (pwallet->CanSupportFeature(FEATURE_HD_SPLIT)) {
         obj.pushKV("keypoolsize_hd_internal",   (int64_t)(pwallet->GetKeyPoolSize() - kpExternalSize));
     }
+    obj.pushKV("encryptionstatus", !pwallet->IsCrypted()
+                                   ? "Unencrypted" : pwallet->IsLocked() ? "Locked" : "Unlocked");
     if (pwallet->IsCrypted()) {
         obj.pushKV("unlocked_until", pwallet->nRelockTime);
         obj.pushKV("unlocked_staking", fWalletUnlockStakingOnly);
