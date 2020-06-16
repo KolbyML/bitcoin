@@ -39,7 +39,6 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <stdint.h>
 #include <future>
 
 #include <boost/algorithm/string/replace.hpp>
@@ -2471,11 +2470,9 @@ CAmount CWallet::getLockedCoins(interfaces::Chain::Lock& locked_chain) const
 {
     CAmount nSum = 0;
     for (const auto& coins : ListCoins(locked_chain)) {
-        for (const auto &outpair : coins.second) {
-            const COutPoint &output = std::get<0>(outpair);
-            const interfaces::WalletTxOut &out = std::get<1>(outpair);
+        for (const COutput& out : coins.second) {
             if (IsLockedCoin(output.hash, output.n)) {
-                nSum += out.txout.nValue;
+                nSum += out.tx->tx->vout[out.i].nValue;
             }
         }
     }
