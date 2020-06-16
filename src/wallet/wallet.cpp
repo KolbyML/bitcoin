@@ -2508,7 +2508,7 @@ CWallet::Balance CWallet::GetBalance(const int min_depth, bool avoid_reuse, bool
 
         }
     }
-    const CAmount locked_coins = getLockedCoins(*locked_chain);
+    const CAmount locked_coins = getLockedCoins(locked_chain);
     ret.m_mine_locked = locked_coins;
     return ret;
 }
@@ -2649,40 +2649,6 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
             if (nMaximumCount > 0 && vCoins.size() >= nMaximumCount) {
                 return;
             }
-        }
-    }
-}
-
-void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain) const
-{
-    AssertLockHeld(cs_wallet);
-
-    vCoins.clear();
-    CAmount nTotal = 0;
-    // Either the WALLET_FLAG_AVOID_REUSE flag is not set (in which case we always allow), or we default to avoiding, and only in the case where
-    // a coin control object is provided, and has the avoid address reuse flag set to false, do we allow already used addresses
-    bool allow_used_addresses = !IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE) || (coinControl && !coinControl->m_avoid_address_reuse);
-    int nInstantSendConfirmationsRequired = Params().GetConsensus().nInstantSendConfirmationsRequired;
-
-    for (const auto& entry : mapWallet)
-    {
-        const uint256& wtxid = entry.first;
-        const CWalletTx& wtx = entry.second;
-
-        for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
-            if (IsLockedCoin(entry.first, i)) {
-                // Checks the sum amount of all UTXO's.
-                if (nMinimumSumAmount != MAX_MONEY) {
-                    nTotal += wtx.tx->vout[i].nValue;
-
-                    if (nTotal >= nMinimumSumAmount) {
-                        return;
-                    }
-                }
-            }
-
-
-
         }
     }
 }
