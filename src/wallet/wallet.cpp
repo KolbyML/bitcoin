@@ -2466,7 +2466,7 @@ void MaybeResendWalletTxs()
  * @{
  */
 
-CAmount getLockedCoins(interfaces::Chain::Lock& locked_chain)
+CAmount CWallet::getLockedCoins(interfaces::Chain::Lock& locked_chain)
 {
     CAmount nSum = 0;
     for (const auto& coins : ListCoins(*locked_chain) {
@@ -2508,7 +2508,8 @@ CWallet::Balance CWallet::GetBalance(const int min_depth, bool avoid_reuse, bool
 
         }
     }
-    ret.m_mine_locked getLockedCoins(*locked_chain);
+    const CAmount locked_coins = getLockedCoins(*locked_chain);
+    ret.m_mine_locked = locked_coins;
     return ret;
 }
 
