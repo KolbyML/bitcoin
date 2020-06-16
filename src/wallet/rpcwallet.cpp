@@ -2439,6 +2439,61 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
+static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const rpc_wallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(rpc_wallet.get(), request.fHelp)) {
+        return NullUniValue;
+    }
+    CWallet& wallet = *rpc_wallet;
+
+    RPCHelpMan{
+            "getbalances",
+            "Returns an object with all balances in " + CURRENCY_UNIT + ".\n",
+            {},
+            RPCResult{
+                    "{\n"
+                    "    \"mine\": {                        (object) balances from outputs that the wallet can sign\n"
+                    "      \"trusted\": xxx                 (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
+                    "      \"untrusted_pending\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
+                    "      \"immature\": xxx                (numeric) balance from immature coinbase outputs\n"
+                    "      \"used\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "      \"locked\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "    },\n"
+                    "}\n"},
+            RPCExamples{
+                    HelpExampleCli("getbalances", "") +
+                    HelpExampleRpc("getbalances", "")},
+    }.Check(request);
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    wallet.BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = wallet.chain().lock();
+    LOCK(wallet.cs_wallet);
+
+    UniValue obj(UniValue::VOBJ);
+
+    const auto bal = wallet.GetBalance();
+    UniValue balances{UniValue::VOBJ};
+    {
+        UniValue balances_mine{UniValue::VOBJ};
+        balances_mine.pushKV("trusted", ValueFromAmount(bal.m_mine_trusted));
+        balances_mine.pushKV("untrusted_pending", ValueFromAmount(bal.m_mine_untrusted_pending));
+        balances_mine.pushKV("immature", ValueFromAmount(bal.m_mine_immature));
+        if (wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE)) {
+            // If the AVOID_REUSE flag is set, bal has been set to just the un-reused address balance. Get
+            // the total balance, and then subtract bal to get the reused address balance.
+            const auto full_bal = wallet.GetBalance(0, false);
+            balances_mine.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
+        }
+        balances_mine.pushKV("locked", ValueFromAmount(bal.m_mine_locked));
+        balances.pushKV("mine", balances_mine);
+    }
+    return balances;
+}
+
 static UniValue getwalletinfo(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -5236,6 +5291,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "gettransaction",                   &gettransaction,                {"txid","include_watchonly"} },
     { "wallet",             "getunconfirmedbalance",            &getunconfirmedbalance,         {} },
     { "wallet",             "getbalances",                      &getbalances,                   {} },
+    { "wallet",             "getbalancedatadesktop",            &getbalancedatadesktop,         {} },
     { "wallet",             "getwalletinfo",                    &getwalletinfo,                 {} },
     { "wallet",             "importaddress",                    &importaddress,                 {"address","label","rescan","p2sh"} },
     { "wallet",             "importmulti",                      &importmulti,                   {"requests","options"} },
