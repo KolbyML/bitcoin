@@ -2471,8 +2471,7 @@ CAmount CWallet::getLockedCoins(interfaces::Chain::Lock& locked_chain) const
     CAmount nSum = 0;
     for (const auto& coins : ListCoins(locked_chain)) {
         for (const COutput& out : coins.second) {
-            uint256 txhash = out.tx->GetHash();
-            if (IsLockedCoin(COutPoint(txhash, out.i))) {
+            if (IsLockedCoin(COutPoint(out.hash, out.n))) {
                 nSum += out.tx->tx->vout[out.i].nValue;
             }
         }
