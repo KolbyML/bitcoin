@@ -1145,7 +1145,7 @@ public:
         CAmount m_watchonly_immature{0};
     };
     Balance GetBalance(int min_depth = 0, bool avoid_reuse = true, bool add_locked = false) const;
-    CAmount getLockedCoins(interfaces::Chain::Lock& locked_chain);
+    CAmount getLockedCoins(interfaces::Chain::Lock& locked_chain) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
 
     OutputType TransactionChangeType(OutputType change_type, const std::vector<CRecipient>& vecSend);
