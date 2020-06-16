@@ -2507,9 +2507,9 @@ CWallet::Balance CWallet::GetBalance(const int min_depth, bool avoid_reuse, bool
             ret.m_watchonly_immature += wtx.GetImmatureWatchOnlyCredit(*locked_chain);
 
         }
+        const CAmount locked_coins = getLockedCoins(locked_chain);
+        ret.m_mine_locked = locked_coins;
     }
-    const CAmount locked_coins = getLockedCoins(*locked_chain);
-    ret.m_mine_locked = locked_coins;
     return ret;
 }
 
