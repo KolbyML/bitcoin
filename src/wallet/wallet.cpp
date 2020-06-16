@@ -2469,7 +2469,7 @@ void MaybeResendWalletTxs()
 CAmount CWallet::getLockedCoins(interfaces::Chain::Lock& locked_chain)
 {
     CAmount nSum = 0;
-    for (const auto& coins : ListCoins(*locked_chain) {
+    for (const auto& coins : ListCoins(*locked_chain)) {
         for (const auto &outpair : coins.second) {
             const COutPoint &output = std::get<0>(outpair);
             const interfaces::WalletTxOut &out = std::get<1>(outpair);
