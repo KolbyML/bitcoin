@@ -2447,12 +2447,12 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, co
 
     wtx.GetAmounts(listReceived, listSent, nFee, ISMINE_SPENDABLE);
 
-    int64_t current_time = GetTime();
-    int64_t tx_time = wtx.GetTxTime();
+    int64_t currenttime = GetTime();
+    int64_t txtime = wtx.GetTxTime();
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
     int64_t month = 30 * 24 * 60 * 60;
 
-    if (current_time - tx_time <= month‬) {
+    if (currenttime - txtime <= month‬) {
         // Sent
         if (!filter_label) {
             for (const COutputEntry& s : listSent) {
@@ -2539,7 +2539,7 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, monthly_total, filter_label);
+            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, filter_label);
         }
 
         monthly_total = send + receive;
