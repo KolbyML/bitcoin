@@ -2480,7 +2480,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
     isminetype fAllFromMe = ISMINE_SPENDABLE;
     for (const CTxIn& txin : wtx.tx->vin)
     {
-        isminetype mine = wallet->IsMine(txin);
+        isminetype mine = pwallet->IsMine(txin);
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllFromMe > mine) fAllFromMe = mine;
     }
@@ -2488,7 +2488,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
     isminetype fAllToMe = ISMINE_SPENDABLE;
     for (const CTxOut& txout : wtx.tx->vout)
     {
-        isminetype mine = wallet->IsMine(txout);
+        isminetype mine = pwallet->IsMine(txout);
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllToMe > mine) fAllToMe = mine;
     }
