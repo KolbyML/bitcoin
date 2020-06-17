@@ -2502,11 +2502,11 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
             for (const COutputEntry& s : listSent) {
                 if (wtx.IsCoinStake())
                 {
-                    send += -s.amount * 0.15;
+                    send += s.amount * 0.15;
                 }
                 else
                 {
-                    send += -s.amount;
+                    send += s.amount;
                 }
             }
         }
@@ -2607,7 +2607,7 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
 
         monthly_total = send + receive;
         balances_mine.pushKV("incoming_value", ValueFromAmount(receive));
-        balances_mine.pushKV("outgoing_value", ValueFromAmount(std::fabs(send)));
+        balances_mine.pushKV("outgoing_value", ValueFromAmount(send));
         balances_mine.pushKV("monthly_total", ValueFromAmount(monthly_total));
 
         balances.pushKV("mine", balances_mine);
