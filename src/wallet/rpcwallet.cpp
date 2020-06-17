@@ -8,7 +8,6 @@
 #include <core_io.h>
 #include <init.h>
 #include <interfaces/chain.h>
-#include <interfaces/wallet.h>
 #include <key_io.h>
 #include <llmq/quorums_chainlocks.h>
 #include <llmq/quorums_instantsend.h>
@@ -2478,18 +2477,18 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
 
 
     bool involvesWatchAddress = false;
-    interfaces::Wallet& wallet = pwallet;
-    interfaces::WalletTx pwtx = wallet->getWalletTx(wtx.GetHash());
     isminetype fAllFromMe = ISMINE_SPENDABLE;
-    for (const isminetype mine : pwtx.txin_is_mine)
+    for (const CTxIn& txin : wtx.tx->vin)
     {
+        isminetype mine = wallet->IsMine(txin);
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllFromMe > mine) fAllFromMe = mine;
     }
 
     isminetype fAllToMe = ISMINE_SPENDABLE;
-    for (const isminetype mine : pwtx.txout_is_mine)
+    for (const CTxOut& txout : wtx.tx->vout)
     {
+        isminetype mine = wallet->IsMine(txout);
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllToMe > mine) fAllToMe = mine;
     }
