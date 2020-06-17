@@ -2439,7 +2439,7 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
-static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CWallet const pwallet, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
