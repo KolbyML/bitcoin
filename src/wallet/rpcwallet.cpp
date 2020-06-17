@@ -2464,7 +2464,6 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
         if (listReceived.size() > 0 && (wtx.GetDepthInMainChain(locked_chain) >= 0 || wtx.IsLockedByInstantSend())) {
             for (const COutputEntry& r : listReceived)
             {
-                MaybePushAddress(entry, r.destination);
                 if (!wtx.IsCoinBase()) {
                     receive += r.amount;
                 }
