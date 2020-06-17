@@ -2479,7 +2479,7 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         return NullUniValue;
     }
     CWallet& wallet = *rpc_wallet;
-    CWallet* const pwallet = wallet.get();
+    CWallet* const pwallet = rpc_wallet.get();
 
     RPCHelpMan{
             "getbalances",
