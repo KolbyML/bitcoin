@@ -8,6 +8,7 @@
 #include <core_io.h>
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/wallet.h>
 #include <key_io.h>
 #include <llmq/quorums_chainlocks.h>
 #include <llmq/quorums_instantsend.h>
@@ -2490,7 +2491,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllToMe > mine) fAllToMe = mine;
     }
-    
+
     int64_t currenttime = GetTime();
     int64_t txtime = wtx.GetTxTime();
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
