@@ -1300,11 +1300,11 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
 static void PushCoinStakeCategory(UniValue & entry, const CWalletTx &wtx)
 {
     if (wtx.GetDepthInMainChain() < 1)
-        entry.push_back(Pair("category", "stake-orphan"));
+        entry.pushKV("category", "stake-orphan");
     else if (wtx.GetBlocksToMaturity() > 0)
-        entry.push_back(Pair("category", "stake"));
+        entry.pushKV("category", "stake");
     else
-        entry.push_back(Pair("category", "stake-mint"));
+        entry.pushKV("category", "stake-mint");
 }
 
 /**
