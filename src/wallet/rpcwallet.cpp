@@ -2478,15 +2478,16 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
 
 
     bool involvesWatchAddress = false;
+    interfaces::WalletTx pwtx = wallet.getWalletTx(wtx.GetHash());
     isminetype fAllFromMe = ISMINE_SPENDABLE;
-    for (const isminetype mine : wtx.txin_is_mine)
+    for (const isminetype mine : pwtx.txin_is_mine)
     {
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllFromMe > mine) fAllFromMe = mine;
     }
 
     isminetype fAllToMe = ISMINE_SPENDABLE;
-    for (const isminetype mine : wtx.txout_is_mine)
+    for (const isminetype mine : pwtx.txout_is_mine)
     {
         if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
         if(fAllToMe > mine) fAllToMe = mine;
