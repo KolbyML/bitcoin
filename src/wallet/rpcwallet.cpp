@@ -27,6 +27,7 @@
 #include <util/string.h>
 #include <util/system.h>
 #include <util/url.h>
+#include <util/time.h>
 #include <util/validation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -2452,7 +2453,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, co
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
     int64_t month = 30 * 24 * 60 * 60;
 
-    if (currenttime - txtime <= month‬) {
+    if (currenttime - txtime <= 30 * 24 * 60 * 60‬) {
         // Sent
         if (!filter_label) {
             for (const COutputEntry& s : listSent) {
