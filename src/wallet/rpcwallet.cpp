@@ -1328,15 +1328,20 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
                 entry.pushKV("involvesWatchonly", true);
             }
             MaybePushAddress(entry, s.destination);
-            if (wtx.IsCoinStake())
+            if (wtx.IsCoinStake()) {
                 if (wtx.GetDepthInMainChain(locked_chain) < 1)
                     entry.pushKV("category", "stake-orphan");
                 else if (wtx.GetBlocksToMaturity(locked_chain) > 0)
                     entry.pushKV("category", "stake");
                 else
                     entry.pushKV("category", "stake-mint");
-            else
+                entry.pushKV("amount", ValueFromAmount(-s.amount * 0.15));
+            }
+            else {
                 entry.pushKV("category", "send");
+                entry.pushKV("amount", ValueFromAmount(-s.amount));
+            }
+
             entry.pushKV("amount", ValueFromAmount(-s.amount));
             if (pwallet->mapAddressBook.count(s.destination)) {
                 entry.pushKV("label", pwallet->mapAddressBook[s.destination].name);
@@ -1389,7 +1394,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
                 else {
                     entry.pushKV("category", "stake-mint");
                 }
-                entry.pushKV("amount", ValueFromAmount(r.amount * 0.85));
+                entry.pushKV("amount", ValueFromAmount(r.amount * 0.15));
             }
             else
             {
