@@ -1329,9 +1329,9 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             }
             MaybePushAddress(entry, s.destination);
             if (wtx.IsCoinStake())
-                if (wtx.GetDepthInMainChain() < 1)
+                if (wtx.GetDepthInMainChain(locked_chain) < 1)
                     entry.pushKV("category", "stake-orphan");
-                else if (wtx.GetBlocksToMaturity() > 0)
+                else if (wtx.GetBlocksToMaturity(locked_chain) > 0)
                     entry.pushKV("category", "stake");
                 else
                     entry.pushKV("category", "stake-mint");
@@ -1379,9 +1379,9 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             }
             else if (wtx.IsCoinStake())
             {
-                if (wtx.GetDepthInMainChain() < 1)
+                if (wtx.GetDepthInMainChain(locked_chain) < 1)
                     entry.pushKV("category", "stake-orphan");
-                else if (wtx.GetBlocksToMaturity() > 0)
+                else if (wtx.GetBlocksToMaturity(locked_chain) > 0)
                     entry.pushKV("category", "stake");
                 else
                     entry.pushKV("category", "stake-mint");
