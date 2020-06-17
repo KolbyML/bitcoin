@@ -1297,16 +1297,6 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
     }
 }
 
-static void PushCoinStakeCategory(UniValue & entry, const CWalletTx &wtx)
-{
-    if (wtx.GetDepthInMainChain() < 1)
-        entry.pushKV("category", "stake-orphan");
-    else if (wtx.GetBlocksToMaturity() > 0)
-        entry.pushKV("category", "stake");
-    else
-        entry.pushKV("category", "stake-mint");
-}
-
 /**
  * List transactions based on the given criteria.
  *
@@ -1339,7 +1329,12 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             }
             MaybePushAddress(entry, s.destination);
             if (wtx.IsCoinStake())
-                PushCoinStakeCategory(entry, wtx);
+                if (wtx.GetDepthInMainChain() < 1)
+                    entry.pushKV("category", "stake-orphan");
+                else if (wtx.GetBlocksToMaturity() > 0)
+                    entry.pushKV("category", "stake");
+                else
+                    entry.pushKV("category", "stake-mint");
             else
                 entry.pushKV("category", "send");
             entry.pushKV("amount", ValueFromAmount(-s.amount));
@@ -1384,7 +1379,12 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             }
             else if (wtx.IsCoinStake())
             {
-                PushCoinStakeCategory(entry, wtx);
+                if (wtx.GetDepthInMainChain() < 1)
+                    entry.pushKV("category", "stake-orphan");
+                else if (wtx.GetBlocksToMaturity() > 0)
+                    entry.pushKV("category", "stake");
+                else
+                    entry.pushKV("category", "stake-mint");
                 entry.pushKV("amount", ValueFromAmount(r.amount * 0.85));
             }
             else
