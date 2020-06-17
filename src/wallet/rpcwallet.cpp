@@ -2439,6 +2439,38 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
+static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, CAmount& send, CAmount& receive) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+{
+    CAmount nFee;
+    std::list<COutputEntry> listReceived;
+    std::list<COutputEntry> listSent;
+
+    wtx.GetAmounts(listReceived, listSent, nFee, ISMINE_SPENDABLE);
+
+    int64_t current_time = GetTime();
+    int64_t tx_time = wtx.GetTxTime();
+    // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
+    if (current_time - tx_time <= 30 * 24 * 60 * 60‬) {
+        // Sent
+        if (!nullptr) {
+            for (const COutputEntry& s : listSent) {
+                send += s.amount;
+            }
+        }
+
+        // Received
+        if (listReceived.size() > 0 && (wtx.GetDepthInMainChain(locked_chain) >= 0 || wtx.IsLockedByInstantSend())) {
+            for (const COutputEntry& r : listReceived)
+            {
+                MaybePushAddress(entry, r.destination);
+                if (!wtx.IsCoinBase()) {
+                    receive += r.amount;
+                }
+            }
+        }
+    }
+}
+
 static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const rpc_wallet = GetWalletForJSONRPCRequest(request);
@@ -2458,7 +2490,10 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
                     "      \"untrusted_pending\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
                     "      \"immature\": xxx                (numeric) balance from immature coinbase outputs\n"
                     "      \"used\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
-                    "      \"locked\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "      \"locked\": xxx                  (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "      \"incoming_value\": xxx          (numeric) Income from the last 30 days\n"
+                    "      \"outgoing_value\": xxx          (numeric) Outgoing from the last 30 days\n"
+                    "      \"monthly_total\": xxx           (numeric) Incoming and outgoing combined\n"
                     "    },\n"
                     "}\n"},
             RPCExamples{
@@ -2489,6 +2524,26 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
             balances_mine.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
         }
         balances_mine.pushKV("locked", ValueFromAmount(bal.m_mine_locked));
+
+
+        CAmount send = 0;
+        CAmount receive = 0;
+        CAmount monthly_total = 0;
+
+        const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
+
+        // iterate backwards until we have nCount items to return:
+        for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
+        {
+            CWalletTx *const pwtx = (*it).second;
+            ListTransactions2(*locked_chain, *pwtx, send, receive, monthly_total);
+        }
+
+        monthly_total = send + receive;
+        balances_mine.pushKV("incoming_value", ValueFromAmount(send));
+        balances_mine.pushKV("outgoing_value", ValueFromAmount(receive));
+        balances_mine.pushKV("monthly_total", ValueFromAmount(monthly_total));
+
         balances.pushKV("mine", balances_mine);
     }
     return balances;
