@@ -2478,7 +2478,8 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
 
 
     bool involvesWatchAddress = false;
-    interfaces::WalletTx pwtx = pwallet->getWalletTx(wtx.GetHash());
+    interfaces::Wallet& wallet = pwallet;
+    interfaces::WalletTx pwtx = wallet->getWalletTx(wtx.GetHash());
     isminetype fAllFromMe = ISMINE_SPENDABLE;
     for (const isminetype mine : pwtx.txin_is_mine)
     {
