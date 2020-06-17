@@ -27,7 +27,6 @@
 #include <util/string.h>
 #include <util/system.h>
 #include <util/url.h>
-#include <util/time.h>
 #include <util/validation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -2440,7 +2439,7 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
-static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
@@ -2453,7 +2452,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, co
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
     int64_t month = 30 * 24 * 60 * 60;
 
-    if (currenttime - txtime <= 30 * 24 * 60 * 60‬) {
+    if (currenttime - txtime <= 30 * 24 * 60 * 60) {
         // Sent
         if (!filter_label) {
             for (const COutputEntry& s : listSent) {
@@ -2540,7 +2539,7 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, filter_label);
+            getIncomingOutgoingHistory(*locked_chain, wallet, *pwtx, send, receive, filter_label);
         }
 
         monthly_total = send + receive;
