@@ -2530,13 +2530,13 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         CAmount receive = 0;
         CAmount monthly_total = 0;
 
-        const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
+        const CWallet::TxItems & txOrdered = wallet->wtxOrdered;
 
         // iterate backwards until we have nCount items to return:
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            ListTransactions2(*locked_chain, *pwtx, send, receive, monthly_total);
+            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, monthly_total);
         }
 
         monthly_total = send + receive;
