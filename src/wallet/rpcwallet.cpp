@@ -2481,7 +2481,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
             for (const COutputEntry& s : listSent) {
                 if (wtx.IsCoinStake())
                 {
-                    send += s.amount * 0.85;
+                    send += s.amount * 0.15;
                 }
                 else
                 {
@@ -2499,7 +2499,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
                 }
                 else if (wtx.IsCoinStake())
                 {
-                    receive += r.amount * 0.85;
+                    receive += r.amount * 0.15;
                 }
                 else
                 {
