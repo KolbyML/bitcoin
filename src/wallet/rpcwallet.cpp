@@ -2533,7 +2533,7 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         CAmount monthly_total = 0;
 
         const std::string* filter_label = nullptr;
-        const CWallet::TxItems & txOrdered = wallet->wtxOrdered;
+        const CWallet::TxItems & txOrdered = wallet.wtxOrdered;
 
         // iterate backwards until we have nCount items to return:
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
