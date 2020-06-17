@@ -2504,6 +2504,10 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
                 {
                     send += s.amount * 0.15;
                 }
+                else if (fAllFromMe && fAllToMe)
+                {
+                    continue;
+                }
                 else
                 {
                     send += s.amount;
