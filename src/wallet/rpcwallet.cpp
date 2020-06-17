@@ -2479,7 +2479,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
         // Sent
         if (!filter_label) {
             for (const COutputEntry& s : listSent) {
-                else if (wtx.IsCoinStake())
+                if (wtx.IsCoinStake())
                 {
                     send += s.amount * 0.85;
                 }
