@@ -2475,11 +2475,25 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
 
     wtx.GetAmounts(listReceived, listSent, nFee, ISMINE_SPENDABLE);
 
+
+    bool involvesWatchAddress = false;
+    isminetype fAllFromMe = ISMINE_SPENDABLE;
+    for (const isminetype mine : wtx.txin_is_mine)
+    {
+        if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
+        if(fAllFromMe > mine) fAllFromMe = mine;
+    }
+
+    isminetype fAllToMe = ISMINE_SPENDABLE;
+    for (const isminetype mine : wtx.txout_is_mine)
+    {
+        if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
+        if(fAllToMe > mine) fAllToMe = mine;
+    }
+    
     int64_t currenttime = GetTime();
     int64_t txtime = wtx.GetTxTime();
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
-    int64_t month = 30 * 24 * 60 * 60;
-
     if (currenttime - txtime <= 30 * 24 * 60 * 60) {
         // Sent
         if (!filter_label) {
@@ -2505,6 +2519,10 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
                 else if (wtx.IsCoinStake())
                 {
                     receive += r.amount * 0.15;
+                }
+                else if (fAllFromMe && fAllToMe)
+                {
+                    continue;
                 }
                 else
                 {
