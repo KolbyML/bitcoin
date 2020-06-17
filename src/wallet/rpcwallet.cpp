@@ -1297,6 +1297,16 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
     }
 }
 
+static void PushCoinStakeCategory(UniValue & entry, const CWalletTx &wtx)
+{
+    if (wtx.GetDepthInMainChain() < 1)
+        entry.push_back(Pair("category", "stake-orphan"));
+    else if (wtx.GetBlocksToMaturity() > 0)
+        entry.push_back(Pair("category", "stake"));
+    else
+        entry.push_back(Pair("category", "stake-mint"));
+}
+
 /**
  * List transactions based on the given criteria.
  *
@@ -1328,7 +1338,10 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
                 entry.pushKV("involvesWatchonly", true);
             }
             MaybePushAddress(entry, s.destination);
-            entry.pushKV("category", "send");
+            if (wtx.IsCoinStake())
+                PushCoinStakeCategory(entry, wtx);
+            else
+                entry.pushKV("category", "send");
             entry.pushKV("amount", ValueFromAmount(-s.amount));
             if (pwallet->mapAddressBook.count(s.destination)) {
                 entry.pushKV("label", pwallet->mapAddressBook[s.destination].name);
@@ -1367,12 +1380,18 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
                     entry.pushKV("category", "immature");
                 else
                     entry.pushKV("category", "generate");
+                entry.pushKV("amount", ValueFromAmount(r.amount));
+            }
+            else if (wtx.IsCoinStake())
+            {
+                PushCoinStakeCategory(entry, wtx);
+                entry.pushKV("amount", ValueFromAmount(r.amount * 0.85));
             }
             else
             {
                 entry.pushKV("category", "receive");
+                entry.pushKV("amount", ValueFromAmount(r.amount));
             }
-            entry.pushKV("amount", ValueFromAmount(r.amount));
             if (pwallet->mapAddressBook.count(r.destination)) {
                 entry.pushKV("label", label);
             }
@@ -2456,7 +2475,14 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
         // Sent
         if (!filter_label) {
             for (const COutputEntry& s : listSent) {
-                send += s.amount;
+                else if (wtx.IsCoinStake())
+                {
+                    send += s.amount * 0.85;
+                }
+                else
+                {
+                    send += s.amount;
+                }
             }
         }
 
@@ -2464,7 +2490,15 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
         if (listReceived.size() > 0 && (wtx.GetDepthInMainChain(locked_chain) >= 0 || wtx.IsLockedByInstantSend())) {
             for (const COutputEntry& r : listReceived)
             {
-                if (!wtx.IsCoinBase()) {
+                if (wtx.IsCoinBase()) {
+                    continue;
+                }
+                else if (wtx.IsCoinStake())
+                {
+                    receive += r.amount * 0.85;
+                }
+                else
+                {
                     receive += r.amount;
                 }
             }
