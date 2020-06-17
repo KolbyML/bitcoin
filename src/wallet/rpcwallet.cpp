@@ -2439,7 +2439,7 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
-static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, CAmount& send, CAmount& receive) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
@@ -2450,9 +2450,11 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, co
     int64_t current_time = GetTime();
     int64_t tx_time = wtx.GetTxTime();
     // 30 * 24 * 60 * 60 is one month days * (day in seconds) which is 24 * 60 * 60
-    if (current_time - tx_time <= 30 * 24 * 60 * 60‬) {
+    int64_t month = 30 * 24 * 60 * 60;
+
+    if (current_time - tx_time <= month‬) {
         // Sent
-        if (!nullptr) {
+        if (!filter_label) {
             for (const COutputEntry& s : listSent) {
                 send += s.amount;
             }
@@ -2530,13 +2532,14 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         CAmount receive = 0;
         CAmount monthly_total = 0;
 
+        const std::string* filter_label = nullptr;
         const CWallet::TxItems & txOrdered = wallet->wtxOrdered;
 
         // iterate backwards until we have nCount items to return:
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, monthly_total);
+            getIncomingOutgoingHistory(*locked_chain, *pwtx, send, receive, monthly_total, filter_label);
         }
 
         monthly_total = send + receive;
