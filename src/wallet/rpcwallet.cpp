@@ -4418,7 +4418,7 @@ static void ParseOutputs(
     UniValue entry(UniValue::VOBJ);
 
     // GetAmounts variables
-    std::list<COutputEntry> listReceived, listSent, listStaked;
+    std::list<COutputEntry> listReceived, listSent;
     CAmount nFee, amount = 0;
 
     wtx.GetAmounts(
@@ -4439,21 +4439,15 @@ static void ParseOutputs(
     UniValue outputs(UniValue::VARR);
     WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry, true);
 
-    if (!listStaked.empty() || !listSent.empty()) {
+    if (!listSent.empty()) {
         entry.pushKV("abandoned", wtx.isAbandoned());
     }
 
-    // staked
-    if (!listStaked.empty()) {
-        if (wtx.GetDepthInMainChain(locked_chain) < 1) {
-            entry.pushKV("category", "orphaned_stake");
-        } else {
-            entry.pushKV("category", "stake");
-        }
-        for (const auto &s : listStaked) {
+    // sent
+    if (!listSent.empty()) {
+        for (const auto &s : listSent) {
             UniValue output(UniValue::VOBJ);
-            if (!ParseOutput(
-                output,
+            if (!ParseOutput(output,
                 s,
                 pwallet,
                 wtx,
@@ -4462,78 +4456,66 @@ static void ParseOutputs(
                 amounts)) {
                 return ;
             }
-            output.pushKV("amount", ValueFromAmount(s.amount));
+            output.pushKV("amount", ValueFromAmount(-s.amount));
+            amount -= s.amount;
             outputs.push_back(output);
         }
-        amount += -nFee;
-    } else {
-        // sent
-        if (!listSent.empty()) {
-            for (const auto &s : listSent) {
-                UniValue output(UniValue::VOBJ);
-                if (!ParseOutput(output,
-                    s,
-                    pwallet,
-                    wtx,
-                    watchonly,
-                    addresses,
-                    amounts)) {
-                    return ;
+    }
+
+    // received
+    if (!listReceived.empty()) {
+        for (const auto &r : listReceived) {
+            UniValue output(UniValue::VOBJ);
+            if (!ParseOutput(
+                output,
+                r,
+                pwallet,
+                wtx,
+                watchonly,
+                addresses,
+                amounts
+            )) {
+                return ;
+            }
+            output.pushKV("amount", ValueFromAmount(r.amount));
+            amount += r.amount;
+
+            bool fExists = false;
+            for (size_t i = 0; i < outputs.size(); ++i) {
+                auto &o = outputs.get(i);
+                if (o["vout"].get_int() == r.vout) {
+                    o.get("amount").setStr(FormatMoney(r.amount));
+                    fExists = true;
                 }
-                output.pushKV("amount", ValueFromAmount(-s.amount));
-                amount -= s.amount;
+            }
+            if (!fExists) {
                 outputs.push_back(output);
             }
         }
+    }
 
-        // received
-        if (!listReceived.empty()) {
-            for (const auto &r : listReceived) {
-                UniValue output(UniValue::VOBJ);
-                if (!ParseOutput(
-                    output,
-                    r,
-                    pwallet,
-                    wtx,
-                    watchonly,
-                    addresses,
-                    amounts
-                )) {
-                    return ;
-                }
-                output.pushKV("amount", ValueFromAmount(r.amount));
-                amount += r.amount;
-
-                bool fExists = false;
-                for (size_t i = 0; i < outputs.size(); ++i) {
-                    auto &o = outputs.get(i);
-                    if (o["vout"].get_int() == r.vout) {
-                        o.get("amount").setStr(FormatMoney(r.amount));
-                        fExists = true;
-                    }
-                }
-                if (!fExists) {
-                    outputs.push_back(output);
-                }
-            }
+    if (wtx.IsCoinBase()) {
+        entry.pushKV("category", "mined");
+    } else if (!nFee) {
+        entry.pushKV("category", "receive");
+    } else if (amount == 0) {
+        entry.pushKV("fee", ValueFromAmount(-nFee));
+        entry.pushKV("category", "payment_to_yourself");
+    } else if (wtx.IsCoinStake()) {
+        if (wtx.GetDepthInMainChain(locked_chain) < 1) {
+        entry.pushKV("category", "orphaned_stake");
+        } else {
+        entry.pushKV("category", "mint_by_stake");
         }
 
-        if (wtx.IsCoinBase()) {
-            entry.pushKV("category", "mined");
-        } else if (!nFee) {
-            entry.pushKV("category", "receive");
-        } else if (amount == 0) {
-            entry.pushKV("fee", ValueFromAmount(-nFee));
-            entry.pushKV("category", "payment_to_yourself");
-        } else {
-            entry.pushKV("category", "send_to");
+    } else {
+        entry.pushKV("category", "send_to");
 
-            // Handle txns partially funded by wallet
-            if (nFee < 0) {
-                amount = wtx.GetCredit(locked_chain, ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
-            } else {
-                entry.pushKV("fee", ValueFromAmount(-nFee));
-            }
+        // Handle txns partially funded by wallet
+        if (nFee < 0) {
+            amount = wtx.GetCredit(locked_chain, ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
+        } else {
+            entry.pushKV("fee", ValueFromAmount(-nFee));
         }
     }
 
