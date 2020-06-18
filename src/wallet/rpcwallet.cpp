@@ -4377,12 +4377,6 @@ static bool ParseOutput(
 {
     CTxDestination dest;
     isminetype mine = IsMine(*pwallet, o.destination);
-
-    std::string sKey = strprintf("n%d", o.vout);
-    mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
-    if (mvi != wtx.mapValue.end()) {
-        output.pushKV("narration", mvi->second);
-    }
     if (o.destination.which() != 0) {
         output.pushKV("address", EncodeDestination(o.destination));
         addresses.push_back(EncodeDestination(o.destination));
@@ -4402,6 +4396,111 @@ static bool ParseOutput(
     amounts.push_back(std::to_string(o.amount));
     return true;
 }
+
+static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter_ismine, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+{
+    CAmount nFee;
+    std::list<COutputEntry> listReceived;
+    std::list<COutputEntry> listSent;
+
+    wtx.GetAmounts(listReceived, listSent, nFee, filter_ismine);
+
+    bool involvesWatchonly = wtx.IsFromMe(ISMINE_WATCH_ONLY);
+
+    // Sent
+    if (!filter_label)
+    {
+        for (const COutputEntry& s : listSent)
+        {
+            UniValue entry(UniValue::VOBJ);
+            if (involvesWatchonly || (::IsMine(*pwallet, s.destination) & ISMINE_WATCH_ONLY)) {
+                entry.pushKV("involvesWatchonly", true);
+            }
+            MaybePushAddress(entry, s.destination);
+            if (wtx.IsCoinStake()) {
+                if (wtx.GetDepthInMainChain(locked_chain) < 1)
+                    entry.pushKV("category", "stake-orphan");
+                else if (wtx.GetBlocksToMaturity(locked_chain) > 0)
+                    entry.pushKV("category", "stake");
+                else
+                    entry.pushKV("category", "stake-mint");
+                entry.pushKV("amount", ValueFromAmount(-s.amount * 0.15));
+            }
+            else {
+                entry.pushKV("category", "send");
+                entry.pushKV("amount", ValueFromAmount(-s.amount));
+            }
+
+            entry.pushKV("amount", ValueFromAmount(-s.amount));
+            if (pwallet->mapAddressBook.count(s.destination)) {
+                entry.pushKV("label", pwallet->mapAddressBook[s.destination].name);
+            }
+            entry.pushKV("vout", s.vout);
+            entry.pushKV("fee", ValueFromAmount(-nFee));
+            if (fLong)
+                WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry);
+            entry.pushKV("abandoned", wtx.isAbandoned());
+            ret.push_back(entry);
+        }
+    }
+
+    // Received
+    if (listReceived.size() > 0 && (wtx.GetDepthInMainChain(locked_chain) >= nMinDepth || wtx.IsLockedByInstantSend()))
+    {
+        for (const COutputEntry& r : listReceived)
+        {
+            std::string label;
+            if (pwallet->mapAddressBook.count(r.destination)) {
+                label = pwallet->mapAddressBook[r.destination].name;
+            }
+            if (filter_label && label != *filter_label) {
+                continue;
+            }
+            UniValue entry(UniValue::VOBJ);
+            if (involvesWatchonly || (::IsMine(*pwallet, r.destination) & ISMINE_WATCH_ONLY)) {
+                entry.pushKV("involvesWatchonly", true);
+            }
+            MaybePushAddress(entry, r.destination);
+            if (wtx.IsCoinBase())
+            {
+                if (wtx.GetDepthInMainChain(locked_chain) < 1) {
+                    entry.pushKV("category", "orphan");
+                }
+                else if (wtx.IsImmatureCoinBase(locked_chain)) {
+                    entry.pushKV("category", "immature");
+                }
+                else {
+                    entry.pushKV("category", "generate");
+                }
+                entry.pushKV("amount", ValueFromAmount(r.amount));
+            } else if (wtx.IsCoinStake()) {
+                if (wtx.GetDepthInMainChain(locked_chain) < 1) {
+                    entry.pushKV("category", "stake-orphan");
+                }
+                else if (wtx.GetBlocksToMaturity(locked_chain) > 0) {
+                    entry.pushKV("category", "stake");
+                }
+                else {
+                    entry.pushKV("category", "stake-mint");
+                }
+                entry.pushKV("amount", ValueFromAmount(r.amount * 0.15));
+            }
+            else
+            {
+                entry.pushKV("category", "receive");
+                entry.pushKV("amount", ValueFromAmount(r.amount));
+            }
+            if (pwallet->mapAddressBook.count(r.destination)) {
+                entry.pushKV("label", label);
+            }
+            entry.pushKV("vout", r.vout);
+            if (fLong)
+                WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry);
+            ret.push_back(entry);
+        }
+    }
+}
+
 
 static void ParseOutputs(
     interfaces::Chain::Lock& locked_chain,
@@ -4667,7 +4766,7 @@ static void ParseRecords(
 
         output.__pushKV("type", "standard");
 
-        CAmount amount = wtx.GetCredit(locked_chain, ISMINE_ALL);
+        CAmount amount = wtx.tx->vout[i].nValue;
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
@@ -4675,6 +4774,10 @@ static void ParseRecords(
         output.__pushKV("vout", (int64_t)i);
         outputs.push_back(output);
     }
+
+
+
+
     CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
     CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
     CAmount nNet = nCredit - nDebit;
