@@ -4494,6 +4494,7 @@ static void ParseOutputs(
         }
     }
 
+    CTxDestination address;
     if (ExtractDestination(wtx.tx->scriptPubKey, address) && IsMine(*wallet, address)) {
         entry.pushKV("category", "receive");
     } else if (wtx.IsCoinBase()) {
