@@ -4607,8 +4607,8 @@ static void ParseRecords(
     } else {
         entry.__pushKV("trusted", wtx.IsTrusted(locked_chain));
     }
-
-    entry.__pushKV("txid", hash.ToString());
+    uint256 phash = wtx.GetHash();
+    entry.__pushKV("txid", phash.ToString());
     UniValue conflicts(UniValue::VARR);
     std::set<uint256> setconflicts = pwallet->GetConflicts(hash);
     setconflicts.erase(hash);
