@@ -4496,7 +4496,7 @@ static void ParseOutputs(
 
     if (wtx.IsCoinBase()) {
         entry.pushKV("category", "mined");
-    } else if (!nFee) {
+    } else if (!nFee && wtx.IsCoinBase()) {
         entry.pushKV("category", "receive");
     } else if (amount == 0) {
         entry.pushKV("fee", ValueFromAmount(-nFee));
