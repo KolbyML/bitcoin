@@ -4494,12 +4494,24 @@ static void ParseOutputs(
         }
     }
 
-    CTxDestination address;
-    if (ExtractDestination(wtx.tx->scriptPubKey, address) && IsMine(*wallet, address)) {
-        entry.pushKV("category", "receive");
-    } else if (wtx.IsCoinBase()) {
-        entry.pushKV("category", "mined");
-    } else if (amount == 0) {
+    for (const CTxOut& txout : wtx.vout) {
+        isminetype mine = pwallet->IsMine(txout);
+        if (mine) {
+            CTxDestination address;
+            if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address)) {
+                // Received by Phore Address
+                entry.pushKV("category", "receive");
+                break;
+            }
+            if (wtx.IsCoinBase()) {
+                // Generated
+                entry.pushKV("category", "mined");
+                break;
+            }
+        }
+    }
+    
+    if (amount == 0) {
         entry.pushKV("fee", ValueFromAmount(-nFee));
         entry.pushKV("category", "payment_to_yourself");
     } else if (wtx.IsCoinStake()) {
