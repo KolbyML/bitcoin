@@ -4494,20 +4494,33 @@ static void ParseOutputs(
         }
     }
 
-    if (wtx.IsCoinBase()) {
-        entry.pushKV("category", "mined");
-    } else if (!nFee && wtx.IsCoinBase()) {
+    if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address)) {
         entry.pushKV("category", "receive");
+    } else if (wtx.IsCoinBase()) {
+        entry.pushKV("category", "mined");
     } else if (amount == 0) {
         entry.pushKV("fee", ValueFromAmount(-nFee));
         entry.pushKV("category", "payment_to_yourself");
     } else if (wtx.IsCoinStake()) {
-        if (wtx.GetDepthInMainChain(locked_chain) < 1) {
-        entry.pushKV("category", "orphaned_stake");
+        isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
+        CTxDestination address;
+        if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
+            //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
+            for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
+                CTxDestination outAddress;
+                if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
+                    if (IsMine(*pwallet, outAddress)) {
+                        entry.pushKV("category", "masternode_reward");
+                    }
+                }
+            }
         } else {
-        entry.pushKV("category", "mint_by_stake");
+            if (wtx.GetDepthInMainChain(locked_chain) < 1) {
+                entry.pushKV("category", "orphaned_stake");
+            } else {
+                entry.pushKV("category", "mint_by_stake");
+            }
         }
-
     } else {
         entry.pushKV("category", "send_to");
 
