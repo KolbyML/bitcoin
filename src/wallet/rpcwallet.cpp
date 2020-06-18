@@ -4665,7 +4665,32 @@ static void ParseRecords(
 
         totalAmount += amount;
         amounts.push_back(std::to_string(ValueFromAmount(amount).get_real()));
+
+
+
+
+     if (wtx.tx->IsCoinStake()) {
+        isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
+        CTxDestination address;
+        if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
+            //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
+            for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
+                CTxDestination outAddress;
+                if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
+                    if (IsMine(*pwallet, outAddress)) {
+                        output.__pushKV("amount", ValueFromAmount(amount));
+                    }
+                }
+            }
+        } else {
+            output.__pushKV("amount", ValueFromAmount(amount * 0.15));
+        }
+    } else {
         output.__pushKV("amount", ValueFromAmount(amount));
+    }
+
+
+
         output.__pushKV("vout", (int64_t)i);
         outputs.push_back(output);
     }
