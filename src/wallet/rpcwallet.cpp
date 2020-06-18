@@ -4494,28 +4494,11 @@ static void ParseOutputs(
         }
     }
 
-    for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
-        const CTxOut& txout = wtx.tx->vout[i];
-        isminetype mine = pwallet->IsMine(txout);
-        if (mine) {
-            CTxDestination address;
-            if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*pwallet, address)) {
-                // Received by Phore Address
-                entry.pushKV("category", "receive");
-                break;
-            }
-            if (wtx.IsCoinBase()) {
-                // Generated
-                entry.pushKV("category", "mined");
-                break;
-            }
-        }
-    }
+    CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
+    CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
+    CAmount nNet = nCredit - nDebit;
 
-    if (amount == 0) {
-        entry.pushKV("fee", ValueFromAmount(-nFee));
-        entry.pushKV("category", "payment_to_yourself");
-    } else if (wtx.IsCoinStake()) {
+    if (wtx.tx->IsCoinStake()) {
         isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
         CTxDestination address;
         if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
@@ -4535,14 +4518,37 @@ static void ParseOutputs(
                 entry.pushKV("category", "mint_by_stake");
             }
         }
+    } else if (nNet > 0 || wtx.IsCoinBase()) {
+        for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
+            const CTxOut& txout = wtx.tx->vout[i];
+            isminetype mine = pwallet->IsMine(txout);
+            if (mine) {
+                CTxDestination address;
+                if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*pwallet, address)) {
+                    // Received by Phore Address
+                    entry.pushKV("category", "receive");
+                    break;
+                }
+                if (wtx.IsCoinBase()) {
+                    // Generated
+                    entry.pushKV("category", "mined");
+                    break;
+                }
+            }
+        }
     } else {
-        entry.pushKV("category", "send_to");
-
-        // Handle txns partially funded by wallet
-        if (nFee < 0) {
-            amount = wtx.GetCredit(locked_chain, ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
-        } else {
+        if (amount == 0) {
             entry.pushKV("fee", ValueFromAmount(-nFee));
+            entry.pushKV("category", "payment_to_yourself");
+        } else {
+            entry.pushKV("category", "send_to");
+
+            // Handle txns partially funded by wallet
+            if (nFee < 0) {
+                amount = wtx.GetCredit(locked_chain, ISMINE_ALL) - wtx.GetDebit(ISMINE_ALL);
+            } else {
+                entry.pushKV("fee", ValueFromAmount(-nFee));
+            }
         }
     }
 
