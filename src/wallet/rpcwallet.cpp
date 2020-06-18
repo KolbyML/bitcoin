@@ -4494,11 +4494,12 @@ static void ParseOutputs(
         }
     }
 
-    for (const CTxOut& txout : wtx.vout) {
+    for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
+        const CTxOut& txout = wtx.tx->vout[i];
         isminetype mine = pwallet->IsMine(txout);
         if (mine) {
             CTxDestination address;
-            if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address)) {
+            if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*pwallet, address)) {
                 // Received by Phore Address
                 entry.pushKV("category", "receive");
                 break;
@@ -4510,7 +4511,7 @@ static void ParseOutputs(
             }
         }
     }
-    
+
     if (amount == 0) {
         entry.pushKV("fee", ValueFromAmount(-nFee));
         entry.pushKV("category", "payment_to_yourself");
