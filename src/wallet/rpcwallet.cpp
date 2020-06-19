@@ -4659,7 +4659,7 @@ static void ParseRecords(
         }
         uint256 txhash = wtx.tx->GetHash();
         COutPoint outpt(txhash, i);
-        if (IsLockedCoin(outpt.hash, i))) {
+        if (pwallet->IsLockedCoin(outpt.hash, i))) {
             nLockedOutputs++;
         }
 
@@ -4774,16 +4774,24 @@ static void ParseRecords(
     }
 
     entry.__pushKV("outputs", outputs);
-
+/*
     if (nOwned && nFrom && nOwned != outputs.size()) {
         // Must check against the owned input value
         CAmount nInput = 0;
-        for (const auto &vin : rtx.vin) {
-            if (vin.IsAnonInput()) {
-                continue;
-            }
+        for (const CTxIn& txin : wtx.tx->vin) {
+            isminetype mine = pwallet->IsMine(txin);
             nInput += pwallet->GetOwnedOutputValue(vin, watchonly_filter);
         }
+
+    for (const CTxIn& txin : wtx.tx->vin) {
+        auto it = mapWallet.find(txin.prevout.hash);
+        if (it != mapWallet.end()) {
+            CWalletTx& prevtx = it->second;
+            if (prevtx.nIndex == -1 && !prevtx.hashUnset()) {
+                MarkConflicted(prevtx.hashBlock, wtx.GetHash());
+            }
+        }
+    }
 
         CAmount nOutput = 0;
         for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
@@ -4800,8 +4808,9 @@ static void ParseRecords(
         entry.__pushKV("amount", ValueFromAmount(nOutput-nInput));
     } else {
         entry.__pushKV("amount", ValueFromAmount(totalAmount));
-    }
+    }*/
 
+    entry.__pushKV("amount", ValueFromAmount(totalAmount));
     amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));
 
     if (search != "") {
