@@ -4620,26 +4620,50 @@ static void ParseRecords(
     }
     entry.__pushKV("time", (int64_t)wtx.nTimeReceived);
 
+
+    bool involvesWatchAddress = false;
+    isminetype fAllFromMe = ISMINE_SPENDABLE;
+    for (const CTxIn& txin : wtx.tx->vin)
+    {
+        isminetype mine = pwallet->IsMine(txin);
+        if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
+        if(fAllFromMe > mine) fAllFromMe = mine;
+    }
+
+    isminetype fAllToMe = ISMINE_SPENDABLE;
+    for (const CTxOut& txout : wtx.tx->vout)
+    {
+        isminetype mine = pwallet->IsMine(txout);
+        if(mine & ISMINE_WATCH_ONLY) involvesWatchAddress = true;
+        if(fAllToMe > mine) fAllToMe = mine;
+    }
+    bool involvesWatchonly = wtx.IsFromMe(ISMINE_WATCH_ONLY);
     size_t nLockedOutputs = 0;
     for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
         UniValue output(UniValue::VOBJ);
-/*
-        if (record.nFlags & ORF_CHANGE) {
-            continue ;
-        }
-        if (record.nFlags & ORF_OWN_ANY) {
+
+        const CTxOut& txout = wtx.tx->vout[i];
+        isminetype mine = pwallet->IsMine(txout);
+        if (mine & ISMINE_SPENDABLE) {
             nOwned++;
         }
-        if (record.nFlags & ORF_FROM) {
-            nFrom++;
+        const CTxOut& txout = wtx.tx->vout[i];
+        CTxDestination address;
+        ExtractDestination(txout.scriptPubKey, address)
+        if (fAllFromMe) {
+            if (ExtractDestination(txout.scriptPubKey, address)) {
+                nFrom++;
+            }
         }
-        if (record.nFlags & ORF_OWN_WATCH) {
+        if (involvesWatchonly || (::IsMine(*pwallet, address) & ISMINE_WATCH_ONLY)) {
             nWatchOnly++;
         }
-        if (record.nFlags & ORF_LOCKED) {
+        uint256 txhash = wtx.tx->GetHash();
+        COutPoint outpt(txhash, i);
+        if (IsLockedCoin(outpt.hash, i))) {
             nLockedOutputs++;
         }
-*/
+
         CTxDestination  dest;
         bool extracted = ExtractDestination(wtx.tx->vout[i].scriptPubKey, dest);
 
@@ -4669,25 +4693,25 @@ static void ParseRecords(
 
 
 
-     if (wtx.tx->IsCoinStake()) {
-        isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
-        CTxDestination address;
-        if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
-            //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
-            for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
-                CTxDestination outAddress;
-                if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
-                    if (IsMine(*pwallet, outAddress)) {
-                        output.__pushKV("amount", ValueFromAmount(amount));
+         if (wtx.tx->IsCoinStake()) {
+            isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
+            CTxDestination address;
+            if (!ExtractDestination(wtx.tx->vout[1].scriptPubKey, address) && mine == ISMINE_NO) {
+                //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
+                for (unsigned int i = 1; i < wtx.tx->vout.size(); i++) {
+                    CTxDestination outAddress;
+                    if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, outAddress)) {
+                        if (IsMine(*pwallet, outAddress)) {
+                            output.__pushKV("amount", ValueFromAmount(amount));
+                        }
                     }
                 }
+            } else {
+                output.__pushKV("amount", ValueFromAmount(amount * 0.15));
             }
         } else {
-            output.__pushKV("amount", ValueFromAmount(amount * 0.15));
+            output.__pushKV("amount", ValueFromAmount(amount));
         }
-    } else {
-        output.__pushKV("amount", ValueFromAmount(amount));
-    }
 
 
 
@@ -4710,9 +4734,9 @@ static void ParseRecords(
     }
 
     std::string category;
-    if (nFrom) {
+    if (fAllFromMe && fAllToMe) {
         category = "payment_to_yourself";
-    } else if (!nFrom) {
+    } else if (nOwned && !nFrom) {
         category = "receive";
     } else if (nFrom) {
         category = "sent_to";
@@ -4752,7 +4776,29 @@ static void ParseRecords(
 
     entry.__pushKV("outputs", outputs);
 
-    entry.__pushKV("amount", ValueFromAmount(totalAmount));
+    if (nOwned && nFrom && nOwned != outputs.size()) {
+        // Must check against the owned input value
+        CAmount nInput = 0;
+        for (const auto &vin : rtx.vin) {
+            if (vin.IsAnonInput()) {
+                continue;
+            }
+            nInput += pwallet->GetOwnedOutputValue(vin, watchonly_filter);
+        }
+
+        CAmount nOutput = 0;
+        for (auto &record : rtx.vout) {
+            if ((record.nFlags & ORF_OWNED && watchonly_filter & ISMINE_SPENDABLE)
+                || (record.nFlags & ORF_OWN_WATCH && watchonly_filter & ISMINE_WATCH_ONLY)) {
+                nOutput += record.nValue;
+            }
+        }
+
+        entry.__pushKV("amount", ValueFromAmount(nOutput-nInput));
+    } else {
+        entry.__pushKV("amount", ValueFromAmount(totalAmount));
+    }
+
     amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));
 
     if (search != "") {
