@@ -4659,7 +4659,7 @@ static void ParseRecords(
         }
         uint256 txhash = wtx.tx->GetHash();
         COutPoint outpt(txhash, i);
-        if (pwallet->IsLockedCoin(outpt.hash, i))) {
+        if (pwallet->IsLockedCoin(outpt.hash, i)) {
             nLockedOutputs++;
         }
 
