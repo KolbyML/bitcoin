@@ -4648,14 +4648,12 @@ static void ParseRecords(
             nOwned++;
         }
         CTxDestination address;
-        ExtractDestination(txout.scriptPubKey, address)
+        ExtractDestination(txout.scriptPubKey, address);
         if (fAllFromMe) {
             if (ExtractDestination(txout.scriptPubKey, address)) {
                 nFrom++;
             }
         }
-        CTxDestination address;
-        ExtractDestination(txout.scriptPubKey, address)
         if (involvesWatchonly || (::IsMine(*pwallet, address) & ISMINE_WATCH_ONLY)) {
             nWatchOnly++;
         }
@@ -4792,7 +4790,7 @@ static void ParseRecords(
             const CTxOut& txout = wtx.tx->vout[i];
             isminetype mine = pwallet->IsMine(txout);
             CTxDestination address;
-            ExtractDestination(txout.scriptPubKey, address)
+            ExtractDestination(txout.scriptPubKey, address);
             if ((mine & ISMINE_SPENDABLE && watchonly_filter & ISMINE_SPENDABLE)
                 || ((involvesWatchonly || (::IsMine(*pwallet, address) & ISMINE_WATCH_ONLY)) && watchonly_filter & ISMINE_WATCH_ONLY)) {
                 nOutput += wtx.tx->vout[i].nValue;
