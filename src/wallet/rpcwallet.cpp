@@ -4647,7 +4647,6 @@ static void ParseRecords(
         if (mine & ISMINE_SPENDABLE) {
             nOwned++;
         }
-        const CTxOut& txout = wtx.tx->vout[i];
         CTxDestination address;
         ExtractDestination(txout.scriptPubKey, address)
         if (fAllFromMe) {
@@ -4655,6 +4654,8 @@ static void ParseRecords(
                 nFrom++;
             }
         }
+        CTxDestination address;
+        ExtractDestination(txout.scriptPubKey, address)
         if (involvesWatchonly || (::IsMine(*pwallet, address) & ISMINE_WATCH_ONLY)) {
             nWatchOnly++;
         }
@@ -4787,10 +4788,14 @@ static void ParseRecords(
         }
 
         CAmount nOutput = 0;
-        for (auto &record : rtx.vout) {
-            if ((record.nFlags & ORF_OWNED && watchonly_filter & ISMINE_SPENDABLE)
-                || (record.nFlags & ORF_OWN_WATCH && watchonly_filter & ISMINE_WATCH_ONLY)) {
-                nOutput += record.nValue;
+        for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
+            const CTxOut& txout = wtx.tx->vout[i];
+            isminetype mine = pwallet->IsMine(txout);
+            CTxDestination address;
+            ExtractDestination(txout.scriptPubKey, address)
+            if ((mine & ISMINE_SPENDABLE && watchonly_filter & ISMINE_SPENDABLE)
+                || ((involvesWatchonly || (::IsMine(*pwallet, address) & ISMINE_WATCH_ONLY)) && watchonly_filter & ISMINE_WATCH_ONLY)) {
+                nOutput += wtx.tx->vout[i].nValue;
             }
         }
 
