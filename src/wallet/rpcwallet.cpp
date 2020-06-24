@@ -2555,11 +2555,11 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
             RPCResult{
                     "{\n"
                     "    \"mine\": {                        (object) balances from outputs that the wallet can sign\n"
-                    "      \"trusted\": xxx                 (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
-                    "      \"untrusted_pending\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
-                    "      \"immature\": xxx                (numeric) balance from immature coinbase outputs\n"
+                    "      \"totalBalance\": xxx                 (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
+                    "      \"availableBalance\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
+                    "      \"unconfirmedBalance\": xxx                (numeric) balance from immature coinbase outputs\n"
                     "      \"used\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
-                    "      \"locked\": xxx                  (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "      \"lockedBalance\": xxx                  (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
                     "      \"incoming_value\": xxx          (numeric) Income from the last 30 days\n"
                     "      \"outgoing_value\": xxx          (numeric) Outgoing from the last 30 days\n"
                     "      \"monthly_total\": xxx           (numeric) Incoming and outgoing combined\n"
@@ -2583,16 +2583,16 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
     UniValue balances{UniValue::VOBJ};
     {
         UniValue balances_mine{UniValue::VOBJ};
-        balances_mine.pushKV("trusted", ValueFromAmount(bal.m_mine_trusted));
-        balances_mine.pushKV("untrusted_pending", ValueFromAmount(bal.m_mine_untrusted_pending));
-        balances_mine.pushKV("immature", ValueFromAmount(bal.m_mine_immature));
+        balances_mine.pushKV("totalBalance", ValueFromAmount(bal.m_mine_trusted + bal.m_mine_untrusted_pending + bal.m_mine_immature));
+        balances_mine.pushKV("availableBalance", ValueFromAmount(bal.m_mine_trusted));
+        balances_mine.pushKV("unconfirmedBalance", ValueFromAmount(bal.m_mine_untrusted_pending));
         if (wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE)) {
             // If the AVOID_REUSE flag is set, bal has been set to just the un-reused address balance. Get
             // the total balance, and then subtract bal to get the reused address balance.
             const auto full_bal = wallet.GetBalance(0, false);
             balances_mine.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
         }
-        balances_mine.pushKV("locked", ValueFromAmount(bal.m_mine_locked));
+        balances_mine.pushKV("lockedBalance", ValueFromAmount(bal.m_mine_locked));
 
 
         CAmount send = 0;
@@ -4718,18 +4718,19 @@ static void ParseRecords(
         outputs.push_back(output);
     }
 
+    if (wtx.tx->IsCoinStake()) {
 
+    } else {
+        CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
+        CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
+        CAmount nNet = nCredit - nDebit;
+        CAmount nFee = (wtx.IsFromMe(ISMINE_ALL) ? wtx.tx->GetValueOut() - nDebit : 0);
 
-
-    CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
-    CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
-    CAmount nNet = nCredit - nDebit;
-    CAmount nFee = (wtx.IsFromMe(ISMINE_ALL) ? wtx.tx->GetValueOut() - nDebit : 0);
-
-    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
-    if (wtx.IsFromMe(ISMINE_ALL)) {
-        entry.__pushKV("abandoned", wtx.isAbandoned());
-        entry.pushKV("fee", ValueFromAmount(-nFee));
+        entry.pushKV("amount", ValueFromAmount(nNet - nFee));
+        if (wtx.IsFromMe(ISMINE_ALL)) {
+            entry.__pushKV("abandoned", wtx.isAbandoned());
+            entry.pushKV("fee", ValueFromAmount(-nFee));
+        }
     }
 
     std::string category;
