@@ -2587,9 +2587,9 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
             // If the AVOID_REUSE flag is set, bal has been set to just the un-reused address balance. Get
             // the total balance, and then subtract bal to get the reused address balance.
             const auto full_bal = wallet.GetBalance(0, false);
-            balances_mine.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
+            balances.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
         }
-        balances_mine.pushKV("lockedBalance", ValueFromAmount(bal.m_mine_locked));
+        balances.pushKV("lockedBalance", ValueFromAmount(bal.m_mine_locked));
 
 
         CAmount send = 0;
