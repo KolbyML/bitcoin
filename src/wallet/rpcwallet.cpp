@@ -2554,7 +2554,6 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
             {},
             RPCResult{
                     "{\n"
-                    "    \"mine\": {                        (object) balances from outputs that the wallet can sign\n"
                     "      \"totalBalance\": xxx                 (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
                     "      \"availableBalance\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
                     "      \"unconfirmedBalance\": xxx                (numeric) balance from immature coinbase outputs\n"
@@ -2563,7 +2562,6 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
                     "      \"incoming_value\": xxx          (numeric) Income from the last 30 days\n"
                     "      \"outgoing_value\": xxx          (numeric) Outgoing from the last 30 days\n"
                     "      \"monthly_total\": xxx           (numeric) Incoming and outgoing combined\n"
-                    "    },\n"
                     "}\n"},
             RPCExamples{
                     HelpExampleCli("getbalances", "") +
@@ -2582,10 +2580,9 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
     const auto bal = wallet.GetBalance();
     UniValue balances{UniValue::VOBJ};
     {
-        UniValue balances_mine{UniValue::VOBJ};
-        balances_mine.pushKV("totalBalance", ValueFromAmount(bal.m_mine_trusted + bal.m_mine_untrusted_pending + bal.m_mine_immature));
-        balances_mine.pushKV("availableBalance", ValueFromAmount(bal.m_mine_trusted));
-        balances_mine.pushKV("unconfirmedBalance", ValueFromAmount(bal.m_mine_untrusted_pending));
+        balances.pushKV("totalBalance", ValueFromAmount(bal.m_mine_trusted + bal.m_mine_untrusted_pending + bal.m_mine_immature));
+        balances.pushKV("availableBalance", ValueFromAmount(bal.m_mine_trusted));
+        balances.pushKV("unconfirmedBalance", ValueFromAmount(bal.m_mine_untrusted_pending));
         if (wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE)) {
             // If the AVOID_REUSE flag is set, bal has been set to just the un-reused address balance. Get
             // the total balance, and then subtract bal to get the reused address balance.
@@ -2610,11 +2607,10 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         }
 
         monthly_total = send + receive;
-        balances_mine.pushKV("incoming_value", ValueFromAmount(receive));
-        balances_mine.pushKV("outgoing_value", ValueFromAmount(send));
-        balances_mine.pushKV("monthly_total", ValueFromAmount(monthly_total));
-
-        balances.pushKV("mine", balances_mine);
+        balances.pushKV("incoming_value", ValueFromAmount(receive));
+        balances.pushKV("outgoing_value", ValueFromAmount(send));
+        balances.pushKV("monthly_total", ValueFromAmount(monthly_total));
+        
     }
     return balances;
 }
