@@ -4469,17 +4469,33 @@ static void ParseOutputs(
             )) {
                 return ;
             }
-            output.pushKV("amount", ValueFromAmount(r.amount));
-            amount += r.amount;
 
-            bool fExists = false;
-            for (size_t i = 0; i < outputs.size(); ++i) {
-                auto &o = outputs.get(i);
-                if (o["vout"].get_int() == r.vout) {
-                    o.get("amount").setStr(FormatMoney(r.amount));
-                    fExists = true;
+            if (wtx.IsCoinStake()) {
+                output.pushKV("amount", ValueFromAmount(r.amount * 0.15));
+                amount += r.amount * 0.15;
+
+                bool fExists = false;
+                for (size_t i = 0; i < outputs.size(); ++i) {
+                    auto &o = outputs.get(i);
+                    if (o["vout"].get_int() == r.vout) {
+                        o.get("amount").setStr(FormatMoney(r.amount * 0.15));
+                        fExists = true;
+                    }
+                }
+            } else {
+                output.pushKV("amount", ValueFromAmount(r.amount));
+                amount += r.amount;
+
+                bool fExists = false;
+                for (size_t i = 0; i < outputs.size(); ++i) {
+                    auto &o = outputs.get(i);
+                    if (o["vout"].get_int() == r.vout) {
+                        o.get("amount").setStr(FormatMoney(r.amount));
+                        fExists = true;
+                    }
                 }
             }
+
             if (!fExists) {
                 outputs.push_back(output);
             }
@@ -4533,7 +4549,7 @@ static void ParseOutputs(
             entry.pushKV("fee", ValueFromAmount(-nFee));
             entry.pushKV("category", "payment_to_yourself");
         } else {
-            entry.pushKV("category", "send_to");
+            entry.pushKV("category", "send");
 
             // Handle txns partially funded by wallet
             if (nFee < 0) {
@@ -4716,19 +4732,21 @@ static void ParseRecords(
         outputs.push_back(output);
     }
 
-    if (wtx.tx->IsCoinStake()) {
-
-    } else {
-        CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
-        CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
-        CAmount nNet = nCredit - nDebit;
-        CAmount nFee = (wtx.IsFromMe(ISMINE_ALL) ? wtx.tx->GetValueOut() - nDebit : 0);
-
-        entry.pushKV("amount", ValueFromAmount(nNet - nFee));
-        if (wtx.IsFromMe(ISMINE_ALL)) {
-            entry.__pushKV("abandoned", wtx.isAbandoned());
-            entry.pushKV("fee", ValueFromAmount(-nFee));
+    if (type > 0) {
+        if (type == OUTPUT_STANDARD && !nStd) {
+            return;
         }
+    }
+
+    CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
+    CAmount nDebit = wtx.GetDebit(ISMINE_ALL);
+    CAmount nNet = nCredit - nDebit;
+    CAmount nFee = (wtx.IsFromMe(ISMINE_ALL) ? wtx.tx->GetValueOut() - nDebit : 0);
+
+    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
+    if (wtx.IsFromMe(ISMINE_ALL)) {
+        entry.__pushKV("abandoned", wtx.isAbandoned());
+        entry.pushKV("fee", ValueFromAmount(-nFee));
     }
 
     std::string category;
@@ -4737,7 +4755,7 @@ static void ParseRecords(
     } else if (nOwned && !nFrom) {
         category = "receive";
     } else if (nFrom) {
-        category = "sent_to";
+        category = "send";
     } else if (wtx.tx->IsCoinStake()) {
         //isminetype mine = pwallet->IsMine(wtx.tx->vout[i]);
         isminetype mine = pwallet->IsMine(wtx.tx->vout[1]);
@@ -4817,7 +4835,7 @@ static void ParseRecords(
         if (std::any_of(addresses.begin(), addresses.end(), [search](std::string addr) {
             return addr.find(search) != std::string::npos;
         })) {
-            //entries.push_back(entry);
+            entries.push_back(entry);
             return;
         }
         // search in amounts
@@ -4825,11 +4843,11 @@ static void ParseRecords(
         if (std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
             return amount.find(search) != std::string::npos;
         })) {
-            //entries.push_back(entry);
+            entries.push_back(entry);
             return;
         }
     } else {
-        //entries.push_back(entry);
+        entries.push_back(entry);
     }
 }
 
@@ -4962,7 +4980,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
             std::vector<std::string> categories = {
                 "all",
                 "receive",
-                "sent_to",
+                "send",
                 "payment_to_yourself",
                 "mined",
                 "mint_by_stake",
