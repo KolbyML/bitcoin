@@ -4470,11 +4470,11 @@ static void ParseOutputs(
                 return ;
             }
 
+            bool fExists = false;
             if (wtx.IsCoinStake()) {
                 output.pushKV("amount", ValueFromAmount(r.amount * 0.15));
                 amount += r.amount * 0.15;
 
-                bool fExists = false;
                 for (size_t i = 0; i < outputs.size(); ++i) {
                     auto &o = outputs.get(i);
                     if (o["vout"].get_int() == r.vout) {
@@ -4486,7 +4486,6 @@ static void ParseOutputs(
                 output.pushKV("amount", ValueFromAmount(r.amount));
                 amount += r.amount;
 
-                bool fExists = false;
                 for (size_t i = 0; i < outputs.size(); ++i) {
                     auto &o = outputs.get(i);
                     if (o["vout"].get_int() == r.vout) {
@@ -4730,12 +4729,6 @@ static void ParseRecords(
 
         output.__pushKV("vout", (int64_t)i);
         outputs.push_back(output);
-    }
-
-    if (type > 0) {
-        if (type == OUTPUT_STANDARD && !nStd) {
-            return;
-        }
     }
 
     CAmount nCredit = wtx.GetCredit(locked_chain, ISMINE_ALL);
