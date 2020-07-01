@@ -1984,47 +1984,45 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         COutputEntry output = {CNoDestination(), 0, 0};
         listReceived.push_back(output);
         return;
-    } else {
-        // Sent/received.
-        for (unsigned int i = 0; i < tx->vout.size(); ++i)
-        {
-            const CTxOut& txout = tx->vout[i];
-            isminetype fIsMine = pwallet->IsMine(txout);
-            // Only need to handle txouts if AT LEAST one of these is true:
-            //   1) they debit from us (sent)
-            //   2) the output is to us (received)
-            if (nDebit > 0)
-            {
-                // Don't report 'change' txouts
-                if (pwallet->IsChange(txout))
-                    continue;
-            }
-            else if (!(fIsMine & filter))
-                continue;
-
-            // In either case, we need to get the destination address
-            CTxDestination address;
-
-            if (!ExtractDestination(txout.scriptPubKey, address) && !txout.scriptPubKey.IsUnspendable())
-            {
-                pwallet->WalletLogPrintf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
-                                        this->GetHash().ToString());
-                address = CNoDestination();
-            }
-
-            COutputEntry output = {address, txout.nValue, (int)i};
-
-            // If we are debited by the transaction, add the output as a "sent" entry
-            if (nDebit > 0)
-                listSent.push_back(output);
-
-            // If we are receiving the output, add it as a "received" entry
-            if (fIsMine & filter)
-                listReceived.push_back(output);
-        }
     }
 
+    // Sent/received.
+    for (unsigned int i = 0; i < tx->vout.size(); ++i)
+    {
+        const CTxOut& txout = tx->vout[i];
+        isminetype fIsMine = pwallet->IsMine(txout);
+        // Only need to handle txouts if AT LEAST one of these is true:
+        //   1) they debit from us (sent)
+        //   2) the output is to us (received)
+        if (nDebit > 0)
+        {
+            // Don't report 'change' txouts
+            if (pwallet->IsChange(txout))
+                continue;
+        }
+        else if (!(fIsMine & filter))
+            continue;
 
+        // In either case, we need to get the destination address
+        CTxDestination address;
+
+        if (!ExtractDestination(txout.scriptPubKey, address) && !txout.scriptPubKey.IsUnspendable())
+        {
+            pwallet->WalletLogPrintf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
+                                    this->GetHash().ToString());
+            address = CNoDestination();
+        }
+
+        COutputEntry output = {address, txout.nValue, (int)i};
+
+        // If we are debited by the transaction, add the output as a "sent" entry
+        if (nDebit > 0)
+            listSent.push_back(output);
+
+        // If we are receiving the output, add it as a "received" entry
+        if (fIsMine & filter)
+            listReceived.push_back(output);
+    }
 
 }
 
