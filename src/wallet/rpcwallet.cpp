@@ -4828,7 +4828,7 @@ static void ParseRecords(
         if (std::any_of(addresses.begin(), addresses.end(), [search](std::string addr) {
             return addr.find(search) != std::string::npos;
         })) {
-            entries.push_back(entry);
+            //entries.push_back(entry);
             return;
         }
         // search in amounts
@@ -4836,11 +4836,11 @@ static void ParseRecords(
         if (std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
             return amount.find(search) != std::string::npos;
         })) {
-            entries.push_back(entry);
+            //entries.push_back(entry);
             return;
         }
     } else {
-        entries.push_back(entry);
+        //entries.push_back(entry);
     }
 }
 
