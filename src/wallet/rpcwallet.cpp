@@ -4420,9 +4420,11 @@ static void ParseOutputs(
     if (wtx.IsFromMe(ISMINE_WATCH_ONLY) && !(watchonly & ISMINE_WATCH_ONLY)) {
         return;
     }
+    /*
     if (nFee == 0) {
         return;
     }
+     */
 
     std::vector<std::string> addresses, amounts;
 
