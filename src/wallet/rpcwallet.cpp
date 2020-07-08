@@ -2467,7 +2467,7 @@ static UniValue getbalances(const JSONRPCRequest& request)
     return balances;
 }
 
-static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, CAmount& send, CAmount& receive, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, CAmount& send, CAmount& receive, CAmount& monthly_fee, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
@@ -2512,6 +2512,7 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
                 {
                     send += s.amount;
                 }
+                monthly_fee += nFee;
             }
         }
 
@@ -2554,14 +2555,14 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
             {},
             RPCResult{
                     "{\n"
-                    "      \"totalBalance\": xxx                 (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
-                    "      \"availableBalance\": xxx       (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
-                    "      \"unconfirmedBalance\": xxx                (numeric) balance from immature coinbase outputs\n"
-                    "      \"used\": xxx                    (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
-                    "      \"lockedBalance\": xxx                  (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
-                    "      \"incoming_value\": xxx          (numeric) Income from the last 30 days\n"
-                    "      \"outgoing_value\": xxx          (numeric) Outgoing from the last 30 days\n"
-                    "      \"monthly_total\": xxx           (numeric) Incoming and outgoing combined\n"
+                    "      \"totalBalance\": xxx          (numeric) trusted balance (outputs created by the wallet or confirmed outputs)\n"
+                    "      \"availableBalance\": xxx      (numeric) untrusted pending balance (outputs created by others that are in the mempool)\n"
+                    "      \"unconfirmedBalance\": xxx    (numeric) balance from immature coinbase outputs\n"
+                    "      \"lockedBalance\": xxx         (numeric) (only present if avoid_reuse is set) balance from coins sent to addresses that were previously spent from (potentially privacy violating)\n"
+                    "      \"monthly_fees\": xxx          (numeric) monthly fees\n"
+                    "      \"incoming_value\": xxx        (numeric) Income from the last 30 days\n"
+                    "      \"outgoing_value\": xxx        (numeric) Outgoing from the last 30 days\n"
+                    "      \"monthly_total\": xxx         (numeric) Incoming and outgoing combined\n"
                     "}\n"},
             RPCExamples{
                     HelpExampleCli("getbalances", "") +
@@ -2583,18 +2584,13 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         balances.pushKV("totalBalance", ValueFromAmount(bal.m_mine_trusted + bal.m_mine_untrusted_pending + bal.m_mine_immature));
         balances.pushKV("availableBalance", ValueFromAmount(bal.m_mine_trusted));
         balances.pushKV("unconfirmedBalance", ValueFromAmount(bal.m_mine_untrusted_pending));
-        if (wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE)) {
-            // If the AVOID_REUSE flag is set, bal has been set to just the un-reused address balance. Get
-            // the total balance, and then subtract bal to get the reused address balance.
-            const auto full_bal = wallet.GetBalance(0, false);
-            balances.pushKV("used", ValueFromAmount(full_bal.m_mine_trusted + full_bal.m_mine_untrusted_pending - bal.m_mine_trusted - bal.m_mine_untrusted_pending));
-        }
         balances.pushKV("lockedBalance", ValueFromAmount(bal.m_mine_locked));
 
 
         CAmount send = 0;
         CAmount receive = 0;
         CAmount monthly_total = 0;
+        CAmount monthly_fee = 0;
 
         const std::string* filter_label = nullptr;
         const CWallet::TxItems & txOrdered = pwallet->wtxOrdered;
@@ -2603,10 +2599,11 @@ static UniValue getbalancedatadesktop(const JSONRPCRequest& request)
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            getIncomingOutgoingHistory(*locked_chain, pwallet, *pwtx, send, receive, filter_label);
+            getIncomingOutgoingHistory(*locked_chain, pwallet, *pwtx, send, receive, monthly_fee, filter_label);
         }
 
         monthly_total = send + receive;
+        balances.pushKV("monthly_fees", ValueFromAmount(monthly_fee));
         balances.pushKV("incoming_value", ValueFromAmount(receive));
         balances.pushKV("outgoing_value", ValueFromAmount(send));
         balances.pushKV("monthly_total", ValueFromAmount(monthly_total));
