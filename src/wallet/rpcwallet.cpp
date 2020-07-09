@@ -2512,10 +2512,11 @@ static void getIncomingOutgoingHistory(interfaces::Chain::Lock& locked_chain, CW
                 {
                     send += s.amount;
                 }
-                monthly_fee += nFee;
-            }
-        }
 
+            }
+
+        }
+        monthly_fee += nFee;
         // Received
         if (listReceived.size() > 0 && (wtx.GetDepthInMainChain(locked_chain) >= 0 || wtx.IsLockedByInstantSend())) {
             for (const COutputEntry& r : listReceived)
