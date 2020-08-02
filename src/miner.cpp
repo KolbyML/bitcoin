@@ -693,7 +693,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
                     nMintableLastCheck = GetTime();
                     fMintableCoins = pwallet->MintableCoins();
                 }
-                }
+            }
 
             if (mapHashedBlocks.count(chainActive.Tip()->nHeight)) //search our map of hashed blocks, see if bestblock has been hashed yet
             {
