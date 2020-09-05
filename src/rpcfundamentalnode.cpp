@@ -536,6 +536,389 @@ UniValue getmasternodestatus (const UniValue& params, bool fHelp)
                         + activeMasternode.GetStatus());
 }
 
+UniValue masternodeconnect(const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() != 1))
+        throw runtime_error(
+                "masternodeconnect \"address\"\n"
+                "\nAttempts to connect to specified masternode address\n"
+
+                "\nArguments:\n"
+                "1. \"address\"     (string, required) IP or net address to connect to\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("masternodeconnect", "\"192.168.0.6:11771\"") + HelpExampleRpc("masternodeconnect", "\"192.168.0.6:11771\""));
+
+    std::string strAddress = params[0].get_str();
+
+    CService addr = CService(strAddress);
+
+    CNode* pnode = ConnectNode((CAddress)addr, NULL, false);
+    if (pnode) {
+        pnode->Release();
+        return NullUniValue;
+    } else {
+        throw runtime_error("error connecting\n");
+    }
+}
+
+UniValue getmasternodecount (const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() > 0))
+        throw runtime_error(
+                "getmasternodecount\n"
+                "\nGet masternode count values\n"
+
+                "\nResult:\n"
+                "{\n"
+                "  \"total\": n,        (numeric) Total masternodes\n"
+                "  \"stable\": n,       (numeric) Stable count\n"
+                "  \"obfcompat\": n,    (numeric) Obfuscation Compatible\n"
+                "  \"enabled\": n,      (numeric) Enabled masternodes\n"
+                "  \"inqueue\": n       (numeric) Masternodes in queue\n"
+                "}\n"
+                "\nExamples:\n" +
+                HelpExampleCli("getmasternodecount", "") + HelpExampleRpc("getmasternodecount", ""));
+
+    UniValue obj(UniValue::VOBJ);
+    int nCount = 0;
+    int ipv4 = 0, ipv6 = 0, onion = 0;
+
+    if (chainActive.Tip())
+        mnodeman.GetNextMasternodeInQueueForPayment(chainActive.Tip()->nHeight, true, nCount);
+
+    mnodeman.CountNetworks(ActiveProtocol(), ipv4, ipv6, onion);
+
+    obj.push_back(Pair("total", mnodeman.size()));
+    obj.push_back(Pair("stable", mnodeman.stable_size()));
+    obj.push_back(Pair("obfcompat", mnodeman.CountEnabled(ActiveProtocol())));
+    obj.push_back(Pair("enabled", mnodeman.CountEnabled()));
+    obj.push_back(Pair("inqueue", nCount));
+    obj.push_back(Pair("ipv4", ipv4));
+    obj.push_back(Pair("ipv6", ipv6));
+    obj.push_back(Pair("onion", onion));
+
+    return obj;
+}
+
+UniValue masternodecurrent (const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() != 0))
+        throw runtime_error(
+                "masternodecurrent\n"
+                "\nGet current masternode winner\n"
+
+                "\nResult:\n"
+                "{\n"
+                "  \"protocol\": xxxx,        (numeric) Protocol version\n"
+                "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
+                "  \"pubkey\": \"xxxx\",      (string) MN Public key\n"
+                "  \"lastseen\": xxx,       (numeric) Time since epoch of last seen\n"
+                "  \"activeseconds\": xxx,  (numeric) Seconds MN has been active\n"
+                "}\n"
+                "\nExamples:\n" +
+                HelpExampleCli("masternodecurrent", "") + HelpExampleRpc("masternodecurrent", ""));
+
+    CMasternode* winner = mnodeman.GetCurrentMasterNode(1);
+    if (winner) {
+        UniValue obj(UniValue::VOBJ);
+
+        obj.push_back(Pair("protocol", (int64_t)winner->protocolVersion));
+        obj.push_back(Pair("txhash", winner->vin.prevout.hash.ToString()));
+        obj.push_back(Pair("pubkey", EncodeDestination(winner->pubKeyCollateralAddress.GetID())));
+        obj.push_back(Pair("lastseen", (winner->lastPing == CMasternodePing()) ? winner->sigTime : (int64_t)winner->lastPing.sigTime));
+        obj.push_back(Pair("activeseconds", (winner->lastPing == CMasternodePing()) ? 0 : (int64_t)(winner->lastPing.sigTime - winner->sigTime)));
+        return obj;
+    }
+
+    throw runtime_error("unknown");
+}
+
+UniValue masternodedebug (const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() != 0))
+        throw runtime_error(
+                "masternodedebug\n"
+                "\nPrint masternode status\n"
+
+                "\nResult:\n"
+                "\"status\"     (string) Masternode status message\n"
+                "\nExamples:\n" +
+                HelpExampleCli("masternodedebug", "") + HelpExampleRpc("masternodedebug", ""));
+
+    if (activeMasternode.status != ACTIVE_MASTERNODE_INITIAL || !masternodeSync.IsSynced())
+        return activeMasternode.GetStatus();
+
+    CTxIn vin = CTxIn();
+    CPubKey pubkey = CScript();
+    CKey key;
+    if (!activeMasternode.GetMasterNodeVin(vin, pubkey, key))
+        throw runtime_error("Missing masternode input, please look at the documentation for instructions on masternode creation\n");
+    else
+        return activeMasternode.GetStatus();
+}
+
+UniValue createmasternodekey (const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() != 0))
+        throw runtime_error(
+                "createmasternodekey\n"
+                "\nCreate a new masternode private key\n"
+
+                "\nResult:\n"
+                "\"key\"    (string) Masternode private key\n"
+                "\nExamples:\n" +
+                HelpExampleCli("createmasternodekey", "") + HelpExampleRpc("createmasternodekey", ""));
+
+    CKey secret;
+    secret.MakeNewKey(false);
+
+    return CBitcoinSecret(secret).ToString();
+}
+
+UniValue getmasternodeoutputs (const UniValue& params, bool fHelp)
+{
+    if (fHelp || (params.size() != 0))
+        throw runtime_error(
+                "getmasternodeoutputs\n"
+                "\nPrint all masternode transaction outputs\n"
+
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"txhash\": \"xxxx\",    (string) output transaction hash\n"
+                "    \"outputidx\": n       (numeric) output index number\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("getmasternodeoutputs", "") + HelpExampleRpc("getmasternodeoutputs", ""));
+
+    // Find possible candidates
+    vector<COutput> possibleCoins = activeMasternode.SelectCoinsMasternode();
+
+    UniValue ret(UniValue::VARR);
+    for (COutput& out : possibleCoins) {
+        UniValue obj(UniValue::VOBJ);
+        obj.push_back(Pair("txhash", out.tx->GetHash().ToString()));
+        obj.push_back(Pair("outputidx", out.i));
+        ret.push_back(obj);
+    }
+
+    return ret;
+}
+
+UniValue listmasternodeconf (const UniValue& params, bool fHelp)
+{
+    std::string strFilter = "";
+
+    if (params.size() == 1) strFilter = params[0].get_str();
+
+    if (fHelp || (params.size() > 1))
+        throw runtime_error(
+                "listmasternodeconf ( \"filter\" )\n"
+                "\nPrint masternode.conf in JSON format\n"
+
+                "\nArguments:\n"
+                "1. \"filter\"    (string, optional) Filter search text. Partial match on alias, address, txHash, or status.\n"
+
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"alias\": \"xxxx\",        (string) masternode alias\n"
+                "    \"address\": \"xxxx\",      (string) masternode IP address\n"
+                "    \"privateKey\": \"xxxx\",   (string) masternode private key\n"
+                "    \"txHash\": \"xxxx\",       (string) transaction hash\n"
+                "    \"outputIndex\": n,       (numeric) transaction output index\n"
+                "    \"status\": \"xxxx\"        (string) masternode status\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("listmasternodeconf", "") + HelpExampleRpc("listmasternodeconf", ""));
+
+    std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
+    mnEntries = masternodeConfig.getEntries();
+
+    UniValue ret(UniValue::VARR);
+
+    for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
+        int nIndex;
+        if(!mne.castOutputIndex(nIndex))
+            continue;
+        CTxIn vin = CTxIn(uint256(mne.getTxHash()), uint32_t(nIndex));
+        CMasternode* pmn = mnodeman.Find(vin);
+
+        std::string strStatus = pmn ? pmn->Status() : "MISSING";
+
+        if (strFilter != "" && mne.getAlias().find(strFilter) == string::npos &&
+            mne.getIp().find(strFilter) == string::npos &&
+            mne.getTxHash().find(strFilter) == string::npos &&
+            strStatus.find(strFilter) == string::npos) continue;
+
+        UniValue mnObj(UniValue::VOBJ);
+        mnObj.push_back(Pair("alias", mne.getAlias()));
+        mnObj.push_back(Pair("address", mne.getIp()));
+        mnObj.push_back(Pair("privateKey", mne.getPrivKey()));
+        mnObj.push_back(Pair("txHash", mne.getTxHash()));
+        mnObj.push_back(Pair("outputIndex", mne.getOutputIndex()));
+        mnObj.push_back(Pair("status", strStatus));
+        ret.push_back(mnObj);
+    }
+
+    return ret;
+}
+
+UniValue getmasternodewinners (const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() > 3)
+        throw runtime_error(
+                "getmasternodewinners ( blocks \"filter\" )\n"
+                "\nPrint the masternode winners for the last n blocks\n"
+
+                "\nArguments:\n"
+                "1. blocks      (numeric, optional) Number of previous blocks to show (default: 10)\n"
+                "2. filter      (string, optional) Search filter matching MN address\n"
+
+                "\nResult (single winner):\n"
+                "[\n"
+                "  {\n"
+                "    \"nHeight\": n,           (numeric) block height\n"
+                "    \"winner\": {\n"
+                "      \"address\": \"xxxx\",    (string) Phore MN address\n"
+                "      \"nVotes\": n,          (numeric) Number of votes for winner\n"
+                "    }\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+
+                "\nResult (multiple winners):\n"
+                "[\n"
+                "  {\n"
+                "    \"nHeight\": n,           (numeric) block height\n"
+                "    \"winner\": [\n"
+                "      {\n"
+                "        \"address\": \"xxxx\",  (string) Phore MN address\n"
+                "        \"nVotes\": n,        (numeric) Number of votes for winner\n"
+                "      }\n"
+                "      ,...\n"
+                "    ]\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+                "\nExamples:\n" +
+                HelpExampleCli("getmasternodewinners", "") + HelpExampleRpc("getmasternodewinners", ""));
+
+    int nHeight;
+    {
+        LOCK(cs_main);
+        CBlockIndex* pindex = chainActive.Tip();
+        if(!pindex) return 0;
+        nHeight = pindex->nHeight;
+    }
+
+    int nLast = 10;
+    std::string strFilter = "";
+
+    if (params.size() >= 1)
+        nLast = atoi(params[0].get_str());
+
+    if (params.size() == 2)
+        strFilter = params[1].get_str();
+
+    UniValue ret(UniValue::VARR);
+
+    for (int i = nHeight - nLast; i < nHeight + 20; i++) {
+        UniValue obj(UniValue::VOBJ);
+        obj.push_back(Pair("nHeight", i));
+
+        std::string strPayment = GetRequiredPaymentsString(i);
+        if (strFilter != "" && strPayment.find(strFilter) == std::string::npos) continue;
+
+        if (strPayment.find(',') != std::string::npos) {
+            UniValue winner(UniValue::VARR);
+            boost::char_separator<char> sep(",");
+            boost::tokenizer< boost::char_separator<char> > tokens(strPayment, sep);
+            for (const string& t : tokens) {
+                UniValue addr(UniValue::VOBJ);
+                std::size_t pos = t.find(":");
+                std::string strAddress = t.substr(0,pos);
+                uint64_t nVotes = atoi(t.substr(pos+1));
+                addr.push_back(Pair("address", strAddress));
+                addr.push_back(Pair("nVotes", nVotes));
+                winner.push_back(addr);
+            }
+            obj.push_back(Pair("winner", winner));
+        } else if (strPayment.find("Unknown") == std::string::npos) {
+            UniValue winner(UniValue::VOBJ);
+            std::size_t pos = strPayment.find(":");
+            std::string strAddress = strPayment.substr(0,pos);
+            uint64_t nVotes = atoi(strPayment.substr(pos+1));
+            winner.push_back(Pair("address", strAddress));
+            winner.push_back(Pair("nVotes", nVotes));
+            obj.push_back(Pair("winner", winner));
+        } else {
+            UniValue winner(UniValue::VOBJ);
+            winner.push_back(Pair("address", strPayment));
+            winner.push_back(Pair("nVotes", 0));
+            obj.push_back(Pair("winner", winner));
+        }
+
+        ret.push_back(obj);
+    }
+
+    return ret;
+}
+
+UniValue getmasternodescores (const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+        throw runtime_error(
+                "getmasternodescores ( blocks )\n"
+                "\nPrint list of winning masternode by score\n"
+
+                "\nArguments:\n"
+                "1. blocks      (numeric, optional) Show the last n blocks (default 10)\n"
+
+                "\nResult:\n"
+                "{\n"
+                "  xxxx: \"xxxx\"   (numeric : string) Block height : Masternode hash\n"
+                "  ,...\n"
+                "}\n"
+                "\nExamples:\n" +
+                HelpExampleCli("getmasternodescores", "") + HelpExampleRpc("getmasternodescores", ""));
+
+    int nLast = 10;
+
+    if (params.size() == 1) {
+        try {
+            nLast = std::stoi(params[0].get_str());
+        } catch (const boost::bad_lexical_cast &) {
+            throw runtime_error("Exception on param 2");
+        }
+    }
+    UniValue obj(UniValue::VOBJ);
+
+    std::vector<CMasternode> vMasternodes = mnodeman.GetFullMasternodeVector();
+    for (int nHeight = chainActive.Tip()->nHeight - nLast; nHeight < chainActive.Tip()->nHeight + 20; nHeight++) {
+        uint256 nHigh = 0;
+        CMasternode* pBestMasternode = NULL;
+        for (CMasternode& mn : vMasternodes) {
+            uint256 n = mn.CalculateScore(1, nHeight - 100);
+            if (n > nHigh) {
+                nHigh = n;
+                pBestMasternode = &mn;
+            }
+        }
+        if (pBestMasternode)
+            obj.push_back(Pair(strprintf("%d", nHeight), pBestMasternode->vin.prevout.hash.ToString().c_str()));
+    }
+
+    return obj;
+}
+
 UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
 {
     std::string strFilter = "";
