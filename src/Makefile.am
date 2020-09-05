@@ -119,6 +119,7 @@ BITCOIN_CORE_H = \
   obfuscation.h \
   obfuscation-relay.h \
   db.h \
+  fs.h \
   hash.h \
   httprpc.h \
   httpserver.h \
@@ -138,7 +139,6 @@ BITCOIN_CORE_H = \
   masternode-payments.h \
   masternode-budget.h \
   masternodeman.h \
-  masternode-pos.h \
   masternodeman.h \
   masternodeconfig.h \
   fundamentalnode.h \
@@ -377,7 +377,6 @@ libbitcoin_common_a_SOURCES = \
   primitives/transaction.cpp \
   primitives/zerocoin.cpp \
   masternode.cpp \
-  masternode-pos.cpp \
   masternodeman.cpp \
   masternodeconfig.cpp \
   core_read.cpp \
@@ -411,6 +410,7 @@ libbitcoin_util_a_SOURCES = \
   compat/glibcxx_sanity.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
+  fs.cpp \
   random.cpp \
   rpcprotocol.cpp \
   sync.cpp \

@@ -14,7 +14,6 @@
 #include "util.h"
 #include "utilmoneystr.h"
 
-#include "masternode-pos.h"
 #include "masternode.h"
 #include "masternodeman.h"
 

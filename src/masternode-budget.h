@@ -1,6 +1,5 @@
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
-// Copyright (c) 2018 The VITAE developers
+// Copyright (c) 2015-2020 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,11 +14,9 @@
 #include "net.h"
 #include "sync.h"
 #include "util.h"
-#include <boost/lexical_cast.hpp>
 
-using namespace std;
 
-extern CCriticalSection cs_budget;
+extern RecursiveMutex cs_budget;
 
 class CBudgetManager;
 class CFinalizedBudgetBroadcast;
@@ -43,16 +40,13 @@ static const CAmount PROPOSAL_FEE_TX = (50 * COIN);
 static const CAmount BUDGET_FEE_TX_OLD = (50 * COIN);
 static const CAmount BUDGET_FEE_TX = (5 * COIN);
 static const int64_t BUDGET_VOTE_UPDATE_MIN = 60 * 60;
-static map<uint256, int> mapPayment_History;
+static std::map<uint256, int> mapPayment_History;
 
 extern std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
 extern std::vector<CFinalizedBudgetBroadcast> vecImmatureFinalizedBudgets;
 
 extern CBudgetManager budget;
 void DumpBudgets();
-
-// Define amount of blocks in budget payment cycle
-int GetBudgetPaymentCycleBlocks();
 
 //Check the collateral transaction for the budget proposal/finalized budget
 bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, std::string& strError, int64_t& nTime, int& nConf, bool fBudgetFinalization=false);
@@ -61,7 +55,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
 // CBudgetVote - Allow a masternode node to vote and broadcast throughout the network
 //
 
-class CBudgetVote
+class CBudgetVote : public CSignedMessage
 {
 public:
     bool fValid;  //if the vote is currently valid / counted
@@ -70,13 +64,10 @@ public:
     uint256 nProposalHash;
     int nVote;
     int64_t nTime;
-    std::vector<unsigned char> vchSig;
 
     CBudgetVote();
     CBudgetVote(CTxIn vin, uint256 nProposalHash, int nVoteIn);
 
-    bool Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode);
-    bool SignatureValid(bool fSignatureCheck);
     void Relay();
 
     std::string GetVoteString()
@@ -87,26 +78,29 @@ public:
         return ret;
     }
 
-    uint256 GetHash()
-    {
-        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-        ss << vin;
-        ss << nProposalHash;
-        ss << nVote;
-        ss << nTime;
-        return ss.GetHash();
-    }
+    uint256 GetHash() const;
+
+    // override CSignedMessage functions
+    uint256 GetSignatureHash() const override { return GetHash(); }
+    std::string GetStrMessage() const override;
+    const CTxIn GetVin() const override { return vin; };
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(vin);
         READWRITE(nProposalHash);
         READWRITE(nVote);
         READWRITE(nTime);
         READWRITE(vchSig);
+        try
+        {
+            READWRITE(nMessVersion);
+        } catch (...) {
+            nMessVersion = MessageVersion::MESS_VER_STRMESS;
+        }
     }
 };
 
@@ -114,7 +108,7 @@ public:
 // CFinalizedBudgetVote - Allow a masternode node to vote and broadcast throughout the network
 //
 
-class CFinalizedBudgetVote
+class CFinalizedBudgetVote : public CSignedMessage
 {
 public:
     bool fValid;  //if the vote is currently valid / counted
@@ -122,33 +116,33 @@ public:
     CTxIn vin;
     uint256 nBudgetHash;
     int64_t nTime;
-    std::vector<unsigned char> vchSig;
 
     CFinalizedBudgetVote();
     CFinalizedBudgetVote(CTxIn vinIn, uint256 nBudgetHashIn);
 
-    bool Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode);
-    bool SignatureValid(bool fSignatureCheck);
     void Relay();
+    uint256 GetHash() const;
 
-    uint256 GetHash()
-    {
-        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-        ss << vin;
-        ss << nBudgetHash;
-        ss << nTime;
-        return ss.GetHash();
-    }
+    // override CSignedMessage functions
+    uint256 GetSignatureHash() const override { return GetHash(); }
+    std::string GetStrMessage() const override;
+    const CTxIn GetVin() const override { return vin; };
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(vin);
         READWRITE(nBudgetHash);
         READWRITE(nTime);
         READWRITE(vchSig);
+        try
+        {
+            READWRITE(nMessVersion);
+        } catch (...) {
+            nMessVersion = MessageVersion::MESS_VER_STRMESS;
+        }
     }
 };
 
@@ -157,7 +151,7 @@ public:
 class CBudgetDB
 {
 private:
-    boost::filesystem::path pathDB;
+    fs::path pathDB;
     std::string strMagicMessage;
 
 public:
@@ -184,16 +178,16 @@ class CBudgetManager
 {
 private:
     //hold txes until they mature enough to use
-    // XX42    map<uint256, CTransaction> mapCollateral;
-    map<uint256, uint256> mapCollateralTxids;
+    // XX42    std::map<uint256, CTransaction> mapCollateral;
+    std::map<uint256, uint256> mapCollateralTxids;
 
 public:
     // critical section to protect the inner data structures
-    mutable CCriticalSection cs;
+    mutable RecursiveMutex cs;
 
     // keep track of the scanning errors I've seen
-    map<uint256, CBudgetProposal> mapProposals;
-    map<uint256, CFinalizedBudget> mapFinalizedBudgets;
+    std::map<uint256, CBudgetProposal> mapProposals;
+    std::map<uint256, CFinalizedBudget> mapFinalizedBudgets;
 
     std::map<uint256, CBudgetProposalBroadcast> mapSeenMasternodeBudgetProposals;
     std::map<uint256, CBudgetVote> mapSeenMasternodeBudgetVotes;
@@ -269,7 +263,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(mapSeenMasternodeBudgetProposals);
         READWRITE(mapSeenMasternodeBudgetVotes);
@@ -295,16 +289,16 @@ public:
     {
         payee = CScript();
         nAmount = 0;
-        nProposalHash = 0;
+        nProposalHash = UINT256_ZERO;
     }
 
     ADD_SERIALIZE_METHODS;
 
     //for saving to the serialized db
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        READWRITE(payee);
+        READWRITE(*(CScriptBase*)(&payee));
         READWRITE(nAmount);
         READWRITE(nProposalHash);
     }
@@ -318,7 +312,7 @@ class CFinalizedBudget
 {
 private:
     // critical section to protect the inner data structures
-    mutable CCriticalSection cs;
+    mutable RecursiveMutex cs;
     bool fAutoChecked; //If it matches what we see, we'll auto vote for it (masternode only)
 
 public:
@@ -326,14 +320,14 @@ public:
     std::string strBudgetName;
     int nBlockStart;
     std::vector<CTxBudgetPayment> vecBudgetPayments;
-    map<uint256, CFinalizedBudgetVote> mapVotes;
+    std::map<uint256, CFinalizedBudgetVote> mapVotes;
     uint256 nFeeTXHash;
     int64_t nTime;
 
     CFinalizedBudget();
     CFinalizedBudget(const CFinalizedBudget& other);
 
-    void CleanAndRemove(bool fSignatureCheck);
+    void CleanAndRemove();
     bool AddOrUpdateVote(CFinalizedBudgetVote& vote, std::string& strError);
     double GetScore();
     bool HasMinimumRequiredSupport();
@@ -369,15 +363,15 @@ public:
         return true;
     }
 
-    //check to see if we should vote on this
-    void AutoCheck();
-    //total vitae paid out by this budget
+    // Verify and vote on finalized budget
+    void CheckAndVote();
+    //total pivx paid out by this budget
     CAmount GetTotalPayout();
     //vote on this finalized budget as a masternode
     void SubmitVote();
 
     //checks the hashes to make sure we know about them
-    string GetStatus();
+    std::string GetStatus();
 
     uint256 GetHash()
     {
@@ -394,7 +388,7 @@ public:
 
     //for saving to the serialized db
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(LIMITED_STRING(strBudgetName, 20));
         READWRITE(nFeeTXHash);
@@ -410,9 +404,6 @@ public:
 // FinalizedBudget are cast then sent to peers with this object, which leaves the votes out
 class CFinalizedBudgetBroadcast : public CFinalizedBudget
 {
-private:
-    std::vector<unsigned char> vchSig;
-
 public:
     CFinalizedBudgetBroadcast();
     CFinalizedBudgetBroadcast(const CFinalizedBudget& other);
@@ -445,7 +436,7 @@ public:
 
     //for propagating messages
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         //for syncing with other clients
         READWRITE(LIMITED_STRING(strBudgetName, 20));
@@ -464,7 +455,7 @@ class CBudgetProposal
 {
 private:
     // critical section to protect the inner data structures
-    mutable CCriticalSection cs;
+    mutable RecursiveMutex cs;
     CAmount nAlloted;
 
 public:
@@ -483,7 +474,7 @@ public:
     int64_t nTime;
     uint256 nFeeTXHash;
 
-    map<uint256, CBudgetVote> mapVotes;
+    std::map<uint256, CBudgetVote> mapVotes;
     //cache object
 
     CBudgetProposal();
@@ -497,14 +488,8 @@ public:
 
     bool IsValid(std::string& strError, bool fCheckCollateral = true);
 
-    bool IsEstablished()
-    {
-        // Proposals must be at least a day old to make it into a budget
-        if (Params().NetworkID() == CBaseChainParams::MAIN) return (nTime < GetTime() - (60 * 60 * 24));
-
-        // For testing purposes - 5 minutes
-        return (nTime < GetTime() - (60 * 5));
-    }
+    bool IsEstablished();
+    bool IsPassing(const CBlockIndex* pindexPrev, int nBlockStartBudget, int nBlockEndBudget, int mnCount);
 
     std::string GetName() { return strProposalName; }
     std::string GetURL() { return strURL; }
@@ -517,16 +502,16 @@ public:
     int GetBlockCurrentCycle();
     int GetBlockEndCycle();
     double GetRatio();
-    int GetYeas();
-    int GetNays();
-    int GetAbstains();
+    int GetYeas() const;
+    int GetNays() const;
+    int GetAbstains() const;
     CAmount GetAmount() { return nAmount; }
     void SetAllotted(CAmount nAllotedIn) { nAlloted = nAllotedIn; }
     CAmount GetAllotted() { return nAlloted; }
 
-    void CleanAndRemove(bool fSignatureCheck);
+    void CleanAndRemove();
 
-    uint256 GetHash()
+    uint256 GetHash() const
     {
         CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
         ss << strProposalName;
@@ -534,7 +519,7 @@ public:
         ss << nBlockStart;
         ss << nBlockEnd;
         ss << nAmount;
-        ss << address;
+        ss << std::vector<unsigned char>(address.begin(), address.end());
         uint256 h1 = ss.GetHash();
 
         return h1;
@@ -543,7 +528,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         //for syncing with other clients
         READWRITE(LIMITED_STRING(strProposalName, 20));
@@ -552,7 +537,7 @@ public:
         READWRITE(nBlockStart);
         READWRITE(nBlockEnd);
         READWRITE(nAmount);
-        READWRITE(address);
+        READWRITE(*(CScriptBase*)(&address));
         READWRITE(nTime);
         READWRITE(nFeeTXHash);
 
@@ -599,7 +584,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         //for syncing with other clients
 
@@ -609,7 +594,7 @@ public:
         READWRITE(nBlockStart);
         READWRITE(nBlockEnd);
         READWRITE(nAmount);
-        READWRITE(address);
+        READWRITE(*(CScriptBase*)(&address));
         READWRITE(nFeeTXHash);
     }
 };
