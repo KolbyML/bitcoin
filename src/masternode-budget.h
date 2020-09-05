@@ -151,7 +151,7 @@ public:
 class CBudgetDB
 {
 private:
-    fs::path pathDB;
+    boost::filesystem::path pathDB;
     std::string strMagicMessage;
 
 public:
@@ -289,7 +289,7 @@ public:
     {
         payee = CScript();
         nAmount = 0;
-        nProposalHash = UINT256_ZERO;
+        nProposalHash = uint256();
     }
 
     ADD_SERIALIZE_METHODS;

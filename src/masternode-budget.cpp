@@ -192,7 +192,7 @@ void CBudgetManager::SubmitFinalBudget()
         return;
     }
 
-    CFinalizedBudgetBroadcast tempBudget(strBudgetName, nBlockStart, vecTxBudgetPayments, UINT256_ZERO);
+    CFinalizedBudgetBroadcast tempBudget(strBudgetName, nBlockStart, vecTxBudgetPayments, uint256());
     if (mapSeenFinalizedBudgets.count(tempBudget.GetHash())) {
         LogPrint(BCLog::MNBUDGET,"CBudgetManager::SubmitFinalBudget - Budget already exists - %s\n", tempBudget.GetHash().ToString());
         nSubmittedHeight = nCurrentHeight;
@@ -977,7 +977,7 @@ void CBudgetManager::NewBlock()
         LOCK(cs_vNodes);
         for (CNode* pnode : vNodes)
             if (pnode->nVersion >= ActiveProtocol())
-                Sync(pnode, UINT256_ZERO, true);
+                Sync(pnode, uint256(), true);
 
         MarkSynced();
     }

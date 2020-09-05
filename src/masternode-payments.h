@@ -37,7 +37,7 @@ void DumpMasternodePayments();
 class CMasternodePaymentDB
 {
 private:
-    fs::path pathDB;
+    boost::filesystem::path pathDB;
     std::string strMagicMessage;
 
 public:
