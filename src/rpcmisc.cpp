@@ -15,7 +15,6 @@
 #include "netbase.h"
 #include "rpcserver.h"
 #include "spork.h"
-#include "mn-spork.h"
 #include "timedata.h"
 #include "util.h"
 #ifdef ENABLE_WALLET

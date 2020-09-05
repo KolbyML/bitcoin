@@ -5606,9 +5606,6 @@ bool static AlreadyHave(const CInv& inv)
         return false;
     case MSG_FUNDAMENTALNODE_PING:
         return mnodeman.mapSeenFundamentalnodePing.count(inv.hash);
-
-    case MSG_MN_SPORK:
-            return mapMNSporks.count(inv.hash);
     case MSG_MASTERNODE_ANNOUNCE:
         if (m_nodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
             masternodeSync.AddedMasternodeList(inv.hash);
