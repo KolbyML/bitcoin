@@ -29,7 +29,6 @@
 #include "fundamentalnodeman.h"
 
 #include "activemasternode.h"
-#include "masternode-payments.h"
 #include "masternodeconfig.h"
 #include "masternodeman.h"
 
