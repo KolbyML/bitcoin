@@ -13,7 +13,7 @@
 #include <leveldb/filter_policy.h>
 #include <memenv.h>
 
-void HandleError(const leveldb::Status& status) throw(leveldb_error)
+void HandleError(const leveldb::Status& status)
 {
     if (status.ok())
         return;
