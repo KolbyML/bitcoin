@@ -6724,11 +6724,10 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         ProcessSpork(pfrom, strCommand, vRecv);
         fundamentalnodeSync.ProcessMessage(pfrom, strCommand, vRecv);
 
+        //probably one the extensions
         m_nodeman.ProcessMessage(pfrom, strCommand, vRecv);
-        ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
-
-        ProcessMNSpork(pfrom, strCommand, vRecv);
-        ProcessMessageMasternodePOS(pfrom, strCommand, vRecv);
+        masternodePayments.ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
+        masternodeSync.ProcessMessage(pfrom, strCommand, vRecv);
         ///TODO: ends
 
     }
