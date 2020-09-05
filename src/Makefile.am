@@ -148,6 +148,7 @@ BITCOIN_CORE_H = \
   fundamentalnodeman.h \
   fundamentalnodeconfig.h \
   merkleblock.h \
+  messagesigner.h \
   miner.h \
   mintpool.h \
   mruset.h \
@@ -378,6 +379,7 @@ libbitcoin_common_a_SOURCES = \
   primitives/zerocoin.cpp \
   masternode.cpp \
   masternodeman.cpp \
+  messagesigner.cpp \
   masternodeconfig.cpp \
   core_read.cpp \
   core_write.cpp \
