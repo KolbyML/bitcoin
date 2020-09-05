@@ -107,7 +107,7 @@ void CMasternodeSync::Reset()
 
 void CMasternodeSync::AddedMasternodeList(uint256 hash)
 {
-    if (mnodeman.mapSeenMasternodeBroadcast.count(hash)) {
+    if (m_nodeman.mapSeenMasternodeBroadcast.count(hash)) {
         if (mapSeenSyncMNB[hash] < MASTERNODE_SYNC_THRESHOLD) {
             lastMasternodeList = GetTime();
             mapSeenSyncMNB[hash]++;
@@ -263,7 +263,7 @@ void CMasternodeSync::Process()
         /*
             Resync if we lose all masternodes from sleep/wake or failure to sync originally
         */
-        if (mnodeman.CountEnabled() == 0) {
+        if (m_nodeman.CountEnabled() == 0) {
             Reset();
         } else
             return;
@@ -292,9 +292,9 @@ void CMasternodeSync::Process()
             if (RequestedMasternodeAttempt <= 2) {
                 pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
             } else if (RequestedMasternodeAttempt < 4) {
-                mnodeman.DsegUpdate(pnode);
+                m_nodeman.DsegUpdate(pnode);
             } else if (RequestedMasternodeAttempt < 6) {
-                int nMnCount = mnodeman.CountEnabled();
+                int nMnCount = m_nodeman.CountEnabled();
                 pnode->PushMessage(NetMsgType::GETMNWINNERS, nMnCount); //sync payees
                 uint256 n;
                 pnode->PushMessage(NetMsgType::BUDGETVOTESYNC, n); //sync masternode votes
@@ -345,7 +345,7 @@ void CMasternodeSync::Process()
 
                 if (RequestedMasternodeAttempt >= MASTERNODE_SYNC_THRESHOLD * 3) return;
 
-                mnodeman.DsegUpdate(pnode);
+                m_nodeman.DsegUpdate(pnode);
                 RequestedMasternodeAttempt++;
                 return;
             }
@@ -376,7 +376,7 @@ void CMasternodeSync::Process()
 
                 if (RequestedMasternodeAttempt >= MASTERNODE_SYNC_THRESHOLD * 3) return;
 
-                int nMnCount = mnodeman.CountEnabled();
+                int nMnCount = m_nodeman.CountEnabled();
                 pnode->PushMessage(NetMsgType::GETMNWINNERS, nMnCount); //sync payees
                 RequestedMasternodeAttempt++;
 

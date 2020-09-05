@@ -20,7 +20,7 @@
 #define MN_WINNER_MINIMUM_AGE 8000    // Age in seconds. This should be > MASTERNODE_REMOVAL_SECONDS to avoid misconfigured new nodes in the list.
 
 /** Masternode manager */
-CMasternodeMan mnodeman;
+CMasternodeMan m_nodeman;
 /** Keep track of the active Masternode */
 CActiveMasternode activeMasternode;
 
@@ -58,7 +58,7 @@ CMasternodeDB::CMasternodeDB()
     strMagicMessage = "MasternodeCache";
 }
 
-bool CMasternodeDB::Write(const CMasternodeMan& mnodemanToSave)
+bool CMasternodeDB::Write(const CMasternodeMan& m_nodemanToSave)
 {
     int64_t nStart = GetTimeMillis();
 
@@ -66,7 +66,7 @@ bool CMasternodeDB::Write(const CMasternodeMan& mnodemanToSave)
     CDataStream ssMasternodes(SER_DISK, CLIENT_VERSION);
     ssMasternodes << strMagicMessage;                   // masternode cache file specific magic message
     ssMasternodes << FLATDATA(Params().MessageStart()); // network specific magic number
-    ssMasternodes << mnodemanToSave;
+    ssMasternodes << m_nodemanToSave;
     uint256 hash = Hash(ssMasternodes.begin(), ssMasternodes.end());
     ssMasternodes << hash;
 
@@ -86,12 +86,12 @@ bool CMasternodeDB::Write(const CMasternodeMan& mnodemanToSave)
     fileout.fclose();
 
     LogPrint(BCLog::MASTERNODE,"Written info to mncache.dat  %dms\n", GetTimeMillis() - nStart);
-    LogPrint(BCLog::MASTERNODE,"  %s\n", mnodemanToSave.ToString());
+    LogPrint(BCLog::MASTERNODE,"  %s\n", m_nodemanToSave.ToString());
 
     return true;
 }
 
-CMasternodeDB::ReadResult CMasternodeDB::Read(CMasternodeMan& mnodemanToLoad, bool fDryRun)
+CMasternodeDB::ReadResult CMasternodeDB::Read(CMasternodeMan& m_nodemanToLoad, bool fDryRun)
 {
     int64_t nStart = GetTimeMillis();
     // open input file, and associate with CAutoFile
@@ -153,20 +153,20 @@ CMasternodeDB::ReadResult CMasternodeDB::Read(CMasternodeMan& mnodemanToLoad, bo
             return IncorrectMagicNumber;
         }
         // de-serialize data into CMasternodeMan object
-        ssMasternodes >> mnodemanToLoad;
+        ssMasternodes >> m_nodemanToLoad;
     } catch (const std::exception& e) {
-        mnodemanToLoad.Clear();
+        m_nodemanToLoad.Clear();
         error("%s : Deserialize or I/O error - %s", __func__, e.what());
         return IncorrectFormat;
     }
 
     LogPrint(BCLog::MASTERNODE,"Loaded info from mncache.dat  %dms\n", GetTimeMillis() - nStart);
-    LogPrint(BCLog::MASTERNODE,"  %s\n", mnodemanToLoad.ToString());
+    LogPrint(BCLog::MASTERNODE,"  %s\n", m_nodemanToLoad.ToString());
     if (!fDryRun) {
         LogPrint(BCLog::MASTERNODE,"Masternode manager - cleaning....\n");
-        mnodemanToLoad.CheckAndRemove(true);
+        m_nodemanToLoad.CheckAndRemove(true);
         LogPrint(BCLog::MASTERNODE,"Masternode manager - result:\n");
-        LogPrint(BCLog::MASTERNODE,"  %s\n", mnodemanToLoad.ToString());
+        LogPrint(BCLog::MASTERNODE,"  %s\n", m_nodemanToLoad.ToString());
     }
 
     return Ok;
@@ -177,10 +177,10 @@ void DumpMasternodes()
     int64_t nStart = GetTimeMillis();
 
     CMasternodeDB mndb;
-    CMasternodeMan tempMnodeman;
+    CMasternodeMan tempm_nodeman;
 
     LogPrint(BCLog::MASTERNODE,"Verifying mncache.dat format...\n");
-    CMasternodeDB::ReadResult readResult = mndb.Read(tempMnodeman, true);
+    CMasternodeDB::ReadResult readResult = mndb.Read(tempm_nodeman, true);
     // there was an error and it was not an error on file opening => do not proceed
     if (readResult == CMasternodeDB::FileError)
         LogPrint(BCLog::MASTERNODE,"Missing masternode cache file - mncache.dat, will try to recreate\n");
@@ -194,7 +194,7 @@ void DumpMasternodes()
         }
     }
     LogPrint(BCLog::MASTERNODE,"Writting info to mncache.dat...\n");
-    mndb.Write(mnodeman);
+    mndb.Write(m_nodeman);
 
     LogPrint(BCLog::MASTERNODE,"Masternode dump finished  %dms\n", GetTimeMillis() - nStart);
 }
@@ -875,7 +875,7 @@ void ThreadCheckMasternodes()
             if (c % MASTERNODE_PING_SECONDS == 1) activeMasternode.ManageStatus();
 
             if (c % 60 == 0) {
-                mnodeman.CheckAndRemove();
+                m_nodeman.CheckAndRemove();
                 masternodePayments.CleanPaymentList();
                 CleanTransactionLocksList();
             }

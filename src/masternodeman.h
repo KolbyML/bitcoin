@@ -22,7 +22,7 @@
 class CMasternodeMan;
 class CActiveMasternode;
 
-extern CMasternodeMan mnodeman;
+extern CMasternodeMan m_nodeman;
 extern CActiveMasternode activeMasternode;
 extern std::string strMasterNodePrivKey;
 
@@ -48,8 +48,8 @@ public:
     };
 
     CMasternodeDB();
-    bool Write(const CMasternodeMan& mnodemanToSave);
-    ReadResult Read(CMasternodeMan& mnodemanToLoad, bool fDryRun = false);
+    bool Write(const CMasternodeMan& m_nodemanToSave);
+    ReadResult Read(CMasternodeMan& m_nodemanToLoad, bool fDryRun = false);
 };
 
 class CMasternodeMan
