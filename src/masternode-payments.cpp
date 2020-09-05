@@ -19,9 +19,9 @@
 /** Object for who's going to get paid on which blocks */
 CMasternodePayments masternodePayments;
 
-RecursiveMutex cs_vecPayments;
-RecursiveMutex cs_mapMasternodeBlocks;
-RecursiveMutex cs_mapMasternodePayeeVotes;
+CCriticalSection cs_vecPayments;
+CCriticalSection cs_mapMasternodeBlocks;
+CCriticalSection cs_mapMasternodePayeeVotes;
 
 //
 // CMasternodePaymentDB

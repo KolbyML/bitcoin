@@ -110,7 +110,7 @@ class CMasternode : public CSignedMessage
 {
 private:
     // critical section to protect the inner data structures
-    mutable RecursiveMutex cs;
+    mutable CCriticalSection cs;
     int64_t lastTimeChecked;
 
 public:

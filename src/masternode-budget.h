@@ -16,7 +16,7 @@
 #include "util.h"
 
 
-extern RecursiveMutex cs_budget;
+extern CCriticalSection cs_budget;
 
 class CBudgetManager;
 class CFinalizedBudgetBroadcast;
@@ -183,7 +183,7 @@ private:
 
 public:
     // critical section to protect the inner data structures
-    mutable RecursiveMutex cs;
+    mutable CCriticalSection cs;
 
     // keep track of the scanning errors I've seen
     std::map<uint256, CBudgetProposal> mapProposals;
@@ -312,7 +312,7 @@ class CFinalizedBudget
 {
 private:
     // critical section to protect the inner data structures
-    mutable RecursiveMutex cs;
+    mutable CCriticalSection cs;
     bool fAutoChecked; //If it matches what we see, we'll auto vote for it (masternode only)
 
 public:
@@ -455,7 +455,7 @@ class CBudgetProposal
 {
 private:
     // critical section to protect the inner data structures
-    mutable RecursiveMutex cs;
+    mutable CCriticalSection cs;
     CAmount nAlloted;
 
 public:
