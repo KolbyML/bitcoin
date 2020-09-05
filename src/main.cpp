@@ -4865,13 +4865,8 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
             fundamentalnodePayments.ProcessBlock(GetHeight() + 10);
             budget.NewBlock();
         }
-    }
-
-    if(!fMNLiteMode){
-        if (!fImporting && !fReindex && chainActive.Tip()->nHeight > Checkpoints::GetTotalBlocksEstimate()){
-            //darkSendPool.NewBlock();
-            masternodePayments.ProcessBlock(chainActive.Tip()->nHeight + 10);
-            mnscan.DoMasternodePOSChecks();
+        if (masternodeSync.RequestedMasternodeAssets > MASTERNODE_SYNC_LIST) {
+            masternodePayments.ProcessBlock(GetHeight() + 10);
         }
     }
 
