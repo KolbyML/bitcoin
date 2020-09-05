@@ -1891,7 +1891,7 @@ void CFinalizedBudget::CheckAndVote()
         return;
     }
 
-    if (activeMasternode.vin == nullopt) {
+    if (activeMasternode.vin == boost::none) {
         LogPrint("mnbudget","%s: Active Masternode not initialized.\n", __func__);
         return;
     }
@@ -2208,7 +2208,7 @@ TrxValidationStatus CFinalizedBudget::IsTransactionValid(const CTransaction& txN
 void CFinalizedBudget::SubmitVote()
 {
     // function called only from initialized masternodes
-    assert(fMasterNode && activeMasternode.vin != nullopt);
+    assert(fMasterNode && activeMasternode.vin != boost::none);
 
     std::string strError = "";
     CPubKey pubKeyMasternode;
