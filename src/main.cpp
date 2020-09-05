@@ -5609,10 +5609,14 @@ bool static AlreadyHave(const CInv& inv)
 
     case MSG_MN_SPORK:
             return mapMNSporks.count(inv.hash);
-    case MSG_MASTERNODE_WINNER:
-            return mapSeenMasternodeVotes.count(inv.hash);
-    case MSG_MASTERNODE_SCANNING_ERROR:
-            return mapMasternodeScanningErrors.count(inv.hash);
+    case MSG_MASTERNODE_ANNOUNCE:
+        if (m_nodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
+            masternodeSync.AddedMasternodeList(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_MASTERNODE_PING:
+        return m_nodeman.mapSeenMasternodePing.count(inv.hash);
     }
     // Don't know what it is, just say we already got one
     return true;
