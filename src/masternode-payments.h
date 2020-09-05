@@ -200,7 +200,7 @@ public:
     {
         READWRITE(vinMasternode);
         READWRITE(nBlockHeight);
-        READWRITE(*(CScriptBase*)(&payee));
+        READWRITE(payee);
         READWRITE(vchSig);
         try
         {
