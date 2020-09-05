@@ -345,7 +345,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
 }
 
 
-void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake, bool IsMasternode)
+void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake)
 {
     CBlockIndex* pindexPrev = chainActive.Tip();
     if (!pindexPrev) return;
@@ -353,7 +353,7 @@ void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStak
     if (IsSporkActive(SPORK_13_ENABLE_SUPERBLOCKS) && budget.IsBudgetPaymentBlock(pindexPrev->nHeight + 1)) {
         budget.FillBlockPayee(txNew, nFees, fProofOfStake);
     } else {
-        fundamentalnodePayments.FillBlockPayee(txNew, nFees, fProofOfStake, IsMasternode);
+        fundamentalnodePayments.FillBlockPayee(txNew, nFees, fProofOfStake);
     }
 }
 
@@ -366,7 +366,7 @@ std::string GetRequiredPaymentsString(int nBlockHeight)
     }
 }
 
-void CFundamentalnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFees, bool fProofOfStake, bool IsMasternode)
+void CFundamentalnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFees, bool fProofOfStake)
 {
     CBlockIndex* pindexPrev = chainActive.Tip();
     if (!pindexPrev) return;
@@ -424,7 +424,7 @@ void CFundamentalnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_
     //txNew.vout[0].nValue = blockValue;
 
     if (hasPayment) {
-        if(IsMasternode && hasMnPayment){
+        if(hasMnPayment){
             if (fProofOfStake) {
                 /**For Proof Of Stake vout[0] must be null
                  * Stake reward can be split into many different outputs, so we must
@@ -492,7 +492,7 @@ void CFundamentalnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_
         }
     } else {
 
-        if(IsMasternode && hasMnPayment){
+        if(hasMnPayment){
             if (fProofOfStake) {
                 /**For Proof Of Stake vout[0] must be null
                  * Stake reward can be split into many different outputs, so we must
