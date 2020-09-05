@@ -85,9 +85,12 @@ QString ClientModel::getFundamentalnodeCountString() const
 
 QString ClientModel::getMasternodeCountString() const
 {
-    m_nodeman.CountMasternodesAboveProtocol(ActiveProtocol());
-    return tr("Total: %1").arg(QString::number((int)m_nodeman.size()));
-	}
+    int ipv4 = 0, ipv6 = 0, onion = 0;
+    m_nodeman.CountNetworks(ActiveProtocol(), ipv4, ipv6, onion);
+    int nUnknown = mnodeman.size() - ipv4 - ipv6 - onion;
+    if(nUnknown < 0) nUnknown = 0;
+    return tr("Total: %1 (IPv4: %2 / IPv6: %3 / Tor: %4 / Unknown: %5)").arg(QString::number((int)mnodeman.size())).arg(QString::number((int)ipv4)).arg(QString::number((int)ipv6)).arg(QString::number((int)onion)).arg(QString::number((int)nUnknown));
+}
 
 int ClientModel::getNumBlocks() const
 {

@@ -489,7 +489,6 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
         obj.push_back(Pair("total", m_nodeman.size()));
         obj.push_back(Pair("stable", m_nodeman.stable_size()));
-        obj.push_back(Pair("obfcompat", m_nodeman.CountMasternodesAboveProtocol(ActiveProtocol())));
         obj.push_back(Pair("enabled", m_nodeman.CountEnabled()));
 //        obj.push_back(Pair("inqueue", nCount));
         obj.push_back(Pair("ipv4", ipv4));
