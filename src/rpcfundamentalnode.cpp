@@ -919,6 +919,175 @@ UniValue getmasternodescores (const UniValue& params, bool fHelp)
     return obj;
 }
 
+UniValue startmasternode (const UniValue& params, bool fHelp)
+{
+    std::string strCommand;
+    if (params.size() >= 1) {
+        strCommand = params[0].get_str();
+
+        // Backwards compatibility with legacy 'masternode' super-command forwarder
+        if (strCommand == "start") strCommand = "local";
+        if (strCommand == "start-alias") strCommand = "alias";
+        if (strCommand == "start-all") strCommand = "all";
+        if (strCommand == "start-many") strCommand = "many";
+        if (strCommand == "start-missing") strCommand = "missing";
+        if (strCommand == "start-disabled") strCommand = "disabled";
+    }
+
+    if (fHelp || params.size() < 2 || params.size() > 3 ||
+        (params.size() == 2 && (strCommand != "local" && strCommand != "all" && strCommand != "many" && strCommand != "missing" && strCommand != "disabled")) ||
+        (params.size() == 3 && strCommand != "alias"))
+        throw runtime_error(
+                "startmasternode \"local|all|many|missing|disabled|alias\" lockwallet ( \"alias\" )\n"
+                "\nAttempts to start one or more masternode(s)\n"
+
+                "\nArguments:\n"
+                "1. set         (string, required) Specify which set of masternode(s) to start.\n"
+                "2. lockwallet  (boolean, required) Lock wallet after completion.\n"
+                "3. alias       (string) Masternode alias. Required if using 'alias' as the set.\n"
+
+                "\nResult: (for 'local' set):\n"
+                "\"status\"     (string) Masternode status message\n"
+
+                "\nResult: (for other sets):\n"
+                "{\n"
+                "  \"overall\": \"xxxx\",     (string) Overall status message\n"
+                "  \"detail\": [\n"
+                "    {\n"
+                "      \"node\": \"xxxx\",    (string) Node name or alias\n"
+                "      \"result\": \"xxxx\",  (string) 'success' or 'failed'\n"
+                "      \"error\": \"xxxx\"    (string) Error message, if failed\n"
+                "    }\n"
+                "    ,...\n"
+                "  ]\n"
+                "}\n"
+                "\nExamples:\n" +
+                HelpExampleCli("startmasternode", "\"alias\" \"0\" \"my_mn\"") + HelpExampleRpc("startmasternode", "\"alias\" \"0\" \"my_mn\""));
+
+    bool fLock = (params[1].get_str() == "true" ? true : false);
+
+    EnsureWalletIsUnlocked();
+    if (strCommand == "local") {
+        if (!fMasterNode) throw runtime_error("you must set masternode=1 in the configuration\n");
+
+        if (activeMasternode.status != ACTIVE_MASTERNODE_STARTED) {
+            activeMasternode.status = ACTIVE_MASTERNODE_INITIAL; // TODO: consider better way
+            activeMasternode.ManageStatus();
+            if (fLock)
+                pwalletMain->Lock();
+        }
+
+        return activeMasternode.GetStatus();
+    }
+
+    if (strCommand == "all" || strCommand == "many" || strCommand == "missing" || strCommand == "disabled") {
+        if ((strCommand == "missing" || strCommand == "disabled") &&
+            (masternodeSync.RequestedMasternodeAssets <= MASTERNODE_SYNC_LIST ||
+             masternodeSync.RequestedMasternodeAssets == MASTERNODE_SYNC_FAILED)) {
+            throw runtime_error("You can't use this command until masternode list is synced\n");
+        }
+
+        std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
+        mnEntries = masternodeConfig.getEntries();
+
+        int successful = 0;
+        int failed = 0;
+
+        UniValue resultsObj(UniValue::VARR);
+
+        for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
+            std::string errorMessage;
+            int nIndex;
+            if(!mne.castOutputIndex(nIndex))
+                continue;
+            CTxIn vin = CTxIn(uint256(mne.getTxHash()), uint32_t(nIndex));
+            CMasternode* pmn = mnodeman.Find(vin);
+            CMasternodeBroadcast mnb;
+
+            if (pmn != NULL) {
+                if (strCommand == "missing") continue;
+                if (strCommand == "disabled" && pmn->IsEnabled()) continue;
+            }
+
+            bool result = activeMasternode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb);
+
+            UniValue statusObj(UniValue::VOBJ);
+            statusObj.push_back(Pair("alias", mne.getAlias()));
+            statusObj.push_back(Pair("result", result ? "success" : "failed"));
+
+            if (result) {
+                successful++;
+                statusObj.push_back(Pair("error", ""));
+            } else {
+                failed++;
+                statusObj.push_back(Pair("error", errorMessage));
+            }
+
+            resultsObj.push_back(statusObj);
+        }
+        if (fLock)
+            pwalletMain->Lock();
+
+        UniValue returnObj(UniValue::VOBJ);
+        returnObj.push_back(Pair("overall", strprintf("Successfully started %d masternodes, failed to start %d, total %d", successful, failed, successful + failed)));
+        returnObj.push_back(Pair("detail", resultsObj));
+
+        return returnObj;
+    }
+
+    if (strCommand == "alias") {
+        std::string alias = params[2].get_str();
+
+        bool found = false;
+        int successful = 0;
+        int failed = 0;
+
+        UniValue resultsObj(UniValue::VARR);
+        UniValue statusObj(UniValue::VOBJ);
+        statusObj.push_back(Pair("alias", alias));
+
+        for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
+            if (mne.getAlias() == alias) {
+                found = true;
+                std::string errorMessage;
+                CMasternodeBroadcast mnb;
+
+                bool result = activeMasternode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb);
+
+                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+
+                if (result) {
+                    successful++;
+                    mnodeman.UpdateMasternodeList(mnb);
+                    mnb.Relay();
+                } else {
+                    failed++;
+                    statusObj.push_back(Pair("errorMessage", errorMessage));
+                }
+                break;
+            }
+        }
+
+        if (!found) {
+            failed++;
+            statusObj.push_back(Pair("result", "failed"));
+            statusObj.push_back(Pair("error", "could not find alias in config. Verify with list-conf."));
+        }
+
+        resultsObj.push_back(statusObj);
+
+        if (fLock)
+            pwalletMain->Lock();
+
+        UniValue returnObj(UniValue::VOBJ);
+        returnObj.push_back(Pair("overall", strprintf("Successfully started %d masternodes, failed to start %d, total %d", successful, failed, successful + failed)));
+        returnObj.push_back(Pair("detail", resultsObj));
+
+        return returnObj;
+    }
+    return NullUniValue;
+}
+
 UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
 {
     std::string strFilter = "";

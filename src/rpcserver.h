@@ -349,6 +349,7 @@ extern UniValue getmasternodewinners(const UniValue& params, bool fHelp);
 extern UniValue getmasternodescores(const UniValue& params, bool fHelp);
 extern UniValue getmasternodecount(const UniValue& params, bool fHelp);
 extern UniValue masternodecurrent(const UniValue& params, bool fHelp);
+extern UniValue startmasternode(const UniValue& params, bool fHelp);
 
 bool StartRPC();
 void InterruptRPC();
