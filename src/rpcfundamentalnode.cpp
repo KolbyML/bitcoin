@@ -417,139 +417,84 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     return NullUniValue;
 }
-UniValue masternodelist(const UniValue& params, bool fHelp)
+
+UniValue listmasternodes(const UniValue& params, bool fHelp)
 {
-        std::string strMode = "status";
     std::string strFilter = "";
 
-    if (params.size() >= 1) strMode = params[0].get_str();
-    if (params.size() == 2) strFilter = params[1].get_str();
+    if (params.size() == 1) strFilter = params[0].get_str();
 
-    if (fHelp ||
-            (strMode != "status" && strMode != "vin" && strMode != "pubkey" && strMode != "lastseen" && strMode != "activeseconds" && strMode != "rank"
-                && strMode != "protocol" && strMode != "full" && strMode != "votes" && strMode != "donation" && strMode != "pose"))
-    {
+    if (fHelp || (params.size() > 1))
         throw runtime_error(
-                "masternodelist ( \"mode\" \"filter\" )\n"
-                "Get a list of masternodes in different modes\n"
+                "listmasternodes ( \"filter\" )\n"
+                "\nGet a ranked list of masternodes\n"
+
                 "\nArguments:\n"
-                "1. \"mode\"      (string, optional/required to use filter, defaults = status) The mode to run list in\n"
-                "2. \"filter\"    (string, optional) Filter results. Partial match by IP by default in all modes, additional matches in some modes\n"
-                "\nAvailable modes:\n"
-                "  activeseconds  - Print number of seconds masternode recognized by the network as enabled\n"
-                "  donation       - Show donation settings\n"
-                "  full           - Print info in format 'status protocol pubkey vin lastseen activeseconds' (can be additionally filtered, partial match)\n"
-                "  lastseen       - Print timestamp of when a masternode was last seen on the network\n"
-                "  pose           - Print Proof-of-Service score\n"
-                "  protocol       - Print protocol of a masternode (can be additionally filtered, exact match))\n"
-                "  pubkey         - Print public key associated with a masternode (can be additionally filtered, partial match)\n"
-                "  rank           - Print rank of a masternode based on current block\n"
-                "  status         - Print masternode status: ENABLED / EXPIRED / VIN_SPENT / REMOVE / POS_ERROR (can be additionally filtered, partial match)\n"
-                "  vin            - Print vin associated with a masternode (can be additionally filtered, partial match)\n"
-                "  votes          - Print all masternode votes for a Bitsend initiative (can be additionally filtered, partial match)\n"
-                );
-    }
+                "1. \"filter\"    (string, optional) Filter search text. Partial match by txhash, status, or addr.\n"
 
-    //Object obj;
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"rank\": n,           (numeric) Masternode Rank (or 0 if not enabled)\n"
+                "    \"txhash\": \"hash\",    (string) Collateral transaction hash\n"
+                "    \"outidx\": n,         (numeric) Collateral transaction output index\n"
+                "    \"status\": s,         (string) Status (ENABLED/EXPIRED/REMOVE/etc)\n"
+                "    \"addr\": \"addr\",      (string) Masternode phore address\n"
+                "    \"version\": v,        (numeric) Masternode protocol version\n"
+                "    \"lastseen\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) of the last seen\n"
+                "    \"activetime\": ttt,   (numeric) The time in seconds since epoch (Jan 1 1970 GMT) masternode has been active\n"
+                "    \"lastpaid\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) masternode was last paid\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+                "\nExamples:\n" +
+                HelpExampleCli("listmasternodes", "") + HelpExampleRpc("listmasternodes", ""));
+
+    UniValue ret(UniValue::VARR);
+    int nHeight;
+    {
+        LOCK(cs_main);
+        CBlockIndex* pindex = chainActive.Tip();
+        if(!pindex) return 0;
+        nHeight = pindex->nHeight;
+    }
+    std::vector<pair<int, CMasternode> > vMasternodeRanks = mnodeman.GetMasternodeRanks(nHeight);
+    for (PAIRTYPE(int, CMasternode) & s : vMasternodeRanks) {
         UniValue obj(UniValue::VOBJ);
-    if (strMode == "rank") {
-        std::vector<pair<int, CMasternode> > vMasternodeRanks = m_nodeman.GetMasternodeRanks(chainActive.Tip()->nHeight);
-        BOOST_FOREACH(PAIRTYPE(int, CMasternode)& s, vMasternodeRanks) {
-            std::string strAddr = s.second.addr.ToString();
-            if(strFilter !="" && strAddr.find(strFilter) == string::npos) continue;
-            obj.push_back(Pair(strAddr,       s.first));
-        }
-    } else {
-        std::vector<CMasternode> vMasternodes = m_nodeman.GetFullMasternodeVector();
-        BOOST_FOREACH(CMasternode& mn, vMasternodes) {
-            std::string strAddr = mn.addr.ToString();
-            if (strMode == "activeseconds") {
-                if(strFilter !="" && strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       (int64_t)(mn.lastTimeSeen - mn.sigTime)));
-            } else if (strMode == "donation") {
-                CTxDestination address1;
-                ExtractDestination(mn.donationAddress, address1);
-                CBitcoinAddress address2(address1);
+        std::string strVin = s.second.vin.prevout.ToStringShort();
+        std::string strTxHash = s.second.vin.prevout.hash.ToString();
+        uint32_t oIdx = s.second.vin.prevout.n;
 
-                if(strFilter !="" && address2.ToString().find(strFilter) == string::npos &&
-                    strAddr.find(strFilter) == string::npos) continue;
+        CMasternode* mn = mnodeman.Find(s.second.vin);
 
-                std::string strOut = "";
+        if (mn != NULL) {
+            if (strFilter != "" && strTxHash.find(strFilter) == string::npos &&
+                mn->Status().find(strFilter) == string::npos &&
+                EncodeDestination(CTxDestination(mn->pubKeyCollateralAddress.GetID())).find(strFilter) == string::npos) continue;
 
-                if(mn.donationPercentage != 0){
-                    strOut = address2.ToString().c_str();
-                    strOut += ":";
-                    strOut += boost::lexical_cast<std::string>(mn.donationPercentage);
-                }
-                obj.push_back(Pair(strAddr,       strOut.c_str()));
-            } else if (strMode == "full") {
-                CScript pubkey;
-                pubkey = GetScriptForDestination(mn.pubkey.GetID());
-                CTxDestination address1;
-                ExtractDestination(pubkey, address1);
-                CBitcoinAddress address2(address1);
+            std::string strStatus = mn->Status();
+            std::string strHost;
+            int port;
+            SplitHostPort(mn->addr.ToString(), port, strHost);
+            CNetAddr node = CNetAddr(strHost);
+            std::string strNetwork = GetNetworkName(node.GetNetwork());
 
-                std::ostringstream addrStream;
-                addrStream << setw(21) << strAddr;
+            obj.push_back(Pair("rank", (strStatus == "ENABLED" ? s.first : 0)));
+            obj.push_back(Pair("network", strNetwork));
+            obj.push_back(Pair("txhash", strTxHash));
+            obj.push_back(Pair("outidx", (uint64_t)oIdx));
+            obj.push_back(Pair("status", strStatus));
+            obj.push_back(Pair("addr", EncodeDestination(mn->pubKeyCollateralAddress.GetID())));
+            obj.push_back(Pair("version", mn->protocolVersion));
+            obj.push_back(Pair("lastseen", (int64_t)mn->lastPing.sigTime));
+            obj.push_back(Pair("activetime", (int64_t)(mn->lastPing.sigTime - mn->sigTime)));
+            obj.push_back(Pair("lastpaid", (int64_t)mn->GetLastPaid()));
 
-                std::ostringstream stringStream;
-                stringStream << setw(10) <<
-                               mn.Status() << " " <<
-                               mn.protocolVersion << " " <<
-                               address2.ToString() << " " <<
-                               addrStream.str() << " " <<
-                               mn.lastTimeSeen << " " << setw(8) <<
-                               (mn.lastTimeSeen - mn.sigTime);
-                std::string output = stringStream.str();
-                stringStream << " " << strAddr;
-                if(strFilter !="" && stringStream.str().find(strFilter) == string::npos &&
-                        strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(mn.vin.prevout.hash.ToString(), output));
-            } else if (strMode == "lastseen") {
-                if(strFilter !="" && strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       (int64_t)mn.lastTimeSeen));
-            } else if (strMode == "protocol") {
-                if(strFilter !="" && strFilter != boost::lexical_cast<std::string>(mn.protocolVersion) &&
-                    strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       (int64_t)mn.protocolVersion));
-            } else if (strMode == "pubkey") {
-                CScript pubkey;
-                pubkey = GetScriptForDestination(mn.pubkey.GetID());
-                CTxDestination address1;
-                ExtractDestination(pubkey, address1);
-                CBitcoinAddress address2(address1);
-
-                if(strFilter !="" && address2.ToString().find(strFilter) == string::npos &&
-                    strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       address2.ToString().c_str()));
-            } else if (strMode == "pose") {
-                if(strFilter !="" && strAddr.find(strFilter) == string::npos) continue;
-                std::string strOut = boost::lexical_cast<std::string>(mn.nScanningErrorCount);
-                obj.push_back(Pair(strAddr,       strOut.c_str()));
-            } else if(strMode == "status") {
-                std::string strStatus = mn.Status();
-                if(strFilter !="" && strAddr.find(strFilter) == string::npos && strStatus.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       strStatus.c_str()));
-            } else if (strMode == "vin") {
-                if(strFilter !="" && mn.vin.prevout.hash.ToString().find(strFilter) == string::npos &&
-                    strAddr.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strAddr,       mn.vin.prevout.hash.ToString().c_str()));
-            } else if(strMode == "votes"){
-                std::string strStatus = "ABSTAIN";
-
-                //voting lasts 7 days, ignore the last vote if it was older than that
-                if((GetAdjustedTime() - mn.lastVote) < (60*60*8))
-                {
-                    if(mn.nVote == -1) strStatus = "NAY";
-                    if(mn.nVote == 1) strStatus = "YEA";
-                }
-
-                if(strFilter !="" && (strAddr.find(strFilter) == string::npos && strStatus.find(strFilter) == string::npos)) continue;
-                obj.push_back(Pair(strAddr,       strStatus.c_str()));
-            }
+            ret.push_back(obj);
         }
     }
-    return obj;
+
+    return ret;
 }
 
 UniValue getmasternodestatus (const UniValue& params, bool fHelp)
