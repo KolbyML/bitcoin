@@ -68,10 +68,7 @@ void CActiveMasternode::ManageStatus()
                 return;
             }
         } else {
-            int nPort;
-            std::string strHost;
-            SplitHostPort(strMasterNodeAddr, nPort, strHost);
-            service = LookupNumeric(strHost.c_str(), nPort);
+            service = CService(strMasterNodeAddr);
         }
 
         // The service needs the correct default port to work properly
