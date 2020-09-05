@@ -37,6 +37,7 @@
 #include "validationinterface.h"
 #include "zvitchain.h"
 
+#include "masternode-payments.h
 #include "masternodeman.h"
 
 #include "primitives/zerocoin.h"
