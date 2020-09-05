@@ -16,6 +16,7 @@
 #include "chainparams.h"
 #include "checkpoints.h"
 #include "checkqueue.h"
+#include "fs.h"
 #include "init.h"
 #include "kernel.h"
 #include "fundamentalnode-budget.h"
