@@ -332,45 +332,6 @@ UniValue spork(const UniValue& params, bool fHelp)
         HelpExampleCli("spork", "show") + HelpExampleRpc("spork", "show"));
 }
 
-UniValue mnspork(const UniValue& params, bool fHelp)
-{
-    if(params.size() == 1 && params[0].get_str() == "show"){
-        std::map<int, CMNSporkMessage>::iterator it = mapMNSporksActive.begin();
-
-        //Object ret;
-                UniValue ret(UniValue::VOBJ);
-        while(it != mapMNSporksActive.end()) {
-            ret.push_back(Pair(mn_sporkManager.GetMNSporkNameByID(it->second.nMNSporkID), it->second.nValue));
-            it++;
-        }
-        return ret;
-    } else if (params.size() == 2){
-        int nMNSporkID = mn_sporkManager.GetMNSporkIDByName(params[0].get_str());
-        if(nMNSporkID == -1){
-            return "Invalid spork name";
-        }
-
-        // SPORK VALUE
-        int64_t nValue = stoi(params[1].get_str());
-                //TODO: Add core method.
-
-        //broadcast new spork
-        if(mn_sporkManager.UpdateMNSpork(nMNSporkID, nValue)){
-            return "success";
-        } else {
-            return "failure";
-
-        }
-
-    }
-
-    throw runtime_error(
-        "mnspork <name> [<value>]\n"
-        "<name> is the corresponding spork name, or 'show' to show all current spork settings"
-        "<value> is a epoch datetime to enable or disable mnspork"
-        + HelpRequiringPassphrase());
-}
-
 UniValue validateaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
