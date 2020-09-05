@@ -41,7 +41,7 @@ public:
     CPubKey pubKeyMasternode;
 
     // Initialized while registering Masternode
-    Optional<CTxIn> vin;
+    boost::optional<CTxIn> vin;
     CService service;
 
     /// Manage status of main Masternode
