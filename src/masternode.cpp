@@ -13,7 +13,7 @@
 #include "netbase.h"
 #include "sync.h"
 #include "util.h"
-#include "wallet/wallet.h"
+#include "wallet.h"
 
 // keep track of the scanning errors I've seen
 std::map<uint256, int> mapSeenMasternodeScanningErrors;
