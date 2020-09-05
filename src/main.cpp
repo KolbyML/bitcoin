@@ -2017,7 +2017,7 @@ CAmount GetSeeSaw(int nHeight, int64_t blockValue){
         int nMasternodeCount = 0;
 
         //if a mn count is inserted into the function we are looking for a specific result for a masternode count
-        nMasternodeCount = m_nodeman.CountEnabled()
+        nMasternodeCount = m_nodeman.CountEnabled();
 
         int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
         int64_t mNodeCoins = 0 ;
