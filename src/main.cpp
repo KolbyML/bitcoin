@@ -37,6 +37,7 @@
 #include "validationinterface.h"
 #include "zvitchain.h"
 
+#include "masternode-sync.h"
 #include "masternode-payments.h"
 #include "masternodeman.h"
 
