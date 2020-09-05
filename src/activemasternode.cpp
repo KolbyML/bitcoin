@@ -118,7 +118,7 @@ std::string CActiveMasternode::GetStatusMessage() const
 
 bool CActiveMasternode::SendMasternodePing(std::string& errorMessage)
 {
-    if (vin == nullopt) {
+    if (vin == boost::none) {
         errorMessage = "Active Masternode not initialized";
         return false;
     }

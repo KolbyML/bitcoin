@@ -32,7 +32,7 @@ public:
 
     CActiveMasternode()
     {
-        vin = nullopt;
+        vin = boost::none;
         status = ACTIVE_MASTERNODE_INITIAL;
     }
 

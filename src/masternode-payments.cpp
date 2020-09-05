@@ -688,7 +688,7 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
     if (!fMasterNode) return false;
 
-    if (activeMasternode.vin == nullopt)
+    if (activeMasternode.vin == boost::none)
         return error("%s: Active Masternode not initialized.", __func__);
 
     //reference node - hybrid mode
