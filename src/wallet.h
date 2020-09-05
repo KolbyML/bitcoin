@@ -383,6 +383,10 @@ public:
 
     /// Get 1000DASH output and keys which can be used for the Fundamentalnode
     bool GetFundamentalnodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "");
+    /// Get 10000 PIV output and keys which can be used for the Masternode
+    bool GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet,
+                                 CKey& keyRet, std::string strTxHash, std::string strOutputIndex, std::string& strError);
+
     /// Extract txin information and keys from output
     bool GetVinAndKeysFromOutput(COutput out, CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet);
 
