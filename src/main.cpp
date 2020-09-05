@@ -5838,7 +5838,7 @@ void static ProcessGetData(CNode* pfrom)
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << m_nodeman.mapSeenMasternodeBroadcast[inv.hash];
-                        pfrom->PushMessage(NetMsgType::MNBROADCAST, ss);
+                        pfrom->PushMessage("mnb", ss);
                         pushed = true;
                     }
                 }
