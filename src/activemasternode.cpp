@@ -23,10 +23,10 @@ void CActiveMasternode::ManageStatus()
 
     if (!fMasterNode) return;
 
-    LogPrint(BCLog::MASTERNODE, "CActiveMasternode::ManageStatus() - Begin\n");
+    if (fDebug) LogPrintf("CActiveMasternode::ManageStatus() - Begin\n");
 
     //need correct blocks to send ping
-    if (!Params().IsRegTestNet() && !masternodeSync.IsBlockchainSynced()) {
+    if (!masternodeSync.IsBlockchainSynced()) {
         status = ACTIVE_MASTERNODE_SYNC_IN_PROCESS;
         LogPrintf("CActiveMasternode::ManageStatus() - %s\n", GetStatusMessage());
         return;
