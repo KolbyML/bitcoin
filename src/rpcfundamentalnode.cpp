@@ -302,9 +302,6 @@ UniValue masternode(const UniValue& params, bool fHelp)
                 "  start        - Start masternode configured in bitsend.conf\n"
                 "  start-alias  - Start single masternode by assigned alias configured in masternode.conf\n"
                 "  start-many   - Start all masternodes configured in masternode.conf\n"
-                "  stop         - Stop masternode configured in bitsend.conf\n"
-                "  stop-alias   - Stop single masternode by assigned alias configured in masternode.conf\n"
-                "  stop-many    - Stop all masternodes configured in masternode.conf\n"
                 "  list         - see masternodelist, This command has been removed.\n"
                 "  list-conf    - Print masternode.conf in JSON format\n"
                 "  winners      - Print list of masternode winners\n"
@@ -312,153 +309,6 @@ UniValue masternode(const UniValue& params, bool fHelp)
                 "  vote         - Not implemented\n"
                 );
 
-    if (strCommand == "stop")
-    {
-        if(!fMasterNode) return "you must set masternode=1 in the configuration";
-
-        if(pwalletMain->IsLocked()) {
-            SecureString strWalletPass;
-            strWalletPass.reserve(100);
-
-            if (params.size() == 2){
-                strWalletPass = params[1].get_str().c_str();
-            } else {
-                throw runtime_error(
-                            "Your wallet is locked, passphrase is required\n");
-            }
-
-            if(!pwalletMain->Unlock(strWalletPass)){
-                return "incorrect passphrase";
-            }
-        }
-
-        std::string errorMessage;
-        if(!activeMasternode.StopMasterNode(errorMessage)) {
-            return "stop failed: " + errorMessage;
-        }
-        pwalletMain->Lock();
-        /*CService service;
-        CService service2(LookupNumeric(strMasterNodeAddr.c_str(), 0));
-        service = service2;
-        g_connman->OpenNetworkConnection((CAddress)service, false, NULL, service.ToString().c_str());*/
-
-        if(activeMasternode.status == MASTERNODE_STOPPED) return "successfully stopped masternode";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode";
-
-        return "unknown";
-    }
-
-    if (strCommand == "stop-alias")
-    {
-        if (params.size() < 2){
-            throw runtime_error(
-                        "command needs at least 2 parameters\n");
-        }
-
-        std::string alias = params[1].get_str().c_str();
-
-        if(pwalletMain->IsLocked()) {
-            SecureString strWalletPass;
-            strWalletPass.reserve(100);
-
-            if (params.size() == 3){
-                strWalletPass = params[2].get_str().c_str();
-            } else {
-                throw runtime_error(
-                            "Your wallet is locked, passphrase is required\n");
-            }
-
-            if(!pwalletMain->Unlock(strWalletPass)){
-                return "incorrect passphrase";
-            }
-        }
-
-        bool found = false;
-
-        //Object statusObj;
-        UniValue statusObj(UniValue::VOBJ);
-        statusObj.push_back(Pair("alias", alias));
-
-        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-            if(mne.getAlias() == alias) {
-                found = true;
-                std::string errorMessage;
-                bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
-
-                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-                if(!result) {
-                    statusObj.push_back(Pair("errorMessage", errorMessage));
-                }
-                break;
-            }
-        }
-
-        if(!found) {
-            statusObj.push_back(Pair("result", "failed"));
-            statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
-        }
-
-        pwalletMain->Lock();
-        return statusObj;
-    }
-
-    if (strCommand == "stop-many")
-    {
-        if(pwalletMain->IsLocked()) {
-            SecureString strWalletPass;
-            strWalletPass.reserve(100);
-
-            if (params.size() == 2){
-                strWalletPass = params[1].get_str().c_str();
-            } else {
-                throw runtime_error(
-                            "Your wallet is locked, passphrase is required\n");
-            }
-
-            if(!pwalletMain->Unlock(strWalletPass)){
-                return "incorrect passphrase";
-            }
-        }
-
-        int total = 0;
-        int successful = 0;
-        int fail = 0;
-
-
-        //Object resultsObj;
-        UniValue resultsObj(UniValue::VOBJ);
-
-        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-            total++;
-
-            std::string errorMessage;
-            bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
-
-            //Object statusObj;
-            UniValue statusObj(UniValue::VOBJ);
-            statusObj.push_back(Pair("alias", mne.getAlias()));
-            statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-
-            if(result) {
-                successful++;
-            } else {
-                fail++;
-                statusObj.push_back(Pair("errorMessage", errorMessage));
-            }
-
-            resultsObj.push_back(Pair("status", statusObj));
-        }
-        pwalletMain->Lock();
-
-        //Object returnObj;
-        UniValue returnObj(UniValue::VOBJ);
-        returnObj.push_back(Pair("overall", "Successfully stopped " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to stop " +
-                                 boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
-        returnObj.push_back(Pair("detail", resultsObj));
-
-        return returnObj;
-
-    }
 
     if (strCommand == "count")
     {
@@ -518,19 +368,19 @@ UniValue masternode(const UniValue& params, bool fHelp)
             }
         }
 
-        if(activeMasternode.status != MASTERNODE_REMOTELY_ENABLED && activeMasternode.status != MASTERNODE_IS_CAPABLE){
-            activeMasternode.status = MASTERNODE_NOT_PROCESSED; // TODO: consider better way
+        if(activeMasternode.GetStatus() != MASTERNODE_REMOTELY_ENABLED && activeMasternode.GetStatus() != MASTERNODE_IS_CAPABLE){
+            activeMasternode.GetStatus() = MASTERNODE_NOT_PROCESSED; // TODO: consider better way
             std::string errorMessage;
             activeMasternode.ManageStatus();
             pwalletMain->Lock();
         }
 
-        if(activeMasternode.status == MASTERNODE_REMOTELY_ENABLED) return "masternode started remotely";
-        if(activeMasternode.status == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
-        if(activeMasternode.status == MASTERNODE_STOPPED) return "masternode is stopped";
-        if(activeMasternode.status == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
-        if(activeMasternode.status == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
+        if(activeMasternode.GetStatus() == MASTERNODE_REMOTELY_ENABLED) return "masternode started remotely";
+        if(activeMasternode.GetStatus() == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
+        if(activeMasternode.GetStatus() == MASTERNODE_STOPPED) return "masternode is stopped";
+        if(activeMasternode.GetStatus() == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
+        if(activeMasternode.GetStatus() == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
+        if(activeMasternode.GetStatus() == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
 
         return "unknown";
     }
@@ -659,12 +509,12 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (strCommand == "debug")
     {
-        if(activeMasternode.status == MASTERNODE_REMOTELY_ENABLED) return "masternode started remotely";
-        if(activeMasternode.status == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
-        if(activeMasternode.status == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
-        if(activeMasternode.status == MASTERNODE_STOPPED) return "masternode is stopped";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
-        if(activeMasternode.status == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
+        if(activeMasternode.GetStatus() == MASTERNODE_REMOTELY_ENABLED) return "masternode started remotely";
+        if(activeMasternode.GetStatus() == MASTERNODE_INPUT_TOO_NEW) return "masternode input must have at least 15 confirmations";
+        if(activeMasternode.GetStatus() == MASTERNODE_IS_CAPABLE) return "successfully started masternode";
+        if(activeMasternode.GetStatus() == MASTERNODE_STOPPED) return "masternode is stopped";
+        if(activeMasternode.GetStatus() == MASTERNODE_NOT_CAPABLE) return "not capable masternode: " + activeMasternode.notCapableReason;
+        if(activeMasternode.GetStatus() == MASTERNODE_SYNC_IN_PROCESS) return "sync in process. Must wait until client is synced to start.";
 
         CTxIn vin = CTxIn();
         //CPubKey pubkey = CScript();
@@ -1048,7 +898,7 @@ UniValue getmasternodestatus (const UniValue& params, bool fHelp)
         mnObj.push_back(Pair("netaddr", activeMasternode.service.ToString()));
         //pubkeyCollateralAddress missed, need to check about it
         //mnObj.push_back(Pair("addr", CBitcoinAddress(pmn->pubKeyCollateralAddress.GetID()).ToString()));
-        mnObj.push_back(Pair("status", activeMasternode.status));
+        mnObj.push_back(Pair("status", activeMasternode.GetStatus()));
         mnObj.push_back(Pair("message", activeMasternode.GetStatus()));
         return mnObj;
     }

@@ -465,7 +465,7 @@ UniValue masternodedebug (const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("masternodedebug", "") + HelpExampleRpc("masternodedebug", ""));
 
-    if (activeMasternode.status != ACTIVE_MASTERNODE_INITIAL || !masternodeSync.IsSynced())
+    if (activeMasternode.GetStatus() != ACTIVE_MASTERNODE_INITIAL || !masternodeSync.IsSynced())
         return activeMasternode.GetStatus();
 
     CTxIn vin = CTxIn();
@@ -530,8 +530,8 @@ UniValue startmasternode (const UniValue& params, bool fHelp)
     if (strCommand == "local") {
         if (!fMasterNode) throw runtime_error("you must set masternode=1 in the configuration\n");
 
-        if (activeMasternode.status != ACTIVE_MASTERNODE_STARTED) {
-            activeMasternode.status = ACTIVE_MASTERNODE_INITIAL; // TODO: consider better way
+        if (activeMasternode.GetStatus() != ACTIVE_MASTERNODE_STARTED) {
+            activeMasternode.GetStatus() = ACTIVE_MASTERNODE_INITIAL; // TODO: consider better way
             activeMasternode.ManageStatus();
             if (fLock)
                 pwalletMain->Lock();
