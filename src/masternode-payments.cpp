@@ -404,8 +404,9 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
 
         CTxDestination address1;
         ExtractDestination(payee, address1);
+        CBitcoinAddress address2(address1);
 
-        LogPrint("masternode","Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), EncodeDestination(address1).c_str());
+        LogPrint("masternode","Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), address2.ToString());
     }
 }
 
@@ -603,11 +604,14 @@ bool CMasternodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
 
             CTxDestination address1;
             ExtractDestination(payee.scriptPubKey, address1);
+            CBitcoinAddress address2(address1);
 
-            if (strPayeesPossible != "")
-                strPayeesPossible += ",";
 
-            strPayeesPossible += EncodeDestination(address1);
+            if (strPayeesPossible == "") {
+                strPayeesPossible += address2.ToString();
+            } else {
+                strPayeesPossible += "," + address2.ToString();
+            }
         }
     }
 
@@ -624,10 +628,11 @@ std::string CMasternodeBlockPayees::GetRequiredPaymentsString()
     for (CMasternodePayee& payee : vecPayments) {
         CTxDestination address1;
         ExtractDestination(payee.scriptPubKey, address1);
+        CBitcoinAddress address2(address1);
         if (ret != "Unknown") {
             ret += ", ";
         }
-        ret = EncodeDestination(address1) + ":" + std::to_string(payee.nVotes);
+        ret = address2.ToString() + ":" + std::to_string(payee.nVotes);
     }
 
     return ret;
@@ -728,8 +733,9 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 
             CTxDestination address1;
             ExtractDestination(payee, address1);
+            CBitcoinAddress address2(address1);
 
-            LogPrint("masternode","CMasternodePayments::ProcessBlock() Winner payee %s nHeight %d. \n", EncodeDestination(address1).c_str(), newWinner.nBlockHeight);
+            LogPrint("masternode","CMasternodePayments::ProcessBlock() Winner payee %s nHeight %d. \n", address2.ToString(), newWinner.nBlockHeight);
         } else {
             LogPrint("masternode","CMasternodePayments::ProcessBlock() Failed to find masternode to pay\n");
         }
