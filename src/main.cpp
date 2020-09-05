@@ -5833,21 +5833,22 @@ void static ProcessGetData(CNode* pfrom)
                         pushed = true;
                     }
                 }
-                if (!pushed && inv.type == MSG_MASTERNODE_WINNER) {
-                    if(mapSeenMasternodeVotes.count(inv.hash)){
+                if (!pushed && inv.type == MSG_MASTERNODE_ANNOUNCE) {
+                    if (m_nodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
-                        ss << mapSeenMasternodeVotes[inv.hash];
-                        pfrom->PushMessage("mnw", ss);
+                        ss << m_nodeman.mapSeenMasternodeBroadcast[inv.hash];
+                        pfrom->PushMessage(NetMsgType::MNBROADCAST, ss);
                         pushed = true;
                     }
                 }
-                if (!pushed && inv.type == MSG_MASTERNODE_SCANNING_ERROR) {
-                    if(mapMasternodeScanningErrors.count(inv.hash)){
+
+                if (!pushed && inv.type == MSG_MASTERNODE_PING) {
+                    if (m_nodeman.mapSeenMasternodePing.count(inv.hash)) {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
-                        ss << mapMasternodeScanningErrors[inv.hash];
-                        pfrom->PushMessage("mnse", ss);
+                        ss << m_nodeman.mapSeenMasternodePing[inv.hash];
+                        pfrom->PushMessage("mnp", ss);
                         pushed = true;
                     }
                 }
