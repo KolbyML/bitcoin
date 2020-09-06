@@ -286,7 +286,7 @@ UniValue spork(const UniValue& params, bool fHelp)
         }
         return ret;
     } else if (params.size() == 2) {
-        int nSporkID = sporkManager.GetSporkIDByName(params[0].get_str());
+        SporkId nSporkID = sporkManager.GetSporkIDByName(params[0].get_str());
         if (nSporkID == SPORK_INVALID) {
             return "Invalid spork name";
         }
