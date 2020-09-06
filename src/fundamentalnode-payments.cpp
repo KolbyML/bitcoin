@@ -209,7 +209,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
     } else { // we're synced and have data so check the budget schedule
 
         //are these blocks even enabled
-        if (!IsSporkActive(SPORK_11_ENABLE_SUPERBLOCKS)) {
+        if (!sporkManager.IsSporkActive(SPORK_11_ENABLE_SUPERBLOCKS)) {
             return nMinted <= nExpectedValue;
         }
 
