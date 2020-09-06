@@ -177,7 +177,7 @@ bool CZMQPublishRawBlockNotifier::NotifyBlock(const CBlockIndex *pindex)
 {
     LogPrint("zmq", "zmq: Publish rawblock %s\n", pindex->GetBlockHash().GetHex());
 
-// XX42    const Consensus::Params& consensusParams = Params().GetConsensus();
+// XX42    const Consensus::Params& consensusParams = Params();
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
     {
         LOCK(cs_main);

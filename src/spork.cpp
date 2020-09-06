@@ -131,11 +131,11 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
             }
         }
 
-        const bool fRequireNew = spork.nTimeSigned >= Params().GetConsensus().nTime_EnforceNewSporkKey;
+        const bool fRequireNew = spork.nTimeSigned >= Params().nTime_EnforceNewSporkKey;
         bool fValidSig = spork.CheckSignature();
         if (!fValidSig && !fRequireNew) {
             // See if window is open that allows for old spork key to sign messages
-            if (GetAdjustedTime() < Params().GetConsensus().nTime_RejectOldSporkKey) {
+            if (GetAdjustedTime() < Params().nTime_RejectOldSporkKey) {
                 CPubKey pubkeyold = spork.GetPublicKeyOld();
                 fValidSig = spork.CheckSignature(pubkeyold);
             }
@@ -236,11 +236,11 @@ bool CSporkManager::SetPrivKey(std::string strPrivKey)
 
     spork.Sign(strPrivKey);
 
-    const bool fRequireNew = GetTime() >= Params().GetConsensus().nTime_EnforceNewSporkKey;
+    const bool fRequireNew = GetTime() >= Params().nTime_EnforceNewSporkKey;
     bool fValidSig = spork.CheckSignature();
     if (!fValidSig && !fRequireNew) {
         // See if window is open that allows for old spork key to sign messages
-        if (GetAdjustedTime() < Params().GetConsensus().nTime_RejectOldSporkKey) {
+        if (GetAdjustedTime() < Params().nTime_RejectOldSporkKey) {
             CPubKey pubkeyold = spork.GetPublicKeyOld();
             fValidSig = spork.CheckSignature(pubkeyold);
         }
@@ -281,12 +281,12 @@ std::string CSporkMessage::GetStrMessage() const
 
 const CPubKey CSporkMessage::GetPublicKey(std::string& strErrorRet) const
 {
-    return CPubKey(ParseHex(Params().GetConsensus().strSporkPubKey));
+    return CPubKey(ParseHex(Params().strSporkPubKey));
 }
 
 const CPubKey CSporkMessage::GetPublicKeyOld() const
 {
-    return CPubKey(ParseHex(Params().GetConsensus().strSporkPubKeyOld));
+    return CPubKey(ParseHex(Params().strSporkPubKeyOld));
 }
 
 void CSporkMessage::Relay()
