@@ -275,21 +275,19 @@ UniValue spork(const UniValue& params, bool fHelp)
 {
     if (params.size() == 1 && params[0].get_str() == "show") {
         UniValue ret(UniValue::VOBJ);
-        for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
-            if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
+        for (const auto& sporkDef : sporkDefs) {
+            ret.push_back(Pair(sporkDef.name, sporkManager.GetSporkValue(sporkDef.sporkId)));
         }
         return ret;
     } else if (params.size() == 1 && params[0].get_str() == "active") {
         UniValue ret(UniValue::VOBJ);
-        for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
-            if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), IsSporkActive(nSporkID)));
+        for (const auto& sporkDef : sporkDefs) {
+            ret.push_back(Pair(sporkDef.name, sporkManager.IsSporkActive(sporkDef.sporkId)));
         }
         return ret;
     } else if (params.size() == 2) {
         int nSporkID = sporkManager.GetSporkIDByName(params[0].get_str());
-        if (nSporkID == -1) {
+        if (nSporkID == SPORK_INVALID) {
             return "Invalid spork name";
         }
 
