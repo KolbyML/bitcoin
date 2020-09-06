@@ -159,7 +159,7 @@ void PrivacyDialog::on_pushButtonMintzVITAE_clicked()
     if (!walletModel || !walletModel->getOptionsModel())
         return;
 
-    if(GetAdjustedTime() > GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE)) {
+    if(GetAdjustedTime() > sporkManager.GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE)) {
         QMessageBox::information(this, tr("Mint Zerocoin"),
                                  tr("zVITAE is currently undergoing maintenance."), QMessageBox::Ok,
                                  QMessageBox::Ok);
@@ -270,7 +270,7 @@ void PrivacyDialog::on_pushButtonSpendzVITAE_clicked()
     if (!walletModel || !walletModel->getOptionsModel() || !pwalletMain)
         return;
 
-    if(GetAdjustedTime() > GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE)) {
+    if(GetAdjustedTime() > sporkManager.GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE)) {
         QMessageBox::information(this, tr("Mint Zerocoin"),
                                  tr("zVITAE is currently undergoing maintenance."), QMessageBox::Ok, QMessageBox::Ok);
         return;
@@ -785,7 +785,7 @@ void PrivacyDialog::updateSPORK20Status()
 {
     // Update/enable labels, buttons and tooltips depending on the current SPORK_16 status
     bool fButtonsEnabled =  ui->pushButtonMintzVITAE->isEnabled();
-    bool fMaintenanceMode = GetAdjustedTime() > GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE);
+    bool fMaintenanceMode = GetAdjustedTime() > sporkManager.GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE);
     if (fMaintenanceMode && fButtonsEnabled) {
         // Mint zVITAE
         ui->pushButtonMintzVITAE->setEnabled(false);

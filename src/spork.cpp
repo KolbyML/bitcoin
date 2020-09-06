@@ -187,7 +187,7 @@ bool CSporkManager::UpdateSpork(SporkId nSporkID, int64_t nValue)
 // grab the spork value, and see if it's off
 bool CSporkManager::IsSporkActive(SporkId nSporkID)
 {
-    return GetSporkValue(nSporkID) < GetAdjustedTime();
+    return sporkManager.GetSporkValue(nSporkID) < GetAdjustedTime();
 }
 
 // grab the value of the spork on the network, or the default

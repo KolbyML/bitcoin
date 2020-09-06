@@ -1233,7 +1233,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         *pfMissingInputs = false;
 
     //Temporarily disable zerocoin for maintenance
-    if (GetAdjustedTime() > GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE) && tx.ContainsZerocoins())
+    if (GetAdjustedTime() > sporkManager.GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE) && tx.ContainsZerocoins())
         return state.DoS(10, error("AcceptToMemoryPool : Zerocoin transactions are temporarily disabled for maintenance"), REJECT_INVALID, "bad-tx");
 
     if (!CheckTransaction(tx, chainActive.Height() >= Params().Zerocoin_StartHeight(), true, state))
@@ -2277,7 +2277,7 @@ CAmount GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
         ret = blockValue * .25;
     }
     // TODO: set proper height to disable seesaw, or remove this "else if" if we want the new release to be hard fork and remove seesaw immediately
-    else if(nHeight < GetSporkValue(SPORK_16_REMOVE_SEESAW_BLOCK)){
+    else if(nHeight < sporkManager.GetSporkValue(SPORK_16_REMOVE_SEESAW_BLOCK)){
         blockValue = blockValue * 0.6 ;
         ret = GetSeeSaw(nHeight, blockValue);
     }
@@ -3144,7 +3144,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return state.DoS(100, error("ConnectBlock() : too many sigops"), REJECT_INVALID, "bad-blk-sigops");
 
         //Temporarily disable zerocoin transactions for maintenance
-        if (block.nTime > GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE) && !IsInitialBlockDownload() && tx.ContainsZerocoins()) {
+        if (block.nTime > sporkManager.GetSporkValue(SPORK_20_ZEROCOIN_MAINTENANCE_MODE) && !IsInitialBlockDownload() && tx.ContainsZerocoins()) {
             return state.DoS(100, error("ConnectBlock() : zerocoin transactions are currently in maintenance mode"));
         }
 

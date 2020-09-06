@@ -200,7 +200,7 @@ bool IsIXTXValid(const CTransaction& txCollateral)
         }
     }
 
-    if (nValueOut > GetSporkValue(SPORK_5_MAX_VALUE) * COIN) {
+    if (nValueOut > sporkManager.GetSporkValue(SPORK_5_MAX_VALUE) * COIN) {
         LogPrint("swiftx", "IsIXTXValid - Transaction value too high - %s\n", txCollateral.ToString().c_str());
         return false;
     }
