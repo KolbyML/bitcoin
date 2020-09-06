@@ -1248,10 +1248,11 @@ void ThreadDNSAddressSeed()
         if (HaveNameProxy()) {
             AddOneShot(seed.host);
         } else {
-            vector<CNetAddr> vIPs;
-            vector<CAddress> vAdd;
-            if (LookupHost(seed.host.c_str(), vIPs)) {
-                BOOST_FOREACH (CNetAddr& ip, vIPs) {
+            std::vector<CNetAddr> vIPs;
+            std::vector<CAddress> vAdd;
+            ServiceFlags requiredServiceBits = nRelevantServices;
+            if (LookupHost(GetDNSHost(seed, &requiredServiceBits).c_str(), vIPs, 0, true)) {
+                for (CNetAddr& ip : vIPs) {
                     int nOneDay = 24 * 3600;
                     CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()));
                     addr.nTime = GetTime() - 3 * nOneDay - GetRand(4 * nOneDay); // use a random age between 3 and 7 days old
