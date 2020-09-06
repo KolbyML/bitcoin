@@ -1250,7 +1250,7 @@ void ThreadDNSAddressSeed()
         } else {
             std::vector<CNetAddr> vIPs;
             std::vector<CAddress> vAdd;
-            uint64_t requiredServiceBits = nRelevantServices;
+            ServiceFlags requiredServiceBits = nRelevantServices;
             if (LookupHost(GetDNSHost(seed, &requiredServiceBits).c_str(), vIPs, 0, true)) {
                 for (CNetAddr& ip : vIPs) {
                     int nOneDay = 24 * 3600;
