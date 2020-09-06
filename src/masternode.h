@@ -23,6 +23,7 @@
 #define MASTERNODE_REMOVAL_SECONDS (130 * 60)
 #define MASTERNODE_CHECK_SECONDS 5
 
+static const int64_t MASTERNODEAMOUNT = 20000 ;
 
 class CMasternode;
 class CMasternodeBroadcast;
