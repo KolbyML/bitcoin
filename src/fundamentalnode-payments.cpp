@@ -410,7 +410,7 @@ void CFundamentalnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_
         //no masternode detected
         CMasternode* winningNode = m_nodeman.GetCurrentMasterNode(1);
         if(winningNode){
-            mn_payee = GetScriptForDestination(winningNode->pubkey.GetID());
+            mn_payee = GetScriptForDestination(winningNode->pubKeyCollateralAddress.GetID());
         } else {
             LogPrintf("CreateNewBlock: Failed to detect masternode to pay\n");
             hasMnPayment = false;
