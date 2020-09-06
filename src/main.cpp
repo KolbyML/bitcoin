@@ -2277,7 +2277,7 @@ CAmount GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
         ret = blockValue * .25;
     }
     // TODO: set proper height to disable seesaw, or remove this "else if" if we want the new release to be hard fork and remove seesaw immediately
-    else if(nHeight < GetSporkValue(SPORK_22_REMOVE_SEESAW_BLOCK)){
+    else if(nHeight < GetSporkValue(SPORK_16_REMOVE_SEESAW_BLOCK)){
         blockValue = blockValue * 0.6 ;
         ret = GetSeeSaw(nHeight, blockValue);
     }
@@ -5903,12 +5903,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         // VITAE: We use certain sporks during IBD, so check to see if they are
         // available. If not, ask the first peer connected for them.
-        bool fMissingSporks = !pSporkDB->SporkExists(SPORK_14_NEW_PROTOCOL_ENFORCEMENT) &&
-                !pSporkDB->SporkExists(SPORK_15_NEW_PROTOCOL_ENFORCEMENT_2) &&
-                !pSporkDB->SporkExists(SPORK_20_ZEROCOIN_MAINTENANCE_MODE) &&
-                !pSporkDB->SporkExists(SPORK_17_NEW_PROTOCOL_ENFORCEMENT_4) &&
-                !pSporkDB->SporkExists(SPORK_18_NEW_PROTOCOL_ENFORCEMENT_5) &&
-                !pSporkDB->SporkExists(SPORK_20_ZEROCOIN_MAINTENANCE_MODE);
+        bool fMissingSporks = !pSporkDB->SporkExists(SPORK_12_NEW_PROTOCOL_ENFORCEMENT) &&
+                !pSporkDB->SporkExists(SPORK_13_NEW_PROTOCOL_ENFORCEMENT_2);
 
         if (fMissingSporks || !fRequestedSporksIDB){
             LogPrintf("asking peer for sporks\n");
@@ -6754,7 +6750,7 @@ int ActiveProtocol()
     // SPORK_14 is used for 71024. Nodes < 70926 won't see it and still get their protocol version via SPORK_17 and their
     // own ModifierUpgradeBlock()
 
-    if (IsSporkActive(SPORK_14_NEW_PROTOCOL_ENFORCEMENT))
+    if (IsSporkActive(SPORK_12_NEW_PROTOCOL_ENFORCEMENT))
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }

@@ -174,6 +174,7 @@ BITCOIN_CORE_H = \
   serialize.h \
   spork.h \
   sporkdb.h \
+  sporkid.h \
   stakeinput.h \
   streams.h \
   sync.h \
