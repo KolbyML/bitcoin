@@ -13,11 +13,13 @@
 
 bool CMessageSigner::GetKeysFromSecret(const std::string& strSecret, CKey& keyRet, CPubKey& pubkeyRet)
 {
-    keyRet = DecodeSecret(strSecret);
-    if (!keyRet.IsValid())
+
+    CBitcoinSecret vchSecret;
+    bool fGood = vchSecret.SetString(strSecret);
+    if (!fGood)
         return false;
 
-    pubkeyRet = keyRet.GetPubKey();
+    pubkeyRet = vchSecret.GetPubKey();
     return true;
 }
 
