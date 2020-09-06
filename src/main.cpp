@@ -3757,7 +3757,7 @@ void ReprocessBlocks(int nBlocks)
     CValidationState state;
     {
         LOCK(cs_main);
-        DisconnectBlocks(nBlocks);
+        DisconnectBlocksAndReprocess(nBlocks);
     }
 
     if (state.IsValid()) {
