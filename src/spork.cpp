@@ -85,7 +85,7 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
         nChainHeight = chainActive.Height();
     }
 
-    if (strCommand == NetMsgType::SPORK) {
+    if (strCommand == "spork") {
         CSporkMessage spork;
         vRecv >> spork;
 
@@ -158,12 +158,12 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
         // PIVX: add to spork database.
         pSporkDB->WriteSpork(spork.nSporkID, spork);
     }
-    if (strCommand == NetMsgType::GETSPORKS) {
+    if (strCommand == "getsporks") {
         LOCK(cs);
         std::map<SporkId, CSporkMessage>::iterator it = mapSporksActive.begin();
 
         while (it != mapSporksActive.end()) {
-            pfrom->PushMessage(NetMsgType::SPORK, it->second);
+            pfrom->PushMessage("spork", it->second);
             it++;
         }
     }
