@@ -16,6 +16,7 @@
 
 #include "masternode.h"
 #include "masternodeman.h"
+#include "masternode-payments.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
