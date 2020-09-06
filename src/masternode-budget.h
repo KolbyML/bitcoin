@@ -537,7 +537,7 @@ public:
         READWRITE(nBlockStart);
         READWRITE(nBlockEnd);
         READWRITE(nAmount);
-        READWRITE(*(CScriptBase*)(&address));
+        READWRITE(address);
         READWRITE(nTime);
         READWRITE(nFeeTXHash);
 
@@ -594,7 +594,7 @@ public:
         READWRITE(nBlockStart);
         READWRITE(nBlockEnd);
         READWRITE(nAmount);
-        READWRITE(*(CScriptBase*)(&address));
+        READWRITE(address);
         READWRITE(nFeeTXHash);
     }
 };
