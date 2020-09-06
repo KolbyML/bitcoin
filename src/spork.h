@@ -87,7 +87,7 @@ public:
 class CSporkManager
 {
 private:
-    mutable RecursiveMutex cs;
+    mutable CCriticalSection cs;
     std::string strMasterPrivKey;
     std::map<SporkId, CSporkDef*> sporkDefsById;
     std::map<std::string, CSporkDef*> sporkDefsByName;

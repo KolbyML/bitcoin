@@ -17,7 +17,7 @@
 
 
 CBudgetManager budget;
-RecursiveMutex cs_budget;
+CCriticalSection cs_budget;
 
 std::map<uint256, int64_t> askedForSourceProposalOrBudget;
 std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
