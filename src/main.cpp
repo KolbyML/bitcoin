@@ -6717,7 +6717,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         budget.ProcessMessage(pfrom, strCommand, vRecv);
         fundamentalnodePayments.ProcessMessageFundamentalnodePayments(pfrom, strCommand, vRecv);
         ProcessMessageSwiftTX(pfrom, strCommand, vRecv);
-        ProcessSpork(pfrom, strCommand, vRecv);
+        sporkManager.ProcessSpork(pfrom, strCommand, vRecv);
         fundamentalnodeSync.ProcessMessage(pfrom, strCommand, vRecv);
 
         //probably one the extensions
