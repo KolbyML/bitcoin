@@ -519,6 +519,5 @@ public:
 };
 
 void ThreadCheckObfuScationPool();
-void ThreadBitPool();
 
 #endif

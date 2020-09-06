@@ -272,7 +272,6 @@ libbitcoin_wallet_a_SOURCES = \
   bip38.cpp \
   denomination_functions.cpp \
   obfuscation.cpp \
-  bitpool.cpp \
   obfuscation-relay.cpp \
   db.cpp \
   crypter.cpp \
