@@ -4303,7 +4303,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     }
 
     // ----------- swiftTX transaction scanning -----------
-    if (IsSporkActive(SPORK_3_SWIFTTX_BLOCK_FILTERING)) {
+    if (sporkManager.IsSporkActive(SPORK_3_SWIFTTX_BLOCK_FILTERING)) {
         BOOST_FOREACH (const CTransaction& tx, block.vtx) {
             if (!tx.IsCoinBase()) {
                 //only reject blocks when it's based on complete consensus
@@ -6742,7 +6742,7 @@ int ActiveProtocol()
     // SPORK_17 was used for 71010. Leave it 'ON' so they don't see > 70926 nodes. They won't react to SPORK_18
     // messages because it's not in their code
 
-/*    if (IsSporkActive(SPORK_17_NEW_PROTOCOL_ENFORCEMENT_3))
+/*    if (sporkManager.IsSporkActive(SPORK_17_NEW_PROTOCOL_ENFORCEMENT_3))
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
 
 */
@@ -6750,7 +6750,7 @@ int ActiveProtocol()
     // SPORK_14 is used for 71024. Nodes < 70926 won't see it and still get their protocol version via SPORK_17 and their
     // own ModifierUpgradeBlock()
 
-    if (IsSporkActive(SPORK_12_NEW_PROTOCOL_ENFORCEMENT))
+    if (sporkManager.IsSporkActive(SPORK_12_NEW_PROTOCOL_ENFORCEMENT))
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }
