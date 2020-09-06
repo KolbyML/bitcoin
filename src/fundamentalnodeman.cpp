@@ -359,7 +359,7 @@ int CFundamentalnodeMan::stable_size ()
         if (mn.protocolVersion < nMinProtocol) {
             continue; // Skip obsolete versions
         }
-        if (IsSporkActive (SPORK_8_FUNDAMENTALNODE_PAYMENT_ENFORCEMENT)) {
+        if (sporkManager.IsSporkActive (SPORK_8_FUNDAMENTALNODE_PAYMENT_ENFORCEMENT)) {
             nFundamentalnode_Age = GetAdjustedTime() - mn.sigTime;
             if ((nFundamentalnode_Age) < nFundamentalnode_Min_Age) {
                 continue; // Skip fundamentalnodes younger than (default) 8000 sec (MUST be > FUNDAMENTALNODE_REMOVAL_SECONDS)
