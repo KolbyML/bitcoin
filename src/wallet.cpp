@@ -15,6 +15,7 @@
 #include "kernel.h"
 #include "fundamentalnode-budget.h"
 #include "net.h"
+#include "obfuscation.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
 #include "script/sign.h"
@@ -1924,6 +1925,26 @@ CAmount CWallet::GetLockedWatchOnlyBalance() const
         }
     }
     return nTotal;
+}
+
+/**
+ * Test if the transaction is spendable.
+ */
+bool CheckTXAvailability(const CWalletTx* pcoin, bool fOnlyConfirmed, bool fUseIX, int& nDepth)
+{
+    if (!CheckFinalTx(*pcoin)) return false;
+    if (fOnlyConfirmed && !pcoin->IsTrusted()) return false;
+    if (pcoin->GetBlocksToMaturity() > 0) return false;
+
+    nDepth = pcoin->GetDepthInMainChain(false);
+    // do not use IX for inputs that have less then 6 blockchain confirmations
+    if (fUseIX && nDepth < 6) return false;
+
+    // We should not consider coins which aren't at least in our mempool
+    // It's possible for these to be conflicted via ancestors which we may never be able to detect
+    if (nDepth == 0 && !pcoin->InMempool()) return false;
+
+    return true;
 }
 
 bool CWallet::GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash, std::string strOutputIndex, std::string& strError)
