@@ -296,6 +296,28 @@ int64_t CMasternode::GetLastPaid()
     return 0;
 }
 
+std::string CMasternode::GetStatus()
+{
+    switch (nActiveState) {
+        case CMasternode::MASTERNODE_PRE_ENABLED:
+            return "PRE_ENABLED";
+        case CMasternode::MASTERNODE_ENABLED:
+            return "ENABLED";
+        case CMasternode::MASTERNODE_EXPIRED:
+            return "EXPIRED";
+        case CMasternode::MASTERNODE_OUTPOINT_SPENT:
+            return "OUTPOINT_SPENT";
+        case CMasternode::MASTERNODE_REMOVE:
+            return "REMOVE";
+        case CMasternode::MASTERNODE_WATCHDOG_EXPIRED:
+            return "WATCHDOG_EXPIRED";
+        case CMasternode::MASTERNODE_POSE_BAN:
+            return "POSE_BAN";
+        default:
+            return "UNKNOWN";
+    }
+}
+
 bool CMasternode::IsValidNetAddr()
 {
     // TODO: regtest is fine with any addresses for now,

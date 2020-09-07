@@ -262,6 +262,8 @@ public:
         return cacheInputAge + (chainActive.Tip()->nHeight - cacheInputAgeBlock);
     }
 
+    std::string GetStatus();
+
     std::string Status()
     {
         std::string strStatus = "ACTIVE";
