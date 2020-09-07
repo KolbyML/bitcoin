@@ -76,6 +76,7 @@ CMasternode::CMasternode() :
     cacheInputAgeBlock = 0;
     unitTest = false;
     allowFreeTx = true;
+    nActiveState = MASTERNODE_ENABLED,
     protocolVersion = PROTOCOL_VERSION;
     nLastDsq = 0;
     nScanningErrorCount = 0;
@@ -98,6 +99,7 @@ CMasternode::CMasternode(const CMasternode& other) :
     cacheInputAgeBlock = other.cacheInputAgeBlock;
     unitTest = other.unitTest;
     allowFreeTx = other.allowFreeTx;
+    nActiveState = MASTERNODE_ENABLED,
     protocolVersion = other.protocolVersion;
     nLastDsq = other.nLastDsq;
     nScanningErrorCount = other.nScanningErrorCount;
@@ -305,8 +307,6 @@ std::string CMasternode::GetStatus()
             return "ENABLED";
         case CMasternode::MASTERNODE_EXPIRED:
             return "EXPIRED";
-        case CMasternode::MASTERNODE_OUTPOINT_SPENT:
-            return "OUTPOINT_SPENT";
         case CMasternode::MASTERNODE_REMOVE:
             return "REMOVE";
         case CMasternode::MASTERNODE_WATCHDOG_EXPIRED:
