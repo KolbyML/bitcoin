@@ -22,6 +22,7 @@
 #include <vector>
 #include "libzerocoin/Denominations.h"
 #include "libzerocoin/SpendType.h"
+#include "sporkid.h"
 
 class CScript;
 
@@ -321,6 +322,20 @@ inline void Unserialize(Stream& s, libzerocoin::SpendType & a, int, int = 0)
     a = static_cast<libzerocoin::SpendType>(f);
 }
 
+// Serialization for SporkId
+template <typename Stream>
+inline void Serialize(Stream& s, SporkId sporkID)
+{
+    int32_t f = static_cast<int32_t>(sporkID);
+    ser_writedata32(s, f);
+}
+
+template <typename Stream>
+inline void Unserialize(Stream& s, SporkId& sporkID)
+{
+    int32_t f = ser_readdata32(s);
+    sporkID = (SporkId) f;
+}
 
 /**
  * Compact Size
