@@ -6,6 +6,7 @@
 #include "fundamentalnode.h"
 #include "addrman.h"
 #include "fundamentalnodeman.h"
+#include "masternode.h"
 #include "obfuscation.h"
 #include "sync.h"
 #include "util.h"
