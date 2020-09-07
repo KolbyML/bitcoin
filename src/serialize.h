@@ -324,14 +324,14 @@ inline void Unserialize(Stream& s, libzerocoin::SpendType & a, int, int = 0)
 
 // Serialization for SporkId
 template <typename Stream>
-inline void Serialize(Stream& s, SporkId sporkID)
+inline void Serialize(Stream& s, SporkId sporkID, int, int = 0)
 {
     int32_t f = static_cast<int32_t>(sporkID);
     ser_writedata32(s, f);
 }
 
 template <typename Stream>
-inline void Unserialize(Stream& s, SporkId& sporkID)
+inline void Unserialize(Stream& s, SporkId& sporkID, int, int = 0)
 {
     int32_t f = ser_readdata32(s);
     sporkID = (SporkId) f;
