@@ -327,13 +327,14 @@ template <typename Stream>
 inline void Serialize(Stream& s, SporkId sporkID, int, int = 0)
 {
     int32_t f = static_cast<int32_t>(sporkID);
-    ser_writedata32(s, f);
+    WRITEDATA(s, f);
 }
 
 template <typename Stream>
 inline void Unserialize(Stream& s, SporkId& sporkID, int, int = 0)
 {
-    int32_t f = ser_readdata32(s);
+    int32_t f=0;
+    READDATA(s, f);
     sporkID = (SporkId) f;
 }
 
