@@ -7,7 +7,6 @@
 #include "activefundamentalnode.h"
 #include "addrman.h"
 #include "fundamentalnode.h"
-#include "masternode.h"
 #include "obfuscation.h"
 #include "spork.h"
 #include "util.h"
@@ -600,7 +599,7 @@ int CFundamentalnodeMan::GetFundamentalnodeRank(const CTxIn& vin, int64_t nBlock
 
     //make sure we know about this block
     uint256 hash = 0;
-    if (!GetBlockHash(hash, nBlockHeight)) return -1;
+    if (!GetBlockHashFundamentalnode(hash, nBlockHeight)) return -1;
 
     // scan for winner
     BOOST_FOREACH (CFundamentalnode& mn, vFundamentalnodes) {
@@ -646,7 +645,7 @@ std::vector<pair<int, CFundamentalnode> > CFundamentalnodeMan::GetFundamentalnod
 
     //make sure we know about this block
     uint256 hash = 0;
-    if (!GetBlockHash(hash, nBlockHeight)) return vecFundamentalnodeRanks;
+    if (!GetBlockHashFundamentalnode(hash, nBlockHeight)) return vecFundamentalnodeRanks;
 
     // scan for winner
     BOOST_FOREACH (CFundamentalnode& mn, vFundamentalnodes) {

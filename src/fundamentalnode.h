@@ -30,7 +30,10 @@ using namespace std;
 class CFundamentalnode;
 class CFundamentalnodeBroadcast;
 class CFundamentalnodePing;
-extern map<int64_t, uint256> mapCacheBlockHashes;
+extern map<int64_t, uint256> mapFundamentalnodeCacheBlockHashes;
+
+bool GetBlockHashFundamentalnode(uint256& hash, int nBlockHeight);
+
 
 //
 // The Fundamentalnode Ping Class : Contains a different serialize method for sending pings from fundamentalnodes throughout the network

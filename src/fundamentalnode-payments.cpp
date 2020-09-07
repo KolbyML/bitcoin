@@ -184,7 +184,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
     if (pindexPrev == NULL) return true;
 
     int nHeight = 0;
-    if (pindexPrev->GetBlockHash() == block.hashPrevBlock) {
+    if (pindexPrev->GetBlockHashFundamentalnode() == block.hashPrevBlock) {
         nHeight = pindexPrev->nHeight + 1;
     } else { //out of order
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
@@ -252,7 +252,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
 
         CBlockIndex *pindex = chainActive.Tip();
         if(pindex != NULL){
-            if(pindex->GetBlockHash() == block.hashPrevBlock){
+            if(pindex->GetBlockHashFundamentalnode() == block.hashPrevBlock){
                 CAmount stakeReward = GetBlockValue(pindex->nHeight + 1);
                 CAmount masternodePaymentAmount = GetMasternodePayment(pindex->nHeight+1, stakeReward, 0, false);//todo++
 
@@ -699,7 +699,7 @@ bool CFundamentalnodePayments::IsScheduled(CFundamentalnode& mn, int nNotBlockHe
 bool CFundamentalnodePayments::AddWinningFundamentalnode(CFundamentalnodePaymentWinner& winnerIn)
 {
     uint256 blockHash = 0;
-    if (!GetBlockHash(blockHash, winnerIn.nBlockHeight - 100)) {
+    if (!GetBlockHashFundamentalnode(blockHash, winnerIn.nBlockHeight - 100)) {
         return false;
     }
 

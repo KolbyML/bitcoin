@@ -6,7 +6,6 @@
 #include "fundamentalnode.h"
 #include "addrman.h"
 #include "fundamentalnodeman.h"
-#include "masternode.h"
 #include "obfuscation.h"
 #include "sync.h"
 #include "util.h"
@@ -15,7 +14,48 @@
 // keep track of the scanning errors I've seen
 map<uint256, int> mapSeenFundamentalnodeScanningErrors;
 // cache block hashes as we calculate them
-std::map<int64_t, uint256> mapCacheBlockHashes;
+std::map<int64_t, uint256> mapFundamentalnodeCacheBlockHashes;
+
+//Get the last hash that matches the modulus given. Processed in reverse order
+bool GetBlockHashFundamentalnode(uint256& hash, int nBlockHeight)
+{
+    if (chainActive.Tip() == NULL) return false;
+
+    if (nBlockHeight == 0)
+        nBlockHeight = chainActive.Tip()->nHeight;
+
+    if (mapFundamentalnodeCacheBlockHashes.count(nBlockHeight)) {
+        hash = mapFundamentalnodeCacheBlockHashes[nBlockHeight];
+        return true;
+    }
+
+    const CBlockIndex* BlockLastSolved = chainActive.Tip();
+    const CBlockIndex* BlockReading = chainActive.Tip();
+
+    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || chainActive.Tip()->nHeight + 1 < nBlockHeight) return false;
+
+    int nBlocksAgo = 0;
+    if (nBlockHeight > 0) nBlocksAgo = (chainActive.Tip()->nHeight + 1) - nBlockHeight;
+    assert(nBlocksAgo >= 0);
+
+    int n = 0;
+    for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
+        if (n >= nBlocksAgo) {
+            hash = BlockReading->GetBlockHashFundamentalnode();
+            mapFundamentalnodeCacheBlockHashes[nBlockHeight] = hash;
+            return true;
+        }
+        n++;
+
+        if (BlockReading->pprev == NULL) {
+            assert(BlockReading);
+            break;
+        }
+        BlockReading = BlockReading->pprev;
+    }
+
+    return false;
+}
 
 CFundamentalnode::CFundamentalnode()
 {
@@ -127,7 +167,7 @@ uint256 CFundamentalnode::CalculateScore(int mod, int64_t nBlockHeight)
     uint256 hash = 0;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
 
-    if (!GetBlockHash(hash, nBlockHeight)) {
+    if (!GetBlockHashFundamentalnode(hash, nBlockHeight)) {
         LogPrint("fundamentalnode","CalculateScore ERROR - nHeight %d - Returned 0\n", nBlockHeight);
         return 0;
     }
@@ -701,7 +741,7 @@ CFundamentalnodePing::CFundamentalnodePing()
 CFundamentalnodePing::CFundamentalnodePing(CTxIn& newVin)
 {
     vin = newVin;
-    blockHash = chainActive[chainActive.Height() - 12]->GetBlockHash();
+    blockHash = chainActive[chainActive.Height() - 12]->GetBlockHashFundamentalnode();
     sigTime = GetAdjustedTime();
     vchSig = std::vector<unsigned char>();
 }
