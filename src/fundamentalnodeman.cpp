@@ -7,6 +7,7 @@
 #include "activefundamentalnode.h"
 #include "addrman.h"
 #include "fundamentalnode.h"
+#include "masternode.h"
 #include "obfuscation.h"
 #include "spork.h"
 #include "util.h"
