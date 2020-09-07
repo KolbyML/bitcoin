@@ -17,6 +17,7 @@
 #include "zVitcontroldialog.h"
 #include "spork.h"
 #include "askpassphrasedialog.h"
+#include "timedata.h"
 
 #include <QClipboard>
 #include <QSettings>
