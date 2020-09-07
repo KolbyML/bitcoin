@@ -31,6 +31,7 @@
 
 #include "init.h"
 #include "fundamentalnodelist.h"
+#include "fundamentalnode-sync.h"
 #include "masternodelist.h"
 #include "ui_interface.h"
 #include "util.h"
