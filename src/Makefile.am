@@ -282,6 +282,13 @@ libbitcoin_wallet_a_SOURCES = \
   fundamentalnode-sync.cpp \
   fundamentalnodeconfig.cpp \
   fundamentalnodeman.cpp \
+  masternode.cpp \
+  masternode-budget.cpp \
+  masternode-payments.cpp \
+  masternode-sync.cpp \
+  masternodeconfig.cpp \
+  masternodeman.cpp \
+  messagesigner.cpp \
   mintpool.cpp \
   rpcdump.cpp \
   primitives/deterministicmint.cpp \
@@ -361,7 +368,6 @@ libzerocoin_libbitcoin_zerocoin_a_SOURCES = \
 # common: shared between vitaed, and vitae-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(BITCOIN_INCLUDES)
 libbitcoin_common_a_SOURCES = \
-  activemasternode.cpp \
   accumulators.cpp \
   accumulatorcheckpoints.cpp \
   accumulatormap.cpp \
@@ -376,10 +382,6 @@ libbitcoin_common_a_SOURCES = \
   primitives/deterministicmint.cpp \
   primitives/transaction.cpp \
   primitives/zerocoin.cpp \
-  masternode.cpp \
-  masternodeman.cpp \
-  messagesigner.cpp \
-  masternodeconfig.cpp \
   core_read.cpp \
   core_write.cpp \
   hash.cpp \
