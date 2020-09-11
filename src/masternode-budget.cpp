@@ -213,9 +213,7 @@ void CBudgetManager::SubmitFinalBudget()
         // Get our change address
         CReserveKey reservekey(pwalletMain);
         // Send the tx to the network. Do NOT use SwiftTx, locking might need too much time to propagate, especially for testnet
-        const CWallet::CommitResult& res = pwalletMain->CommitTransaction(wtx, reservekey, "NO-ix");
-        if (res.status != CWallet::CommitStatus::OK)
-            return;
+        pwalletMain->CommitTransaction(wtx, reservekey, "NO-ix");
         tx = (CTransaction)wtx;
         txidCollateral = tx.GetHash();
         mapCollateralTxids.insert(std::make_pair(tempBudget.GetHash(), txidCollateral));
@@ -918,9 +916,7 @@ CAmount CBudgetManager::GetTotalBudget(int nHeight)
 
     //get block value and calculate from that
     CAmount nSubsidy = 0;
-    const Consensus::Params& consensus = Params();
-    const bool isPoSActive = consensus.NetworkUpgradeActive(nHeight, Consensus::UPGRADE_POS);
-    if (nHeight >= 151200 && !isPoSActive) {
+    if (nHeight <= Params().LAST_POW_BLOCK() && nHeight >= 151200) {
         nSubsidy = 50 * COIN;
     } else if (isPoSActive && nHeight <= 302399) {
         nSubsidy = 50 * COIN;
@@ -940,7 +936,7 @@ CAmount CBudgetManager::GetTotalBudget(int nHeight)
         nSubsidy = 15 * COIN;
     } else if (nHeight <= 647999 && nHeight >= 604800) {
         nSubsidy = 10 * COIN;
-    } else if (consensus.NetworkUpgradeActive(nHeight, Consensus::UPGRADE_ZC_V2)) {
+    } else if (nHeight >= Params().Zerocoin_Block_V2_Start()) {
         nSubsidy = 10 * COIN;
     } else {
         nSubsidy = 5 * COIN;
