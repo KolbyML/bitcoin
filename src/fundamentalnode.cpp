@@ -41,7 +41,7 @@ bool GetBlockHashFundamentalnode(uint256& hash, int nBlockHeight)
     int n = 0;
     for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
         if (n >= nBlocksAgo) {
-            hash = BlockReading->GetBlockHashFundamentalnode();
+            hash = BlockReading->GetBlockHash();
             mapFundamentalnodeCacheBlockHashes[nBlockHeight] = hash;
             return true;
         }
@@ -741,7 +741,7 @@ CFundamentalnodePing::CFundamentalnodePing()
 CFundamentalnodePing::CFundamentalnodePing(CTxIn& newVin)
 {
     vin = newVin;
-    blockHash = chainActive[chainActive.Height() - 12]->GetBlockHashFundamentalnode();
+    blockHash = chainActive[chainActive.Height() - 12]->GetBlockHash();
     sigTime = GetAdjustedTime();
     vchSig = std::vector<unsigned char>();
 }
