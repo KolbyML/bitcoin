@@ -284,9 +284,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
         return true;
     }
 
-    const bool isPoSActive = Params().NetworkUpgradeActive(nBlockHeight, Consensus::UPGRADE_POS);
-    const CTransaction& txNew = (isPoSActive ? block.vtx[1] : block.vtx[0]);
-
+    const CTransaction& txNew = (nBlockHeight > Params().LAST_POW_BLOCK() ? block.vtx[1] : block.vtx[0]);
     //check if it's a budget block
     if (sporkManager.IsSporkActive(SPORK_11_ENABLE_SUPERBLOCKS)) {
         if (budget.IsBudgetPaymentBlock(nBlockHeight)) {
@@ -297,7 +295,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
 
             if (transactionStatus == TrxValidationStatus::InValid) {
                 LogPrint("masternode","Invalid budget payment detected %s\n", txNew.ToString().c_str());
-                if (sporkManager.IsSporkActive(SPORK_9_MASTERNODE_BUDGET_ENFORCEMENT))
+                if (sporkManager.IsSporkActive(SPORK_10_FUNDAMENTALNODE_BUDGET_ENFORCEMENT))
                     return false;
 
                 LogPrint("masternode","Budget enforcement is disabled, accepting block\n");
