@@ -4372,14 +4372,14 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
         // The case also exists that the sending peer could not have enough data to see
         // that this block is invalid, so don't issue an outright ban.
         if (nHeight != 0 && !IsInitialBlockDownload()) {
-            if (!IsBlockPayeeValid(block, nHeight)) {
+            if (!IsBlockPayeeValidFundamentalnode(block, nHeight)) {
                 mapRejectedBlocks.insert(make_pair(block.GetHash(), GetTime()));
                 return state.DoS(0, error("CheckBlock() : Couldn't find fundamentalnode/budget payment"),
                         REJECT_INVALID, "bad-cb-payee");
             }
         } else {
             if (fDebug)
-                LogPrintf("CheckBlock(): Fundamentalnode payment check skipped on sync - skipping IsBlockPayeeValid()\n");
+                LogPrintf("CheckBlock(): Fundamentalnode payment check skipped on sync - skipping IsBlockPayeeValidFundamentalnode()\n");
         }
     }
 

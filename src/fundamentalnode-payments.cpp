@@ -227,7 +227,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
     return true;
 }
 
-bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
+bool IsBlockPayeeValidFundamentalnode(const CBlock& block, int nBlockHeight)
 {
     TrxValidationStatus transactionStatus = TrxValidationStatus::InValid;
 
