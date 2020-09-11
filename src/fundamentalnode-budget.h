@@ -60,7 +60,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
 // CBudgetVote - Allow a fundamentalnode node to vote and broadcast throughout the network
 //
 
-class CBudgetVote
+class CBudgetFundamentalnodeVote
 {
 public:
     bool fValid;  //if the vote is currently valid / counted
@@ -113,7 +113,7 @@ public:
 // CFinalizedBudgetVote - Allow a fundamentalnode node to vote and broadcast throughout the network
 //
 
-class CFinalizedBudgetVote
+class CFinalizedFundamentalnodeBudgetVote
 {
 public:
     bool fValid;  //if the vote is currently valid / counted
@@ -153,7 +153,7 @@ public:
 
 /** Save Budget Manager (budget.dat)
  */
-class CBudgetDB
+class CFundamentalnodeBudgetDB
 {
 private:
     boost::filesystem::path pathDB;
@@ -179,7 +179,7 @@ public:
 //
 // Budget Manager : Contains all proposals for the budget
 //
-class CBudgetManager
+class CFundamentalnodeBudgetManager
 {
 private:
     //hold txes until they mature enough to use
@@ -283,7 +283,7 @@ public:
 };
 
 
-class CTxBudgetPayment
+class CFundamentalnodeTxBudgetPayment
 {
 public:
     uint256 nProposalHash;
@@ -313,7 +313,7 @@ public:
 // Finalized Budget : Contains the suggested proposals to pay on a given block
 //
 
-class CFinalizedBudget
+class CFundamentalnodeFinalizedBudget
 {
 private:
     // critical section to protect the inner data structures
@@ -407,7 +407,7 @@ public:
 };
 
 // FinalizedBudget are cast then sent to peers with this object, which leaves the votes out
-class CFinalizedBudgetBroadcast : public CFinalizedBudget
+class CFinalizedFundamentalnodeBudgetBroadcast : public CFinalizedBudget
 {
 private:
     std::vector<unsigned char> vchSig;
@@ -459,7 +459,7 @@ public:
 // Budget Proposal : Contains the fundamentalnode votes for each budget
 //
 
-class CBudgetProposal
+class CFundamentalnodeBudgetProposal
 {
 private:
     // critical section to protect the inner data structures
@@ -515,7 +515,7 @@ public:
     int GetBlockStartCycle();
     int GetBlockCurrentCycle();
     int GetBlockEndCycle();
-    double GetRatio();
+    double GetRatioFundamentalnode();
     int GetYeas();
     int GetNays();
     int GetAbstains();
@@ -561,7 +561,7 @@ public:
 };
 
 // Proposals are cast then sent to peers with this object, which leaves the votes out
-class CBudgetProposalBroadcast : public CBudgetProposal
+class CFundamentalnodeBudgetProposalBroadcast : public CBudgetProposal
 {
 public:
     CBudgetProposalBroadcast() : CBudgetProposal() {}

@@ -36,7 +36,7 @@ void budgetToJSON(CBudgetProposal* pbudgetProposal, UniValue& bObj)
     bObj.push_back(Pair("TotalPaymentCount", (int64_t)pbudgetProposal->GetTotalPaymentCount()));
     bObj.push_back(Pair("RemainingPaymentCount", (int64_t)pbudgetProposal->GetRemainingPaymentCount()));
     bObj.push_back(Pair("PaymentAddress", address2.ToString()));
-    bObj.push_back(Pair("Ratio", pbudgetProposal->GetRatio()));
+    bObj.push_back(Pair("Ratio", pbudgetProposal->GetRatioFundamentalnode()));
     bObj.push_back(Pair("Yeas", (int64_t)pbudgetProposal->GetYeas()));
     bObj.push_back(Pair("Nays", (int64_t)pbudgetProposal->GetNays()));
     bObj.push_back(Pair("Abstains", (int64_t)pbudgetProposal->GetAbstains()));
