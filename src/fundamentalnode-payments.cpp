@@ -184,7 +184,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
     if (pindexPrev == NULL) return true;
 
     int nHeight = 0;
-    if (pindexPrev->GetBlockHashFundamentalnode() == block.hashPrevBlock) {
+    if (pindexPrev->GetBlockHash() == block.hashPrevBlock) {
         nHeight = pindexPrev->nHeight + 1;
     } else { //out of order
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
