@@ -147,6 +147,11 @@ public:
         nMasternodeCountDrift = 20;
         nMaxMoneyOut = 21000000 * COIN;
 
+        nBudgetCycleBlocks = 43200;       // approx. 1 every 30 days
+        nBudgetFeeConfirmations = 6;      // Number of confirmations for the finalization fee
+        nProposalEstablishmentTime = 60 * 60 * 24;    // must be at least a day old to make it into a budget
+
+
         /** Height or Time Based Activations **/
         nLastPOWBlock = 200;
         nModifierUpdateBlock = 615800;

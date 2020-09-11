@@ -98,7 +98,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
     nConf = conf;
 
     //if we're syncing we won't have swiftTX information, so accept 1 confirmation
-    const int nRequiredConfs = Params().nBudgetFeeConfirmations;
+    const int nRequiredConfs = Params().BudgetFeeConfirmations();
     if (conf >= nRequiredConfs) {
         return true;
     } else {
@@ -147,7 +147,7 @@ void CBudgetManager::SubmitFinalBudget()
         nCurrentHeight = chainActive.Height();
     }
 
-    const int nBlocksPerCycle = Params().nBudgetCycleBlocks;
+    const int nBlocksPerCycle = Params().BudgetCycleBlocks();
     int nBlockStart = nCurrentHeight - nCurrentHeight % nBlocksPerCycle + nBlocksPerCycle;
     if (nSubmittedHeight >= nBlockStart){
         LogPrint("mnbudget","CBudgetManager::SubmitFinalBudget - nSubmittedHeight(=%ld) < nBlockStart(=%ld) condition not fulfilled.\n", nSubmittedHeight, nBlockStart);
@@ -246,7 +246,7 @@ void CBudgetManager::SubmitFinalBudget()
         Wait will we have 1 extra confirmation, otherwise some clients might reject this feeTX
         -- This function is tied to NewBlock, so we will propagate this budget while the block is also propagating
     */
-    const int nRequiredConfs = Params().nBudgetFeeConfirmations;
+    const int nRequiredConfs = Params().BudgetFeeConfirmations();
     if (conf < nRequiredConfs + 1) {
         LogPrint("mnbudget","CBudgetManager::SubmitFinalBudget - Collateral requires at least %d confirmations - %s - %d confirmations\n", nRequiredConfs + 1, txidCollateral.ToString(), conf);
         return;
@@ -800,7 +800,7 @@ std::vector<CBudgetProposal*> CBudgetManager::GetBudget()
     }
     if (pindexPrev == NULL) return vBudgetProposalsRet;
 
-    const int nBlocksPerCycle = Params().nBudgetCycleBlocks;
+    const int nBlocksPerCycle = Params().BudgetCycleBlocks();
     int nBlockStart = pindexPrev->nHeight - pindexPrev->nHeight % nBlocksPerCycle + nBlocksPerCycle;
     int nBlockEnd = nBlockStart + nBlocksPerCycle - 1;
     int mnCount = m_nodeman.CountEnabled(ActiveProtocol());
@@ -1550,7 +1550,7 @@ bool CBudgetProposal::IsValid(std::string& strError, bool fCheckCollateral)
     }
 
     // Calculate maximum block this proposal will be valid, which is start of proposal + (number of payments * cycle)
-    int nProposalEnd = GetBlockStart() + (Params().nBudgetCycleBlocks * GetTotalPaymentCount());
+    int nProposalEnd = GetBlockStart() + (Params().BudgetCycleBlocks() * GetTotalPaymentCount());
 
     // if (GetBlockEnd() < pindexPrev->nHeight - GetBudgetPaymentCycleBlocks() / 2) {
     if(nProposalEnd < pindexPrev->nHeight){
@@ -1563,7 +1563,7 @@ bool CBudgetProposal::IsValid(std::string& strError, bool fCheckCollateral)
 
 bool CBudgetProposal::IsEstablished()
 {
-    return nTime < GetAdjustedTime() - Params().nProposalEstablishmentTime;
+    return nTime < GetAdjustedTime() - Params().ProposalEstablishmentTime();
 }
 
 bool CBudgetProposal::IsPassing(const CBlockIndex* pindexPrev, int nBlockStartBudget, int nBlockEndBudget, int mnCount)
@@ -1695,7 +1695,7 @@ int CBudgetProposal::GetBlockStartCycle()
 {
     //end block is half way through the next cycle (so the proposal will be removed much after the payment is sent)
 
-    return nBlockStart - nBlockStart % Params().nBudgetCycleBlocks;
+    return nBlockStart - nBlockStart % Params().BudgetCycleBlocks();
 }
 
 int CBudgetProposal::GetBlockCurrentCycle()
@@ -1705,7 +1705,7 @@ int CBudgetProposal::GetBlockCurrentCycle()
 
     if (pindexPrev->nHeight >= GetBlockEndCycle()) return -1;
 
-    return pindexPrev->nHeight - pindexPrev->nHeight % Params().nBudgetCycleBlocks;
+    return pindexPrev->nHeight - pindexPrev->nHeight % Params().BudgetCycleBlocks();
 }
 
 int CBudgetProposal::GetBlockEndCycle()
@@ -1722,13 +1722,13 @@ int CBudgetProposal::GetBlockEndCycle()
 
 int CBudgetProposal::GetTotalPaymentCount()
 {
-    return (GetBlockEndCycle() - GetBlockStartCycle()) / Params().nBudgetCycleBlocks;
+    return (GetBlockEndCycle() - GetBlockStartCycle()) / Params().BudgetCycleBlocks();
 }
 
 int CBudgetProposal::GetRemainingPaymentCount()
 {
     // If this budget starts in the future, this value will be wrong
-    int nPayments = (GetBlockEndCycle() - GetBlockCurrentCycle()) / Params().nBudgetCycleBlocks - 1;
+    int nPayments = (GetBlockEndCycle() - GetBlockCurrentCycle()) / Params().BudgetCycleBlocks() - 1;
     // Take the lowest value
     return std::min(nPayments, GetTotalPaymentCount());
 }
@@ -1740,7 +1740,7 @@ CBudgetProposalBroadcast::CBudgetProposalBroadcast(std::string strProposalNameIn
 
     nBlockStart = nBlockStartIn;
 
-    const int nBlocksPerCycle = Params().nBudgetCycleBlocks;
+    const int nBlocksPerCycle = Params().BudgetCycleBlocks();
     int nCycleStart = nBlockStart - nBlockStart % nBlocksPerCycle;
 
     // Right now single payment proposals have nBlockEnd have a cycle too early!
@@ -2055,7 +2055,7 @@ bool CFinalizedBudget::IsValid(std::string& strError, bool fCheckCollateral)
     // All(!) finalized budgets have the name "main", so get some additional information about them
     std::string strProposals = GetProposals();
 
-    const int nBlocksPerCycle = Params().nBudgetCycleBlocks;
+    const int nBlocksPerCycle = Params().BudgetCycleBlocks();
     // Must be the correct block for payment to happen (once a month)
     if (nBlockStart % nBlocksPerCycle != 0) {
         strError = "Invalid BlockStart";
