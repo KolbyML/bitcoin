@@ -252,7 +252,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
 
         CBlockIndex *pindex = chainActive.Tip();
         if(pindex != NULL){
-            if(pindex->GetBlockHashFundamentalnode() == block.hashPrevBlock){
+            if(pindex->GetBlockHash() == block.hashPrevBlock){
                 CAmount stakeReward = GetBlockValue(pindex->nHeight + 1);
                 CAmount masternodePaymentAmount = GetMasternodePayment(pindex->nHeight+1, stakeReward, 0, false);//todo++
 
