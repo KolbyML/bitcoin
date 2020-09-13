@@ -17,6 +17,7 @@
 #include "main.h"
 #include "spork.h"
 #include "sync.h"
+#include "init.h"
 #include "ui_interface.h"
 #include "wallet.h"
 #include "walletdb.h" // for BackupWallet
