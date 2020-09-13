@@ -24,7 +24,7 @@
 /** Object for who's going to get paid on which blocks */
 CFundamentalnodePayments fundamentalnodePayments;
 
-CCriticalSection cs_vecPayments;
+CCriticalSection cs_vecFundamentalnodePayments;
 CCriticalSection cs_mapFundamentalnodeBlocks;
 CCriticalSection cs_mapFundamentalnodePayeeVotes;
 
@@ -725,7 +725,7 @@ bool CFundamentalnodePayments::AddWinningFundamentalnode(CFundamentalnodePayment
 
 bool CFundamentalnodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
 {
-    LOCK(cs_vecPayments);
+    LOCK(cs_vecFundamentalnodePayments);
 
     int nMaxSignatures = 0;
     int nFundamentalnode_Drift_Count = 0;
@@ -787,7 +787,7 @@ bool CFundamentalnodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
 
 std::string CFundamentalnodeBlockPayees::GetRequiredPaymentsStringFundamentalnode()
 {
-    LOCK(cs_vecPayments);
+    LOCK(cs_vecFundamentalnodePayments);
 
     std::string ret = "Unknown";
 

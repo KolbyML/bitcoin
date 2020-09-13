@@ -13,7 +13,7 @@
 
 using namespace std;
 
-extern CCriticalSection cs_vecPayments;
+extern CCriticalSection cs_vecFundamentalnodePayments;
 extern CCriticalSection cs_mapFundamentalnodeBlocks;
 extern CCriticalSection cs_mapFundamentalnodePayeeVotes;
 
@@ -106,7 +106,7 @@ public:
 
     void AddPayee(CScript payeeIn, int nIncrement)
     {
-        LOCK(cs_vecPayments);
+        LOCK(cs_vecFundamentalnodePayments);
 
         BOOST_FOREACH (CFundamentalnodePayee& payee, vecPayments) {
             if (payee.scriptPubKey == payeeIn) {
@@ -121,7 +121,7 @@ public:
 
     bool GetPayee(CScript& payee)
     {
-        LOCK(cs_vecPayments);
+        LOCK(cs_vecFundamentalnodePayments);
 
         int nVotes = -1;
         BOOST_FOREACH (CFundamentalnodePayee& p, vecPayments) {
@@ -136,7 +136,7 @@ public:
 
     bool HasPayeeWithVotes(CScript payee, int nVotesReq)
     {
-        LOCK(cs_vecPayments);
+        LOCK(cs_vecFundamentalnodePayments);
 
         BOOST_FOREACH (CFundamentalnodePayee& p, vecPayments) {
             if (p.nVotes >= nVotesReq && p.scriptPubKey == payee) return true;
