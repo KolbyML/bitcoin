@@ -243,6 +243,7 @@ public:
     bool UpdateFinalizedBudget(CFinalizedBudgetVote& vote, CNode* pfrom, std::string& strError);
     bool PropExists(uint256 nHash);
     TrxValidationStatus IsTransactionValid(const CTransaction& txNew, int nBlockHeight);
+    std::string GetRequiredPaymentsString(int nBlockHeight);
     void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake);
 
     void CheckOrphanVotes();
