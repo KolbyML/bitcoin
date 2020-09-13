@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "main.h"
-#include "masternode-budget.h"
+#include "fundamentalnode-budget.h"
 #include "messagesigner.h"
 #include "net.h"
 #include "spork.h"

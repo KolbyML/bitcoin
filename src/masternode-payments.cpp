@@ -7,7 +7,6 @@
 #include "addrman.h"
 #include "chainparams.h"
 #include "fs.h"
-#include "masternode-budget.h"
 #include "masternode-sync.h"
 #include "masternodeman.h"
 #include "spork.h"
