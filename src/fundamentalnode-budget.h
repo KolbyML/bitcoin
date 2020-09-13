@@ -20,12 +20,12 @@ using namespace std;
 
 extern CCriticalSection cs_budget;
 
-class CFundamentalnodeBudgetManager;
-class CFinalizedFundamentalnodeBudgetBroadcast;
-class CFinalizedFundamentalnodeBudget;
-class CFundamentalnodeBudgetProposal;
-class CFundamentalnodeBudgetProposalBroadcast;
-class CTxFundamentalnodeBudgetPayment;
+class CBudgetManager;
+class CFinalizedBudgetBroadcast;
+class CFinalizedBudget;
+class CBudgetProposal;
+class CBudgetProposalBroadcast;
+class CTxBudgetPayment;
 
 #define VOTE_ABSTAIN 0
 #define VOTE_YES 1
@@ -44,10 +44,10 @@ static const CAmount BUDGET_FEE_TX = (50 * COIN);
 static const int64_t BUDGET_VOTE_UPDATE_MIN = 60 * 60;
 static map<uint256, int> mapPayment_History;
 
-extern std::vector<CFundamentalnodeBudgetProposalBroadcast> vecImmatureBudgetProposals;
-extern std::vector<CFinalizedFundamentalnodeBudgetBroadcast> vecImmatureFinalizedBudgets;
+extern std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
+extern std::vector<CFinalizedBudgetBroadcast> vecImmatureFinalizedBudgets;
 
-extern CFundamentalnodeBudgetManager budget;
+extern CBudgetManager budget;
 void DumpBudgets();
 
 // Define amount of blocks in budget payment cycle
@@ -110,7 +110,7 @@ public:
 };
 
 //
-// CFinalizedFundamentalnodeBudgetVote - Allow a fundamentalnode node to vote and broadcast throughout the network
+// CFinalizedBudgetVote - Allow a fundamentalnode node to vote and broadcast throughout the network
 //
 
 class CFinalizedFundamentalnodeBudgetVote
@@ -123,8 +123,8 @@ public:
     int64_t nTime;
     std::vector<unsigned char> vchSig;
 
-    CFinalizedFundamentalnodeBudgetVote();
-    CFinalizedFundamentalnodeBudgetVote(CTxIn vinIn, uint256 nBudgetHashIn);
+    CFinalizedBudgetVote();
+    CFinalizedBudgetVote(CTxIn vinIn, uint256 nBudgetHashIn);
 
     bool Sign(CKey& keyFundamentalnode, CPubKey& pubKeyFundamentalnode);
     bool SignatureValid(bool fSignatureCheck);
@@ -171,8 +171,8 @@ public:
     };
 
     CBudgetDB();
-    bool Write(const CFundamentalnodeBudgetManager& objToSave);
-    ReadResult Read(CFundamentalnodeBudgetManager& objToLoad, bool fDryRun = false);
+    bool Write(const CBudgetManager& objToSave);
+    ReadResult Read(CBudgetManager& objToLoad, bool fDryRun = false);
 };
 
 
@@ -191,17 +191,17 @@ public:
     mutable CCriticalSection cs;
 
     // keep track of the scanning errors I've seen
-    map<uint256, CFundamentalnodeBudgetProposal> mapProposals;
-    map<uint256, CFinalizedFundamentalnodeBudget> mapFinalizedBudgets;
+    map<uint256, CBudgetProposal> mapProposals;
+    map<uint256, CFinalizedBudget> mapFinalizedBudgets;
 
-    std::map<uint256, CFundamentalnodeBudgetProposalBroadcast> mapSeenFundamentalnodeBudgetProposals;
+    std::map<uint256, CBudgetProposalBroadcast> mapSeenFundamentalnodeBudgetProposals;
     std::map<uint256, CBudgetVote> mapSeenFundamentalnodeBudgetVotes;
     std::map<uint256, CBudgetVote> mapOrphanFundamentalnodeBudgetVotes;
-    std::map<uint256, CFinalizedFundamentalnodeBudgetBroadcast> mapSeenFinalizedBudgets;
-    std::map<uint256, CFinalizedFundamentalnodeBudgetVote> mapSeenFinalizedBudgetVotes;
-    std::map<uint256, CFinalizedFundamentalnodeBudgetVote> mapOrphanFinalizedBudgetVotes;
+    std::map<uint256, CFinalizedBudgetBroadcast> mapSeenFinalizedBudgets;
+    std::map<uint256, CFinalizedBudgetVote> mapSeenFinalizedBudgetVotes;
+    std::map<uint256, CFinalizedBudgetVote> mapOrphanFinalizedBudgetVotes;
 
-    CFundamentalnodeBudgetManager()
+    CBudgetManager()
     {
         mapProposals.clear();
         mapFinalizedBudgets.clear();
@@ -225,22 +225,22 @@ public:
     void Calculate();
     void ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
     void NewBlock();
-    CFundamentalnodeBudgetProposal* FindProposal(const std::string& strProposalName);
-    CFundamentalnodeBudgetProposal* FindProposal(uint256 nHash);
-    CFinalizedFundamentalnodeBudget* FindFinalizedBudget(uint256 nHash);
+    CBudgetProposal* FindProposal(const std::string& strProposalName);
+    CBudgetProposal* FindProposal(uint256 nHash);
+    CFinalizedBudget* FindFinalizedBudget(uint256 nHash);
     std::pair<std::string, std::string> GetVotes(std::string strProposalName);
 
     CAmount GetTotalBudgetFundamentalnode(int nHeight);
-    std::vector<CFundamentalnodeBudgetProposal*> GetBudget();
-    std::vector<CFundamentalnodeBudgetProposal*> GetAllProposals();
-    std::vector<CFinalizedFundamentalnodeBudget*> GetFinalizedBudgets();
+    std::vector<CBudgetProposal*> GetBudget();
+    std::vector<CBudgetProposal*> GetAllProposals();
+    std::vector<CFinalizedBudget*> GetFinalizedBudgets();
     bool IsBudgetPaymentBlock(int nBlockHeight);
-    bool AddProposal(CFundamentalnodeBudgetProposal& budgetProposal);
-    bool AddFinalizedBudget(CFinalizedFundamentalnodeBudget& finalizedBudget);
+    bool AddProposal(CBudgetProposal& budgetProposal);
+    bool AddFinalizedBudget(CFinalizedBudget& finalizedBudget);
     void SubmitFinalBudget();
 
     bool UpdateProposal(CBudgetVote& vote, CNode* pfrom, std::string& strError);
-    bool UpdateFinalizedBudget(CFinalizedFundamentalnodeBudgetVote& vote, CNode* pfrom, std::string& strError);
+    bool UpdateFinalizedBudget(CFinalizedBudgetVote& vote, CNode* pfrom, std::string& strError);
     bool PropExists(uint256 nHash);
     TrxValidationStatus IsTransactionValid(const CTransaction& txNew, int nBlockHeight);
     std::string GetRequiredFundamentalnodePaymentsString(int nBlockHeight);
@@ -290,7 +290,7 @@ public:
     CScript payee;
     CAmount nAmount;
 
-    CTxFundamentalnodeBudgetPayment()
+    CTxBudgetPayment()
     {
         payee = CScript();
         nAmount = 0;
@@ -324,16 +324,16 @@ public:
     bool fValid;
     std::string strBudgetName;
     int nBlockStart;
-    std::vector<CTxFundamentalnodeBudgetPayment> vecBudgetPayments;
-    map<uint256, CFinalizedFundamentalnodeBudgetVote> mapVotes;
+    std::vector<CTxBudgetPayment> vecBudgetPayments;
+    map<uint256, CFinalizedBudgetVote> mapVotes;
     uint256 nFeeTXHash;
     int64_t nTime;
 
-    CFinalizedFundamentalnodeBudget();
-    CFinalizedFundamentalnodeBudget(const CFinalizedFundamentalnodeBudget& other);
+    CFinalizedBudget();
+    CFinalizedBudget(const CFinalizedBudget& other);
 
     void CleanAndRemove(bool fSignatureCheck);
-    bool AddOrUpdateVote(CFinalizedFundamentalnodeBudgetVote& vote, std::string& strError);
+    bool AddOrUpdateVote(CFinalizedBudgetVote& vote, std::string& strError);
     double GetScore();
     bool HasMinimumRequiredSupport();
 
@@ -346,7 +346,7 @@ public:
     int GetVoteCount() { return (int)mapVotes.size(); }
     bool IsPaidAlready(uint256 nProposalHash, int nBlockHeight);
     TrxValidationStatus IsTransactionValid(const CTransaction& txNew, int nBlockHeight);
-    bool GetBudgetPaymentByBlock(int64_t nBlockHeight, CTxFundamentalnodeBudgetPayment& payment)
+    bool GetBudgetPaymentByBlock(int64_t nBlockHeight, CTxBudgetPayment& payment)
     {
         LOCK(cs);
 
@@ -407,17 +407,17 @@ public:
 };
 
 // FinalizedBudget are cast then sent to peers with this object, which leaves the votes out
-class CFinalizedFundamentalnodeBudgetBroadcast : public CFinalizedFundamentalnodeBudget
+class CFinalizedFundamentalnodeBudgetBroadcast : public CFinalizedBudget
 {
 private:
     std::vector<unsigned char> vchSig;
 
 public:
-    CFinalizedFundamentalnodeBudgetBroadcast();
-    CFinalizedFundamentalnodeBudgetBroadcast(const CFinalizedFundamentalnodeBudget& other);
-    CFinalizedFundamentalnodeBudgetBroadcast(std::string strBudgetNameIn, int nBlockStartIn, std::vector<CTxFundamentalnodeBudgetPayment> vecBudgetPaymentsIn, uint256 nFeeTXHashIn);
+    CFinalizedBudgetBroadcast();
+    CFinalizedBudgetBroadcast(const CFinalizedBudget& other);
+    CFinalizedBudgetBroadcast(std::string strBudgetNameIn, int nBlockStartIn, std::vector<CTxBudgetPayment> vecBudgetPaymentsIn, uint256 nFeeTXHashIn);
 
-    void swap(CFinalizedFundamentalnodeBudgetBroadcast& first, CFinalizedFundamentalnodeBudgetBroadcast& second) // nothrow
+    void swap(CFinalizedBudgetBroadcast& first, CFinalizedBudgetBroadcast& second) // nothrow
     {
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
@@ -432,7 +432,7 @@ public:
         swap(first.nTime, second.nTime);
     }
 
-    CFinalizedFundamentalnodeBudgetBroadcast& operator=(CFinalizedFundamentalnodeBudgetBroadcast from)
+    CFinalizedBudgetBroadcast& operator=(CFinalizedBudgetBroadcast from)
     {
         swap(*this, from);
         return *this;
@@ -485,9 +485,9 @@ public:
     map<uint256, CBudgetVote> mapVotes;
     //cache object
 
-    CFundamentalnodeBudgetProposal();
-    CFundamentalnodeBudgetProposal(const CFundamentalnodeBudgetProposal& other);
-    CFundamentalnodeBudgetProposal(std::string strProposalNameIn, std::string strURLIn, int nBlockStartIn, int nBlockEndIn, CScript addressIn, CAmount nAmountIn, uint256 nFeeTXHashIn);
+    CBudgetProposal();
+    CBudgetProposal(const CBudgetProposal& other);
+    CBudgetProposal(std::string strProposalNameIn, std::string strURLIn, int nBlockStartIn, int nBlockEndIn, CScript addressIn, CAmount nAmountIn, uint256 nFeeTXHashIn);
 
     void Calculate();
     bool AddOrUpdateVote(CBudgetVote& vote, std::string& strError);
@@ -561,15 +561,15 @@ public:
 };
 
 // Proposals are cast then sent to peers with this object, which leaves the votes out
-class CFundamentalnodeBudgetProposalBroadcast : public CFundamentalnodeBudgetProposal
+class CFundamentalnodeBudgetProposalBroadcast : public CBudgetProposal
 {
 public:
-    CFundamentalnodeBudgetProposalBroadcast() : CFundamentalnodeBudgetProposal() {}
-    CFundamentalnodeBudgetProposalBroadcast(const CFundamentalnodeBudgetProposal& other) : CFundamentalnodeBudgetProposal(other) {}
-    CFundamentalnodeBudgetProposalBroadcast(const CFundamentalnodeBudgetProposalBroadcast& other) : CFundamentalnodeBudgetProposal(other) {}
-    CFundamentalnodeBudgetProposalBroadcast(std::string strProposalNameIn, std::string strURLIn, int nPaymentCount, CScript addressIn, CAmount nAmountIn, int nBlockStartIn, uint256 nFeeTXHashIn);
+    CBudgetProposalBroadcast() : CBudgetProposal() {}
+    CBudgetProposalBroadcast(const CBudgetProposal& other) : CBudgetProposal(other) {}
+    CBudgetProposalBroadcast(const CBudgetProposalBroadcast& other) : CBudgetProposal(other) {}
+    CBudgetProposalBroadcast(std::string strProposalNameIn, std::string strURLIn, int nPaymentCount, CScript addressIn, CAmount nAmountIn, int nBlockStartIn, uint256 nFeeTXHashIn);
 
-    void swap(CFundamentalnodeBudgetProposalBroadcast& first, CFundamentalnodeBudgetProposalBroadcast& second) // nothrow
+    void swap(CBudgetProposalBroadcast& first, CBudgetProposalBroadcast& second) // nothrow
     {
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
@@ -587,7 +587,7 @@ public:
         first.mapVotes.swap(second.mapVotes);
     }
 
-    CFundamentalnodeBudgetProposalBroadcast& operator=(CFundamentalnodeBudgetProposalBroadcast from)
+    CBudgetProposalBroadcast& operator=(CBudgetProposalBroadcast from)
     {
         swap(*this, from);
         return *this;
