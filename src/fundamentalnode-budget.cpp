@@ -801,7 +801,7 @@ std::vector<CBudgetProposal*> CBudgetManager::GetBudget()
 
     int nBlockStart = pindexPrev->nHeight - pindexPrev->nHeight % GetBudgetPaymentCycleBlocks() + GetBudgetPaymentCycleBlocks();
     int nBlockEnd = nBlockStart + GetBudgetPaymentCycleBlocks() - 1;
-    CAmount nTotalBudget = GetTotalBudgetFundamentalnode(nBlockStart);
+    CAmount nTotalBudget = GetTotalBudget(nBlockStart);
 
 
     std::vector<std::pair<CBudgetProposal*, int> >::iterator it2 = vBudgetPorposalsSort.begin();
@@ -909,7 +909,7 @@ std::string CBudgetManager::GetRequiredFundamentalnodePaymentsString(int nBlockH
     return ret;
 }
 
-CAmount CBudgetManager::GetTotalBudgetFundamentalnode(int nHeight)
+CAmount CBudgetManager::GetTotalBudget(int nHeight)
 {
     if (chainActive.Tip() == NULL) return 0;
 
@@ -1504,7 +1504,7 @@ bool CBudgetProposal::IsValid(std::string& strError, bool fCheckCollateral)
     // }
 
     //can only pay out 10% of the possible coins (min value of coins)
-    if (nAmount > budget.GetTotalBudgetFundamentalnode(nBlockStart)) {
+    if (nAmount > budget.GetTotalBudget(nBlockStart)) {
         strError = "Proposal " + strProposalName + ": Payment more than max";
         return false;
     }
@@ -2017,7 +2017,7 @@ bool CFinalizedBudget::IsValid(std::string& strError, bool fCheckCollateral)
     }
 
     // Can only pay out 10% of the possible coins (min value of coins)
-    if (GetTotalPayout() > budget.GetTotalBudgetFundamentalnode(nBlockStart)) {
+    if (GetTotalPayout() > budget.GetTotalBudget(nBlockStart)) {
         strError = "Budget " + strBudgetName + " (" + strProposals + ") Invalid Payout (more than max)";
         return false;
     }

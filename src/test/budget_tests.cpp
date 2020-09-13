@@ -14,7 +14,7 @@ void CheckBudgetValue(int nHeight, std::string strNetwork, CAmount nExpectedValu
 {
 return; // need to be fixed
     CBudgetManager budget;
-    CAmount nBudget = budget.GetTotalBudgetFundamentalnode(nHeight);
+    CAmount nBudget = budget.GetTotalBudget(nHeight);
     std::string strError = strprintf("Budget is not as expected for %s. Result: %s, Expected: %s", strNetwork, FormatMoney(nBudget), FormatMoney(nExpectedValue));
     BOOST_CHECK_MESSAGE(nBudget == nExpectedValue, strError);
 }

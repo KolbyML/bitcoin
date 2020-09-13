@@ -230,7 +230,7 @@ public:
     CFinalizedBudget* FindFinalizedBudget(uint256 nHash);
     std::pair<std::string, std::string> GetVotes(std::string strProposalName);
 
-    CAmount GetTotalBudgetFundamentalnode(int nHeight);
+    CAmount GetTotalBudget(int nHeight);
     std::vector<CBudgetProposal*> GetBudget();
     std::vector<CBudgetProposal*> GetAllProposals();
     std::vector<CFinalizedBudget*> GetFinalizedBudgets();
