@@ -88,7 +88,6 @@ void CMasternodeSync::Reset()
     lastBudgetItem = 0;
     mapSeenSyncMNB.clear();
     mapSeenSyncMNW.clear();
-    mapSeenSyncBudget.clear();
     lastFailure = 0;
     nCountFailures = 0;
     sumMasternodeList = 0;
@@ -127,20 +126,6 @@ void CMasternodeSync::AddedMasternodeWinner(uint256 hash)
     } else {
         lastMasternodeWinner = GetTime();
         mapSeenSyncMNW.insert(std::make_pair(hash, 1));
-    }
-}
-
-void CMasternodeSync::AddedBudgetItem(uint256 hash)
-{
-    if (budget.mapSeenMasternodeBudgetProposals.count(hash) || budget.mapSeenMasternodeBudgetVotes.count(hash) ||
-        budget.mapSeenFinalizedBudgets.count(hash) || budget.mapSeenFinalizedBudgetVotes.count(hash)) {
-        if (mapSeenSyncBudget[hash] < MASTERNODE_SYNC_THRESHOLD) {
-            lastBudgetItem = GetTime();
-            mapSeenSyncBudget[hash]++;
-        }
-    } else {
-        lastBudgetItem = GetTime();
-        mapSeenSyncBudget.insert(std::make_pair(hash, 1));
     }
 }
 
