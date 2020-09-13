@@ -40,7 +40,7 @@
 #include "masternode.h"
 #include "masternodeman.h"
 #include "activemasternode.h"
-#include "masternode-payments.h"
+#include "masternode-sync.h"
 
 #include "primitives/zerocoin.h"
 #include "libzerocoin/Denominations.h"
