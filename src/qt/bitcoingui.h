@@ -217,8 +217,6 @@ private slots:
     void gotoMasternodePage();
     /** Switch to privacy page */
     void gotoReceiveCoinsPage();
-    /** Switch to receive coins page */
-    void gotoPrivacyPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
 
