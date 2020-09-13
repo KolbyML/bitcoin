@@ -763,7 +763,7 @@ UniValue listmasternodeconf (const UniValue& params, bool fHelp)
 
 UniValue getmasternodestatus(const UniValue& params, bool fHelp)
 {
-    if (request.fHelp || (request.params.size() != 0))
+    if (fHelp || (params.size() != 0))
         throw std::runtime_error(
                 "getmasternodestatus\n"
                 "\nPrint masternode status\n"
