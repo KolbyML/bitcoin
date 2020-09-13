@@ -761,7 +761,7 @@ UniValue listmasternodeconf (const UniValue& params, bool fHelp)
     return ret;
 }
 
-UniValue getmasternodestatus (const JSONRPCRequest& request)
+UniValue getmasternodestatus(const UniValue& params, bool fHelp)
 {
     if (request.fHelp || (request.params.size() != 0))
         throw std::runtime_error(
