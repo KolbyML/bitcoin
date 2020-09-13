@@ -761,6 +761,48 @@ UniValue listmasternodeconf (const UniValue& params, bool fHelp)
     return ret;
 }
 
+UniValue getmasternodestatus (const JSONRPCRequest& request)
+{
+    if (request.fHelp || (request.params.size() != 0))
+        throw std::runtime_error(
+                "getmasternodestatus\n"
+                "\nPrint masternode status\n"
+
+                "\nResult:\n"
+                "{\n"
+                "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
+                "  \"outputidx\": n,          (numeric) Collateral transaction output index number\n"
+                "  \"netaddr\": \"xxxx\",     (string) Masternode network address\n"
+                "  \"addr\": \"xxxx\",        (string) PIVX address for masternode payments\n"
+                "  \"status\": \"xxxx\",      (string) Masternode status\n"
+                "  \"message\": \"xxxx\"      (string) Masternode status message\n"
+                "}\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("getmasternodestatus", "") + HelpExampleRpc("getmasternodestatus", ""));
+
+    if (!fMasterNode)
+        throw JSONRPCError(RPC_MISC_ERROR, _("This is not a masternode."));
+
+    if (activeMasternode.vin == nullopt)
+        throw JSONRPCError(RPC_MISC_ERROR, _("Active Masternode not initialized."));
+
+    CMasternode* pmn = mnodeman.Find(*(activeMasternode.vin));
+
+    if (pmn) {
+        UniValue mnObj(UniValue::VOBJ);
+        mnObj.push_back(Pair("txhash", activeMasternode.vin->prevout.hash.ToString()));
+        mnObj.push_back(Pair("outputidx", (uint64_t)activeMasternode.vin->prevout.n));
+        mnObj.push_back(Pair("netaddr", activeMasternode.service.ToString()));
+        mnObj.push_back(Pair("addr", EncodeDestination(pmn->pubKeyCollateralAddress.GetID())));
+        mnObj.push_back(Pair("status", activeMasternode.GetStatus()));
+        mnObj.push_back(Pair("message", activeMasternode.GetStatusMessage()));
+        return mnObj;
+    }
+    throw std::runtime_error("Masternode not found in the list of available masternodes. Current status: "
+                             + activeMasternode.GetStatusMessage());
+}
+
 UniValue getmasternodewinners (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 3)
