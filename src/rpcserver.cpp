@@ -386,7 +386,6 @@ static const CRPCCommand vRPCCommands[] =
         {"vitae", "makekeypair", &makekeypair, true, true, false},
         {"vitae", "mnspork", &mnspork, true, true, false},
         {"vitae", "masternode", &masternode, true, true, false},
-        {"vitae", "getmasternodestatus", &getmasternodestatus, true, true, false},
 #ifdef ENABLE_WALLET
         {"vitae", "obfuscation", &obfuscation, false, false, true}, /* not threadSafe because of SendMoney */
 
