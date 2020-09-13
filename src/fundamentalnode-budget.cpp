@@ -1571,7 +1571,7 @@ void CBudgetProposal::CleanAndRemove(bool fSignatureCheck)
     }
 }
 
-double CBudgetProposal::GetRatioFundamentalnode()
+double CBudgetProposal::GetRatio()
 {
     int yeas = 0;
     int nays = 0;
