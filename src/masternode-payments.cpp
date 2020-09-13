@@ -227,8 +227,6 @@ void DumpMasternodePayments()
 
 bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
 {
-    TrxValidationStatus transactionStatus = TrxValidationStatus::InValid;
-
     if (!masternodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
         LogPrint("masternode", "Client not synced, skipping block payee checks\n");
         return true;
