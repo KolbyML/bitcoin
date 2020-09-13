@@ -880,7 +880,7 @@ std::vector<CFinalizedBudget*> CBudgetManager::GetFinalizedBudgets()
     return vFinalizedBudgetsRet;
 }
 
-std::string CBudgetManager::GetRequiredPaymentsString(int nBlockHeight)
+std::string CBudgetManager::GetRequiredPaymentsStringFundamentalnode(int nBlockHeight)
 {
     LOCK(cs);
 
