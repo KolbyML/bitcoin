@@ -11,6 +11,7 @@
 #include "init.h"
 #include "main.h"
 #include "fundamentalnode-sync.h"
+#include "masternode-sync.h"
 #include "net.h"
 #include "netbase.h"
 #include "rpcserver.h"
