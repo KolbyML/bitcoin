@@ -21,7 +21,7 @@
 
 #include <boost/tokenizer.hpp>
 
-UniValue listmasternodes(const UniValue& params)
+UniValue listmasternodes(const UniValue& params, bool fHelp)
 {
     std::string strFilter = "";
 
@@ -104,7 +104,7 @@ UniValue listmasternodes(const UniValue& params)
     return ret;
 }
 
-UniValue getmasternodecount (const UniValue& params)
+UniValue getmasternodecount (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() > 0))
         throw std::runtime_error(
@@ -142,7 +142,7 @@ UniValue getmasternodecount (const UniValue& params)
     return obj;
 }
 
-UniValue masternodecurrent (const UniValue& params)
+UniValue masternodecurrent (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
         throw std::runtime_error(
@@ -235,7 +235,7 @@ void SerializeMNB(UniValue& statusObjRet, const CMasternodeBroadcast& mnb, const
     return SerializeMNB(statusObjRet, mnb, fSuccess, successful, failed);
 }
 
-UniValue startmasternode (const UniValue& params)
+UniValue startmasternode (const UniValue& params, bool fHelp)
 {
     std::string strCommand;
     if (params.size() >= 1) {
@@ -366,7 +366,7 @@ UniValue startmasternode (const UniValue& params)
     return NullUniValue;
 }
 
-UniValue createmasternodekey (const UniValue& params)
+UniValue createmasternodekey (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
         throw std::runtime_error(
@@ -385,7 +385,7 @@ UniValue createmasternodekey (const UniValue& params)
     return EncodeSecret(secret);
 }
 
-UniValue getmasternodeoutputs (const UniValue& params)
+UniValue getmasternodeoutputs (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
         throw std::runtime_error(
@@ -419,7 +419,7 @@ UniValue getmasternodeoutputs (const UniValue& params)
     return ret;
 }
 
-UniValue listmasternodeconf (const UniValue& params)
+UniValue listmasternodeconf (const UniValue& params, bool fHelp)
 {
     std::string strFilter = "";
 
@@ -481,7 +481,7 @@ UniValue listmasternodeconf (const UniValue& params)
     return ret;
 }
 
-UniValue getmasternodestatus (const UniValue& params)
+UniValue getmasternodestatus (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
         throw std::runtime_error(
@@ -523,7 +523,7 @@ UniValue getmasternodestatus (const UniValue& params)
                              + activeMasternode.GetStatusMessage());
 }
 
-UniValue getmasternodewinners (const UniValue& params)
+UniValue getmasternodewinners (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 3)
         throw std::runtime_error(
@@ -625,7 +625,7 @@ UniValue getmasternodewinners (const UniValue& params)
     return ret;
 }
 
-UniValue getmasternodescores (const UniValue& params)
+UniValue getmasternodescores (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
         throw std::runtime_error(
@@ -689,7 +689,7 @@ bool DecodeHexMnb(CMasternodeBroadcast& mnb, std::string strHexMnb) {
 
     return true;
 }
-UniValue createmasternodebroadcast(const UniValue& params)
+UniValue createmasternodebroadcast(const UniValue& params, bool fHelp)
 {
     std::string strCommand;
     if (params.size() >= 1)
@@ -798,7 +798,7 @@ UniValue createmasternodebroadcast(const UniValue& params)
     return NullUniValue;
 }
 
-UniValue decodemasternodebroadcast(const UniValue& params)
+UniValue decodemasternodebroadcast(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw std::runtime_error(
@@ -864,7 +864,7 @@ UniValue decodemasternodebroadcast(const UniValue& params)
     return resultObj;
 }
 
-UniValue relaymasternodebroadcast(const UniValue& params)
+UniValue relaymasternodebroadcast(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw std::runtime_error(
