@@ -63,14 +63,14 @@ UniValue listmasternodes(const UniValue& params, bool fHelp)
         if(!pindex) return 0;
         nHeight = pindex->nHeight;
     }
-    std::vector<std::pair<int, CMasternode> > vMasternodeRanks = mnodeman.GetMasternodeRanks(nHeight);
+    std::vector<std::pair<int, CMasternode> > vMasternodeRanks = m_nodeman.GetMasternodeRanks(nHeight);
     for (PAIRTYPE(int, CMasternode) & s : vMasternodeRanks) {
         UniValue obj(UniValue::VOBJ);
         std::string strVin = s.second.vin.prevout.ToStringShort();
         std::string strTxHash = s.second.vin.prevout.hash.ToString();
         uint32_t oIdx = s.second.vin.prevout.n;
 
-        CMasternode* mn = mnodeman.Find(s.second.vin);
+        CMasternode* mn = m_nodeman.Find(s.second.vin);
 
         if (mn != NULL) {
             if (strFilter != "" && strTxHash.find(strFilter) == std::string::npos &&
@@ -127,13 +127,13 @@ UniValue getmasternodecount (const UniValue& params, bool fHelp)
     int ipv4 = 0, ipv6 = 0, onion = 0;
 
     if (chainActive.Tip())
-        mnodeman.GetNextMasternodeInQueueForPayment(chainActive.Tip()->nHeight, true, nCount);
+        m_nodeman.GetNextMasternodeInQueueForPayment(chainActive.Tip()->nHeight, true, nCount);
 
-    mnodeman.CountNetworks(ActiveProtocol(), ipv4, ipv6, onion);
+    m_nodeman.CountNetworks(ActiveProtocol(), ipv4, ipv6, onion);
 
-    obj.push_back(Pair("total", mnodeman.size()));
-    obj.push_back(Pair("stable", mnodeman.stable_size()));
-    obj.push_back(Pair("enabled", mnodeman.CountEnabled()));
+    obj.push_back(Pair("total", m_nodeman.size()));
+    obj.push_back(Pair("stable", m_nodeman.stable_size()));
+    obj.push_back(Pair("enabled", m_nodeman.CountEnabled()));
     obj.push_back(Pair("inqueue", nCount));
     obj.push_back(Pair("ipv4", ipv4));
     obj.push_back(Pair("ipv6", ipv6));
@@ -163,7 +163,7 @@ UniValue masternodecurrent (const UniValue& params, bool fHelp)
 
     const int nHeight = WITH_LOCK(cs_main, return chainActive.Height() + 1);
     int nCount = 0;
-    CMasternode* winner = mnodeman.GetNextMasternodeInQueueForPayment(nHeight, true, nCount);
+    CMasternode* winner = m_nodeman.GetNextMasternodeInQueueForPayment(nHeight, true, nCount);
     if (winner) {
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("protocol", (int64_t)winner->protocolVersion));
@@ -185,7 +185,7 @@ bool StartMasternodeEntry(UniValue& statusObjRet, CMasternodeBroadcast& mnbRet, 
     }
 
     CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(nIndex));
-    CMasternode* pmn = mnodeman.Find(vin);
+    CMasternode* pmn = m_nodeman.Find(vin);
     if (pmn != NULL) {
         if (strCommand == "missing") return false;
         if (strCommand == "disabled" && pmn->IsEnabled()) return false;
@@ -204,7 +204,7 @@ void RelayMNB(CMasternodeBroadcast& mnb, const bool fSuccess, int& successful, i
 {
     if (fSuccess) {
         successful++;
-        mnodeman.UpdateMasternodeList(mnb);
+        m_nodeman.UpdateMasternodeList(mnb);
         mnb.Relay();
     } else {
         failed++;
@@ -459,7 +459,7 @@ UniValue listmasternodeconf (const UniValue& params, bool fHelp)
         if(!mne.castOutputIndex(nIndex))
             continue;
         CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(nIndex));
-        CMasternode* pmn = mnodeman.Find(vin);
+        CMasternode* pmn = m_nodeman.Find(vin);
 
         std::string strStatus = pmn ? pmn->Status() : "MISSING";
 
@@ -507,7 +507,7 @@ UniValue getmasternodestatus (const UniValue& params, bool fHelp)
     if (activeMasternode.vin == nullopt)
         throw JSONRPCError(RPC_MISC_ERROR, _("Active Masternode not initialized."));
 
-    CMasternode* pmn = mnodeman.Find(*(activeMasternode.vin));
+    CMasternode* pmn = m_nodeman.Find(*(activeMasternode.vin));
 
     if (pmn) {
         UniValue mnObj(UniValue::VOBJ);
@@ -655,7 +655,7 @@ UniValue getmasternodescores (const UniValue& params, bool fHelp)
     }
     UniValue obj(UniValue::VOBJ);
 
-    std::vector<CMasternode> vMasternodes = mnodeman.GetFullMasternodeVector();
+    std::vector<CMasternode> vMasternodes = m_nodeman.GetFullMasternodeVector();
     for (int nHeight = chainActive.Tip()->nHeight - nLast; nHeight < chainActive.Tip()->nHeight + 20; nHeight++) {
         uint256 nHigh;
         CMasternode* pBestMasternode = NULL;
@@ -886,7 +886,7 @@ UniValue relaymasternodebroadcast(const UniValue& params, bool fHelp)
     if(!mnb.CheckSignature())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Masternode broadcast signature verification failed");
 
-    mnodeman.UpdateMasternodeList(mnb);
+    m_nodeman.UpdateMasternodeList(mnb);
     mnb.Relay();
 
     return strprintf("Masternode broadcast sent (service %s, vin %s)", mnb.addr.ToString(), mnb.vin.ToString());
