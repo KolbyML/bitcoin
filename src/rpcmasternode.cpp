@@ -14,7 +14,7 @@
 #include "masternodeconfig.h"
 #include "masternodeman.h"
 #include "netbase.h"
-#include "server.h"
+#include "rpcserver.h"
 #include "utilmoneystr.h"
 
 #include <univalue.h>
