@@ -72,7 +72,7 @@ UniValue listmasternodes(const UniValue& params, bool fHelp)
 
         CMasternode* mn = m_nodeman.Find(s.second.vin);
 
-        if (mn != NULL)
+        if (mn != NULL) {
             if (strFilter != "" && strTxHash.find(strFilter) == std::string::npos &&
                 mn->Status().find(strFilter) == std::string::npos &&
                 CBitcoinAddress(mn->pubKeyCollateralAddress.GetID()).ToString().find(strFilter) == string::npos) continue;
