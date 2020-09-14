@@ -221,6 +221,67 @@ UniValue fnsync(const UniValue& params, bool fHelp)
     return "failure";
 }
 
+UniValue mnsync(const JSONRPCRequest& request)
+{
+    std::string strMode;
+    if (request.params.size() == 1)
+        strMode = request.params[0].get_str();
+
+    if (request.fHelp || request.params.size() != 1 || (strMode != "status" && strMode != "reset")) {
+        throw std::runtime_error(
+                "mnsync \"status|reset\"\n"
+                "\nReturns the sync status or resets sync.\n"
+
+                "\nArguments:\n"
+                "1. \"mode\"    (string, required) either 'status' or 'reset'\n"
+
+                "\nResult ('status' mode):\n"
+                "{\n"
+                "  \"IsBlockchainSynced\": true|false,    (boolean) 'true' if blockchain is synced\n"
+                "  \"lastMasternodeList\": xxxx,        (numeric) Timestamp of last MN list message\n"
+                "  \"lastMasternodeWinner\": xxxx,      (numeric) Timestamp of last MN winner message\n"
+                "  \"lastFailure\": xxxx,           (numeric) Timestamp of last failed sync\n"
+                "  \"nCountFailures\": n,           (numeric) Number of failed syncs (total)\n"
+                "  \"sumMasternodeList\": n,        (numeric) Number of MN list messages (total)\n"
+                "  \"sumMasternodeWinner\": n,      (numeric) Number of MN winner messages (total)\n"
+                "  \"countMasternodeList\": n,      (numeric) Number of MN list messages (local)\n"
+                "  \"countMasternodeWinner\": n,    (numeric) Number of MN winner messages (local)\n"
+                "  \"RequestedMasternodeAssets\": n, (numeric) Status code of last sync phase\n"
+                "  \"RequestedMasternodeAttempt\": n, (numeric) Status code of last sync attempt\n"
+                "}\n"
+
+                "\nResult ('reset' mode):\n"
+                "\"status\"     (string) 'success'\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("mnsync", "\"status\"") + HelpExampleRpc("mnsync", "\"status\""));
+    }
+
+    if (strMode == "status") {
+        UniValue obj(UniValue::VOBJ);
+
+        obj.push_back(Pair("IsBlockchainSynced", masternodeSync.IsBlockchainSynced()));
+        obj.push_back(Pair("lastMasternodeList", masternodeSync.lastMasternodeList));
+        obj.push_back(Pair("lastMasternodeWinner", masternodeSync.lastMasternodeWinner));
+        obj.push_back(Pair("lastFailure", masternodeSync.lastFailure));
+        obj.push_back(Pair("nCountFailures", masternodeSync.nCountFailures));
+        obj.push_back(Pair("sumMasternodeList", masternodeSync.sumMasternodeList));
+        obj.push_back(Pair("sumMasternodeWinner", masternodeSync.sumMasternodeWinner));
+        obj.push_back(Pair("countMasternodeList", masternodeSync.countMasternodeList));
+        obj.push_back(Pair("countMasternodeWinner", masternodeSync.countMasternodeWinner));
+        obj.push_back(Pair("RequestedMasternodeAssets", masternodeSync.RequestedMasternodeAssets));
+        obj.push_back(Pair("RequestedMasternodeAttempt", masternodeSync.RequestedMasternodeAttempt));
+
+        return obj;
+    }
+
+    if (strMode == "reset") {
+        masternodeSync.Reset();
+        return "success";
+    }
+    return "failure";
+}
+
 #ifdef ENABLE_WALLET
 class DescribeAddressVisitor : public boost::static_visitor<UniValue>
 {
