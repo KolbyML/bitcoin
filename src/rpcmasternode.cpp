@@ -382,7 +382,7 @@ UniValue createmasternodekey (const UniValue& params, bool fHelp)
     CKey secret;
     secret.MakeNewKey(false);
 
-    return EncodeSecret(secret);
+    return CBitcoinSecret(secret).ToString();
 }
 
 UniValue getmasternodeoutputs (const UniValue& params, bool fHelp)
