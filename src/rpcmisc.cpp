@@ -221,13 +221,13 @@ UniValue fnsync(const UniValue& params, bool fHelp)
     return "failure";
 }
 
-UniValue mnsync(const JSONRPCRequest& request)
+UniValue mnsync(const UniValue& params, bool fHelp)
 {
     std::string strMode;
-    if (request.params.size() == 1)
-        strMode = request.params[0].get_str();
+    if (params.size() == 1)
+        strMode = params[0].get_str();
 
-    if (request.fHelp || request.params.size() != 1 || (strMode != "status" && strMode != "reset")) {
+    if (fHelp || params.size() != 1 || (strMode != "status" && strMode != "reset")) {
         throw std::runtime_error(
                 "mnsync \"status|reset\"\n"
                 "\nReturns the sync status or resets sync.\n"
