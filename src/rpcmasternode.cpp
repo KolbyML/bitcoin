@@ -503,7 +503,7 @@ UniValue getmasternodestatus (const UniValue& params, bool fHelp)
     if (!fMasterNode)
         throw JSONRPCError(RPC_MISC_ERROR, _("This is not a masternode."));
 
-    if (activeMasternode.vin == nullopt)
+    if (activeMasternode.vin == boost::none)
         throw JSONRPCError(RPC_MISC_ERROR, _("Active Masternode not initialized."));
 
     CMasternode* pmn = m_nodeman.Find(*(activeMasternode.vin));
