@@ -138,7 +138,6 @@ BITCOIN_CORE_H = \
   masternode-sync.h \
   masternode-payments.h \
   masternodeman.h \
-  masternodeman.h \
   masternodeconfig.h \
   fundamentalnode.h \
   fundamentalnode-payments.h \
