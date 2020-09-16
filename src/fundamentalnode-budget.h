@@ -204,8 +204,8 @@ public:
 
     void ClearSeen()
     {
-        mapSeenMasternodeBudgetProposals.clear();
-        mapSeenMasternodeBudgetVotes.clear();
+        mapSeenFundamentalnodeBudgetProposals.clear();
+        mapSeenFundamentalnodeBudgetVotes.clear();
         mapSeenFinalizedBudgets.clear();
         mapSeenFinalizedBudgetVotes.clear();
     }
