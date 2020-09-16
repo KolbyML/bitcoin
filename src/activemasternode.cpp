@@ -172,6 +172,47 @@ bool CActiveMasternode::SendMasternodePing(std::string& errorMessage)
     }
 }
 
+// get all possible outputs for running Masternode
+std::vector<COutput> CActiveMasternode::SelectCoinsMasternode()
+{
+    std::vector<COutput> vCoins;
+    std::vector<COutput> filteredCoins;
+    std::vector<COutPoint> confLockedCoins;
+
+    // Temporary unlock MN coins from masternode.conf
+    if (GetBoolArg("-mnconflock", true)) {
+        uint256 mnTxHash;
+        for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
+            mnTxHash.SetHex(mne.getTxHash());
+
+            int nIndex;
+            if(!mne.castOutputIndex(nIndex))
+                continue;
+
+            COutPoint outpoint = COutPoint(mnTxHash, nIndex);
+            confLockedCoins.push_back(outpoint);
+            pwalletMain->UnlockCoin(outpoint);
+        }
+    }
+
+    // Retrieve all possible outputs
+    pwalletMain->AvailableCoins(&vCoins);
+
+    // Lock MN coins from masternode.conf back if they where temporary unlocked
+    if (!confLockedCoins.empty()) {
+        for (COutPoint outpoint : confLockedCoins)
+            pwalletMain->LockCoin(outpoint);
+    }
+
+    // Filter
+    for (const COutput& out : vCoins) {
+        if (out.tx->vout[out.i].nValue == 10000 * COIN) { //exactly
+            filteredCoins.push_back(out);
+        }
+    }
+    return filteredCoins;
+}
+
 // when starting a Masternode, this can enable to run as a hot wallet with no funds
 bool CActiveMasternode::EnableHotColdMasterNode(CTxIn& newVin, CService& newService)
 {

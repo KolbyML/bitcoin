@@ -50,6 +50,8 @@ public:
     std::string GetStatusMessage() const;
     int GetStatus() const { return status; }
 
+    std::vector<COutput> SelectCoinsMasternode();
+
     /// Enable cold wallet mode (run a Masternode with no funds)
     bool EnableHotColdMasterNode(CTxIn& vin, CService& addr);
 };
