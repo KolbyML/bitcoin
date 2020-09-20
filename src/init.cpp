@@ -34,6 +34,7 @@
 #include "masternodeman.h"
 
 #include "miner.h"
+#include "messagesigner.h"
 #include "net.h"
 #include "rpcserver.h"
 #include "script/standard.h"
@@ -1728,7 +1729,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             MilliSleep(10);
     }
 
-    // ********************************************************* Step 10: setup ObfuScation
+    // ********************************************************* Step 10: setup layer 2 data
 
     uiInterface.InitMessage(_("Loading fundamentalnode cache..."));
 

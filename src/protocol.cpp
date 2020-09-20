@@ -34,7 +34,6 @@ static const char* ppszTypeName[] =
         "fn quorum",
         "fn announce",
         "fn ping",
-        "dstx",
     "mn spork",
     "mn winner",
     "mn scan error",

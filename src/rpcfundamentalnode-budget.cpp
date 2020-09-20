@@ -9,6 +9,7 @@
 #include "db.h"
 #include "init.h"
 #include "main.h"
+#include "messagesigner.h"
 #include "fundamentalnode-budget.h"
 #include "fundamentalnode-payments.h"
 #include "fundamentalnodeconfig.h"

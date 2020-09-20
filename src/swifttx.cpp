@@ -9,6 +9,7 @@
 #include "base58.h"
 #include "key.h"
 #include "fundamentalnodeman.h"
+#include "messagesigner.h"
 #include "net.h"
 #include "protocol.h"
 #include "spork.h"
@@ -264,6 +265,10 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
 {
     if (!fFundamentalNode) return;
 
+    if (activeMasternode.vin == nullopt)
+        LogPrint("fundamentalnode", "%s: Active Fundamentalnode not initialized.", __func__);
+    return;
+
     int n = mnodeman.GetFundamentalnodeRank(activeFundamentalnode.vin, nBlockHeight, MIN_SWIFTTX_PROTO_VERSION);
 
     if (n == -1) {
@@ -497,35 +502,6 @@ bool CConsensusVote::SignatureValid()
 
     return true;
 }
-
-bool CConsensusVote::Sign()
-{
-    std::string errorMessage;
-
-    CKey key2;
-    CPubKey pubkey2;
-    std::string strMessage = txHash.ToString().c_str() + boost::lexical_cast<std::string>(nBlockHeight);
-    //LogPrintf("signing strMessage %s \n", strMessage.c_str());
-    //LogPrintf("signing privkey %s \n", strFundamentalNodePrivKey.c_str());
-
-    if (!CMessageSigner::GetKeysFromSecret(strFundamentalNodePrivKey, key2, pubkey2)) {
-        LogPrintf("CConsensusVote::Sign() - ERROR: Invalid fundamentalnodeprivkey: '%s'\n", errorMessage.c_str());
-        return false;
-    }
-
-    if (!obfuScationSigner.SignMessage(strMessage, errorMessage, vchFundamentalNodeSignature, key2)) {
-        LogPrintf("CConsensusVote::Sign() - Sign message failed");
-        return false;
-    }
-
-    if (!obfuScationSigner.VerifyMessage(pubkey2, vchFundamentalNodeSignature, strMessage, errorMessage)) {
-        LogPrintf("CConsensusVote::Sign() - Verify message failed");
-        return false;
-    }
-
-    return true;
-}
-
 
 bool CTransactionLock::SignaturesValid()
 {
