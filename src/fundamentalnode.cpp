@@ -158,7 +158,7 @@ bool CFundamentalnode::UpdateFromNewBroadcast(CFundamentalnodeBroadcast& mnb)
 //
 uint256 CFundamentalnode::CalculateScore(int mod, int64_t nBlockHeight)
 {
-    if (chainActive.Tip() == NULL) return UINT256_ZERO;
+    if (chainActive.Tip() == NULL) return uint256();
 
     uint256 hash;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
@@ -621,7 +621,7 @@ bool CFundamentalnodeBroadcast::CheckInputsAndAdd(int& nDoS)
 
     // verify that sig time is legit in past
     // should be at least not earlier than block when 1000 PIV tx got FUNDAMENTALNODE_MIN_CONFIRMATIONS
-    uint256 hashBlock = UINT256_ZERO;
+    uint256 hashBlock = uint256();
     CTransaction tx2;
     GetTransaction(vin.prevout.hash, tx2, hashBlock, true);
     BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
