@@ -37,7 +37,7 @@ void DumpFundamentalnodePayments();
 class CFundamentalnodePaymentDB
 {
 private:
-    fs::path pathDB;
+    boost::filesystem::path pathDB;
     std::string strMagicMessage;
 
 public:
