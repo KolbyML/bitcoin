@@ -1820,7 +1820,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             CKey key;
             CPubKey pubkey;
 
-            if (!obfuScationSigner.SetKey(strFundamentalNodePrivKey, errorMessage, key, pubkey)) {
+            if (!CMessageSigner::GetKeysFromSecret(strFundamentalNodePrivKey, key, pubkey)) {
                 return InitError(_("Invalid fundamentalnodeprivkey. Please see documenation."));
             }
 
@@ -1828,8 +1828,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
         } else {
             return InitError(_("You must specify a fundamentalnodeprivkey in the configuration. Please see documentation for help."));
-        }
-    }
+        }    }
 
     //TODO
     /*
@@ -1860,7 +1859,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             CKey key;
             CPubKey pubkey;
 
-            if (!obfuScationSigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey)) {
+            if (!CMessageSigner::GetKeysFromSecret(strMasterNodePrivKey, key, pubkey)) {
                 return InitError(_("Invalid masternodeprivkey. Please see documenation."));
             }
 
@@ -1907,7 +1906,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 CKey key;
                 CPubKey pubkey;
 
-                if(!obfuScationSigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey))
+                if(!CMessageSigner::GetKeysFromSecret(strMasterNodePrivKey, key, pubkey))
                 {
                     return InitError(_("Invalid masternodeprivkey. Please see documenation."));
                 }

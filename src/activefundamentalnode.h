@@ -41,7 +41,7 @@ public:
     CPubKey pubKeyFundamentalnode;
 
     // Initialized while registering Fundamentalnode
-    Optional<CTxIn> vin;
+    boost::optional<CTxIn> vin;
     CService service;
 
     /// Manage status of main Fundamentalnode

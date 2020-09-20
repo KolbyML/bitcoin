@@ -116,7 +116,6 @@ BITCOIN_CORE_H = \
   core_io.h \
   crypter.h \
   denomination_functions.h \
-  obfuscation.h \
   obfuscation-relay.h \
   db.h \
   fs.h \
@@ -270,7 +269,6 @@ libbitcoin_wallet_a_SOURCES = \
   activemasternode.cpp \
   bip38.cpp \
   denomination_functions.cpp \
-  obfuscation.cpp \
   obfuscation-relay.cpp \
   db.cpp \
   crypter.cpp \

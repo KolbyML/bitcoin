@@ -15,7 +15,6 @@
 #include "kernel.h"
 #include "fundamentalnode-budget.h"
 #include "net.h"
-#include "obfuscation.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
 #include "script/sign.h"

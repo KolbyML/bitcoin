@@ -10,7 +10,6 @@
 #include "key.h"
 #include "fundamentalnodeman.h"
 #include "net.h"
-#include "obfuscation.h"
 #include "protocol.h"
 #include "spork.h"
 #include "sync.h"
@@ -509,7 +508,7 @@ bool CConsensusVote::Sign()
     //LogPrintf("signing strMessage %s \n", strMessage.c_str());
     //LogPrintf("signing privkey %s \n", strFundamentalNodePrivKey.c_str());
 
-    if (!obfuScationSigner.SetKey(strFundamentalNodePrivKey, errorMessage, key2, pubkey2)) {
+    if (!CMessageSigner::GetKeysFromSecret(strFundamentalNodePrivKey, key2, pubkey2)) {
         LogPrintf("CConsensusVote::Sign() - ERROR: Invalid fundamentalnodeprivkey: '%s'\n", errorMessage.c_str());
         return false;
     }

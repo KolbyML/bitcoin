@@ -24,7 +24,6 @@
 #include "fundamentalnodeman.h"
 #include "merkleblock.h"
 #include "net.h"
-#include "obfuscation.h"
 #include "pow.h"
 #include "spork.h"
 #include "sporkdb.h"

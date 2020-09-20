@@ -16,7 +16,6 @@
 
 #include "coincontrol.h"
 #include "main.h"
-#include "obfuscation.h"
 #include "wallet.h"
 #include "multisigdialog.h"
 
