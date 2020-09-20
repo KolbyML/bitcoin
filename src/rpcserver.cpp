@@ -11,6 +11,7 @@
 #include "base58.h"
 #include "init.h"
 #include "main.h"
+#include "wallet.h"
 #include "random.h"
 #include "sync.h"
 #include "ui_interface.h"
