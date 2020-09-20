@@ -481,28 +481,6 @@ uint256 CConsensusVote::GetHash() const
     return vinFundamentalnode.prevout.hash + vinFundamentalnode.prevout.n + txHash;
 }
 
-
-bool CConsensusVote::SignatureValid()
-{
-    std::string errorMessage;
-    std::string strMessage = txHash.ToString().c_str() + boost::lexical_cast<std::string>(nBlockHeight);
-    //LogPrintf("verify strMessage %s \n", strMessage.c_str());
-
-    CFundamentalnode* pmn = mnodeman.Find(vinFundamentalnode);
-
-    if (pmn == NULL) {
-        LogPrintf("SwiftX::CConsensusVote::SignatureValid() - Unknown Fundamentalnode\n");
-        return false;
-    }
-
-    if (!obfuScationSigner.VerifyMessage(pmn->pubKeyFundamentalnode, vchFundamentalNodeSignature, strMessage, errorMessage)) {
-        LogPrintf("SwiftX::CConsensusVote::SignatureValid() - Verify message failed\n");
-        return false;
-    }
-
-    return true;
-}
-
 bool CTransactionLock::SignaturesValid()
 {
     BOOST_FOREACH (CConsensusVote vote, vecConsensusVotes) {
