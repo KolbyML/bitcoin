@@ -32,7 +32,7 @@ public:
 
     CActiveFundamentalnode()
     {
-        vin = nullopt;
+        vin = boost::none;
         status = ACTIVE_FUNDAMENTALNODE_INITIAL;
     }
 
