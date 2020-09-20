@@ -76,7 +76,6 @@ HEADERS += src/activemasternode.h \
            src/compressor.h \
            src/core_io.h \
            src/crypter.h \
-           src/obfuscation-relay.h \
            src/vitae-config.h \
            src/db.h \
            src/eccryptoverify.h \
@@ -369,7 +368,6 @@ SOURCES += src/activemasternode.cpp \
            src/core_read.cpp \
            src/core_write.cpp \
            src/crypter.cpp \
-           src/obfuscation-relay.cpp \
            src/vitae-cli.cpp \
            src/vitae-tx.cpp \
            src/vitae.cpp \
