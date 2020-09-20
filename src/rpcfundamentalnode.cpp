@@ -9,273 +9,17 @@
 #include "db.h"
 #include "init.h"
 #include "main.h"
-#include "fundamentalnode-budget.h"
 #include "fundamentalnode-payments.h"
+#include "fundamentalnode-sync.h"
 #include "fundamentalnodeconfig.h"
 #include "fundamentalnodeman.h"
+#include "netbase.h"
 #include "rpcserver.h"
 #include "utilmoneystr.h"
-
-#include "masternodeconfig.h"
-#include "masternodeman.h"
-#include "masternode.h"
-#include "activemasternode.h"
 
 #include <univalue.h>
 
 #include <boost/tokenizer.hpp>
-#include <fstream>
-
-
-void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew, AvailableCoinsType coin_type = ALL_COINS)
-{
-    // Check amount
-    if (nValue <= 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
-
-    if (nValue > pwalletMain->GetBalance())
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-
-    string strError;
-    if (pwalletMain->IsLocked()) {
-        strError = "Error: Wallet locked, unable to create transaction!";
-        LogPrintf("SendMoney() : %s", strError);
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-
-    // Parse Vitae address
-    CScript scriptPubKey = GetScriptForDestination(address);
-
-    // Create and send the transaction
-    CReserveKey reservekey(pwalletMain);
-    CAmount nFeeRequired;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError, NULL, coin_type)) {
-        if (nValue + nFeeRequired > pwalletMain->GetBalance())
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
-        LogPrintf("SendMoney() : %s\n", strError);
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    if (!pwalletMain->CommitTransaction(wtxNew, reservekey))
-        throw JSONRPCError(RPC_WALLET_ERROR, "Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
-}
-
-UniValue obfuscation(const UniValue& params, bool fHelp)
-{
-    throw runtime_error("Obfuscation is not supported any more. Use Zerocoin\n");
-
-    if (fHelp || params.size() == 0)
-        throw runtime_error(
-            "obfuscation <vitaeaddress> <amount>\n"
-            "vitaeaddress, reset, or auto (AutoDenominate)"
-            "<amount> is a real and will be rounded to the next 0.1" +
-            HelpRequiringPassphrase());
-
-    if (pwalletMain->IsLocked())
-        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-
-    if (params[0].get_str() == "auto") {
-        if (fFundamentalNode)
-            return "ObfuScation is not supported from fundamentalnodes";
-
-        return "DoAutomaticDenominating " + (obfuScationPool.DoAutomaticDenominating() ? "successful" : ("failed: " + obfuScationPool.GetStatus()));
-    }
-
-    if (params[0].get_str() == "reset") {
-        obfuScationPool.Reset();
-        return "successfully reset obfuscation";
-    }
-
-    if (params.size() != 2)
-        throw runtime_error(
-            "obfuscation <vitaeaddress> <amount>\n"
-            "vitaeaddress, denominate, or auto (AutoDenominate)"
-            "<amount> is a real and will be rounded to the next 0.1" +
-            HelpRequiringPassphrase());
-
-    CBitcoinAddress address(params[0].get_str());
-    if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Vitae address");
-
-    // Amount
-    CAmount nAmount = AmountFromValue(params[1]);
-
-    // Wallet comments
-    CWalletTx wtx;
-    //    string strError = pwalletMain->SendMoneyToDestination(address.Get(), nAmount, wtx, ONLY_DENOMINATED);
-    SendMoney(address.Get(), nAmount, wtx, ONLY_DENOMINATED);
-    //    if (strError != "")
-    //        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-
-    return wtx.GetHash().GetHex();
-}
-
-
-UniValue getpoolinfo(const UniValue& params, bool fHelp)
-{
-    if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "getpoolinfo\n"
-            "\nReturns anonymous pool-related information\n"
-
-            "\nResult:\n"
-            "{\n"
-            "  \"current\": \"addr\",    (string) VITAE address of current fundamentalnode\n"
-            "  \"state\": xxxx,        (string) unknown\n"
-            "  \"entries\": xxxx,      (numeric) Number of entries\n"
-            "  \"accepted\": xxxx,     (numeric) Number of entries accepted\n"
-            "}\n"
-
-            "\nExamples:\n" +
-            HelpExampleCli("getpoolinfo", "") + HelpExampleRpc("getpoolinfo", ""));
-
-    UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("current_fundamentalnode", mnodeman.GetCurrentFundamentalNode()->addr.ToString()));
-    obj.push_back(Pair("state", obfuScationPool.GetState()));
-    obj.push_back(Pair("entries", obfuScationPool.GetEntriesCount()));
-    obj.push_back(Pair("entries_accepted", obfuScationPool.GetCountEntriesAccepted()));
-    return obj;
-}
-
-// This command is retained for backwards compatibility, but is depreciated.
-// Future removal of this command is planned to keep things clean.
-UniValue fundamentalnode(const UniValue& params, bool fHelp)
-{
-    string strCommand;
-    if (params.size() >= 1)
-        strCommand = params[0].get_str();
-
-    if (fHelp ||
-        (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "start-all" && strCommand != "start-missing" &&
-            strCommand != "start-disabled" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count" && strCommand != "enforce" &&
-            strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" &&
-            strCommand != "outputs" && strCommand != "status" && strCommand != "calcscore"))
-        throw runtime_error(
-            "fundamentalnode \"command\"...\n"
-            "\nSet of commands to execute fundamentalnode related actions\n"
-            "This command is depreciated, please see individual command documentation for future reference\n\n"
-
-            "\nArguments:\n"
-            "1. \"command\"        (string or set of strings, required) The command to execute\n"
-
-            "\nAvailable commands:\n"
-            "  count        - Print count information of all known fundamentalnodes\n"
-            "  current      - Print info on current fundamentalnode winner\n"
-            "  debug        - Print fundamentalnode status\n"
-            "  genkey       - Generate new fundamentalnodeprivkey\n"
-            "  outputs      - Print fundamentalnode compatible outputs\n"
-            "  start        - Start fundamentalnode configured in vitae.conf\n"
-            "  start-alias  - Start single fundamentalnode by assigned alias configured in fundamentalnode.conf\n"
-            "  start-<mode> - Start fundamentalnodes configured in fundamentalnode.conf (<mode>: 'all', 'missing', 'disabled')\n"
-            "  status       - Print fundamentalnode status information\n"
-            "  list         - Print list of all known fundamentalnodes (see fundamentalnodelist for more info)\n"
-            "  list-conf    - Print fundamentalnode.conf in JSON format\n"
-            "  winners      - Print list of fundamentalnode winners\n");
-
-    if (strCommand == "list") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return listfundamentalnodes(newParams, fHelp);
-    }
-
-    if (strCommand == "connect") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return fundamentalnodeconnect(newParams, fHelp);
-    }
-
-    if (strCommand == "count") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return getfundamentalnodecount(newParams, fHelp);
-    }
-
-    if (strCommand == "current") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return fundamentalnodecurrent(newParams, fHelp);
-    }
-
-    if (strCommand == "debug") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return fundamentalnodedebug(newParams, fHelp);
-    }
-
-    if (strCommand == "start" || strCommand == "start-alias" || strCommand == "start-many" || strCommand == "start-all" || strCommand == "start-missing" || strCommand == "start-disabled") {
-        return startfundamentalnode(params, fHelp);
-    }
-
-    if (strCommand == "genkey") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return createfundamentalnodekey(newParams, fHelp);
-    }
-
-    if (strCommand == "list-conf") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return listfundamentalnodeconf(newParams, fHelp);
-    }
-
-    if (strCommand == "outputs") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return getfundamentalnodeoutputs(newParams, fHelp);
-    }
-
-    if (strCommand == "status") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return getfundamentalnodestatus(newParams, fHelp);
-    }
-
-    if (strCommand == "winners") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return getfundamentalnodewinners(newParams, fHelp);
-    }
-
-    if (strCommand == "calcscore") {
-        UniValue newParams(UniValue::VARR);
-        // forward params but skip command
-        for (unsigned int i = 1; i < params.size(); i++) {
-            newParams.push_back(params[i]);
-        }
-        return getfundamentalnodescores(newParams, fHelp);
-    }
-
-    return NullUniValue;
-}
 
 UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
 {
@@ -284,30 +28,32 @@ UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
     if (params.size() == 1) strFilter = params[0].get_str();
 
     if (fHelp || (params.size() > 1))
-        throw runtime_error(
-            "listfundamentalnodes ( \"filter\" )\n"
-            "\nGet a ranked list of fundamentalnodes\n"
+        throw std::runtime_error(
+                "listfundamentalnodes ( \"filter\" )\n"
+                "\nGet a ranked list of fundamentalnodes\n"
 
-            "\nArguments:\n"
-            "1. \"filter\"    (string, optional) Filter search text. Partial match by txhash, status, or addr.\n"
+                "\nArguments:\n"
+                "1. \"filter\"    (string, optional) Filter search text. Partial match by txhash, status, or addr.\n"
 
-            "\nResult:\n"
-            "[\n"
-            "  {\n"
-            "    \"rank\": n,           (numeric) Fundamentalnode Rank (or 0 if not enabled)\n"
-            "    \"txhash\": \"hash\",    (string) Collateral transaction hash\n"
-            "    \"outidx\": n,         (numeric) Collateral transaction output index\n"
-            "    \"status\": s,         (string) Status (ENABLED/EXPIRED/REMOVE/etc)\n"
-            "    \"addr\": \"addr\",      (string) Fundamentalnode VITAE address\n"
-            "    \"version\": v,        (numeric) Fundamentalnode protocol version\n"
-            "    \"lastseen\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) of the last seen\n"
-            "    \"activetime\": ttt,   (numeric) The time in seconds since epoch (Jan 1 1970 GMT) fundamentalnode has been active\n"
-            "    \"lastpaid\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) fundamentalnode was last paid\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
-            "\nExamples:\n" +
-            HelpExampleCli("fundamentalnodelist", "") + HelpExampleRpc("fundamentalnodelist", ""));
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"rank\": n,           (numeric) Fundamentalnode Rank (or 0 if not enabled)\n"
+                "    \"txhash\": \"hash\",    (string) Collateral transaction hash\n"
+                "    \"outidx\": n,         (numeric) Collateral transaction output index\n"
+                "    \"pubkey\": \"key\",   (string) Fundamentalnode public key used for message broadcasting\n"
+                "    \"status\": s,         (string) Status (ENABLED/EXPIRED/REMOVE/etc)\n"
+                "    \"addr\": \"addr\",      (string) Fundamentalnode PIVX address\n"
+                "    \"version\": v,        (numeric) Fundamentalnode protocol version\n"
+                "    \"lastseen\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) of the last seen\n"
+                "    \"activetime\": ttt,   (numeric) The time in seconds since epoch (Jan 1 1970 GMT) fundamentalnode has been active\n"
+                "    \"lastpaid\": ttt,     (numeric) The time in seconds since epoch (Jan 1 1970 GMT) fundamentalnode was last paid\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("listfundamentalnodes", "") + HelpExampleRpc("listfundamentalnodes", ""));
 
     UniValue ret(UniValue::VARR);
     int nHeight;
@@ -317,8 +63,8 @@ UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
         if(!pindex) return 0;
         nHeight = pindex->nHeight;
     }
-    std::vector<pair<int, CFundamentalnode> > vFundamentalnodeRanks = mnodeman.GetFundamentalnodeRanks(nHeight);
-    BOOST_FOREACH (PAIRTYPE(int, CFundamentalnode) & s, vFundamentalnodeRanks) {
+    std::vector<std::pair<int, CFundamentalnode> > vFundamentalnodeRanks = mnodeman.GetFundamentalnodeRanks(nHeight);
+    for (PAIRTYPE(int, CFundamentalnode) & s : vFundamentalnodeRanks) {
         UniValue obj(UniValue::VOBJ);
         std::string strVin = s.second.vin.prevout.ToStringShort();
         std::string strTxHash = s.second.vin.prevout.hash.ToString();
@@ -327,21 +73,23 @@ UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
         CFundamentalnode* mn = mnodeman.Find(s.second.vin);
 
         if (mn != NULL) {
-            if (strFilter != "" && strTxHash.find(strFilter) == string::npos &&
-                mn->Status().find(strFilter) == string::npos &&
+            if (strFilter != "" && strTxHash.find(strFilter) == std::string::npos &&
+                mn->Status().find(strFilter) == std::string::npos &&
                 CBitcoinAddress(mn->pubKeyCollateralAddress.GetID()).ToString().find(strFilter) == string::npos) continue;
 
             std::string strStatus = mn->Status();
             std::string strHost;
             int port;
             SplitHostPort(mn->addr.ToString(), port, strHost);
-            CNetAddr node = CNetAddr(strHost, false);
+            CNetAddr node;
+            LookupHost(strHost.c_str(), node, false);
             std::string strNetwork = GetNetworkName(node.GetNetwork());
 
             obj.push_back(Pair("rank", (strStatus == "ENABLED" ? s.first : 0)));
             obj.push_back(Pair("network", strNetwork));
             obj.push_back(Pair("txhash", strTxHash));
             obj.push_back(Pair("outidx", (uint64_t)oIdx));
+            obj.push_back(Pair("pubkey", HexStr(mn->pubKeyFundamentalnode)));
             obj.push_back(Pair("status", strStatus));
             obj.push_back(Pair("addr", CBitcoinAddress(mn->pubKeyCollateralAddress.GetID()).ToString()));
             obj.push_back(Pair("version", mn->protocolVersion));
@@ -356,49 +104,23 @@ UniValue listfundamentalnodes(const UniValue& params, bool fHelp)
     return ret;
 }
 
-UniValue fundamentalnodeconnect(const UniValue& params, bool fHelp)
-{
-    if (fHelp || (params.size() != 1))
-        throw runtime_error(
-            "fundamentalnodeconnect \"address\"\n"
-            "\nAttempts to connect to specified fundamentalnode address\n"
-
-            "\nArguments:\n"
-            "1. \"address\"     (string, required) IP or net address to connect to\n"
-
-            "\nExamples:\n" +
-            HelpExampleCli("fundamentalnodeconnect", "\"192.168.0.6:8765\"") + HelpExampleRpc("fundamentalnodeconnect", "\"192.168.0.6:8765\""));
-
-    std::string strAddress = params[0].get_str();
-
-    CService addr = CService(strAddress);
-
-    CNode* pnode = ConnectNode((CAddress)addr, NULL, false);
-    if (pnode) {
-        pnode->Release();
-        return NullUniValue;
-    } else {
-        throw runtime_error("error connecting\n");
-    }
-}
-
 UniValue getfundamentalnodecount (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() > 0))
-        throw runtime_error(
-            "getfundamentalnodecount\n"
-            "\nGet fundamentalnode count values\n"
+        throw std::runtime_error(
+                "getfundamentalnodecount\n"
+                "\nGet fundamentalnode count values\n"
 
-            "\nResult:\n"
-            "{\n"
-            "  \"total\": n,        (numeric) Total fundamentalnodes\n"
-            "  \"stable\": n,       (numeric) Stable count\n"
-            "  \"obfcompat\": n,    (numeric) Obfuscation Compatible\n"
-            "  \"enabled\": n,      (numeric) Enabled fundamentalnodes\n"
-            "  \"inqueue\": n       (numeric) Fundamentalnodes in queue\n"
-            "}\n"
-            "\nExamples:\n" +
-            HelpExampleCli("getfundamentalnodecount", "") + HelpExampleRpc("getfundamentalnodecount", ""));
+                "\nResult:\n"
+                "{\n"
+                "  \"total\": n,        (numeric) Total fundamentalnodes\n"
+                "  \"stable\": n,       (numeric) Stable count\n"
+                "  \"enabled\": n,      (numeric) Enabled fundamentalnodes\n"
+                "  \"inqueue\": n       (numeric) Fundamentalnodes in queue\n"
+                "}\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("getfundamentalnodecount", "") + HelpExampleRpc("getfundamentalnodecount", ""));
 
     UniValue obj(UniValue::VOBJ);
     int nCount = 0;
@@ -411,7 +133,6 @@ UniValue getfundamentalnodecount (const UniValue& params, bool fHelp)
 
     obj.push_back(Pair("total", mnodeman.size()));
     obj.push_back(Pair("stable", mnodeman.stable_size()));
-    obj.push_back(Pair("obfcompat", mnodeman.CountEnabled(ActiveProtocol())));
     obj.push_back(Pair("enabled", mnodeman.CountEnabled()));
     obj.push_back(Pair("inqueue", nCount));
     obj.push_back(Pair("ipv4", ipv4));
@@ -424,25 +145,27 @@ UniValue getfundamentalnodecount (const UniValue& params, bool fHelp)
 UniValue fundamentalnodecurrent (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
-        throw runtime_error(
-            "fundamentalnodecurrent\n"
-            "\nGet current fundamentalnode winner\n"
+        throw std::runtime_error(
+                "fundamentalnodecurrent\n"
+                "\nGet current fundamentalnode winner (scheduled to be paid next).\n"
 
-            "\nResult:\n"
-            "{\n"
-            "  \"protocol\": xxxx,        (numeric) Protocol version\n"
-            "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
-            "  \"pubkey\": \"xxxx\",      (string) FN Public key\n"
-            "  \"lastseen\": xxx,       (numeric) Time since epoch of last seen\n"
-            "  \"activeseconds\": xxx,  (numeric) Seconds FN has been active\n"
-            "}\n"
-            "\nExamples:\n" +
-            HelpExampleCli("fundamentalnodecurrent", "") + HelpExampleRpc("fundamentalnodecurrent", ""));
+                "\nResult:\n"
+                "{\n"
+                "  \"protocol\": xxxx,        (numeric) Protocol version\n"
+                "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
+                "  \"pubkey\": \"xxxx\",      (string) MN Public key\n"
+                "  \"lastseen\": xxx,         (numeric) Time since epoch of last seen\n"
+                "  \"activeseconds\": xxx,    (numeric) Seconds MN has been active\n"
+                "}\n"
 
-    CFundamentalnode* winner = mnodeman.GetCurrentFundamentalNode(1);
+                "\nExamples:\n" +
+                HelpExampleCli("fundamentalnodecurrent", "") + HelpExampleRpc("fundamentalnodecurrent", ""));
+
+    const int nHeight = WITH_LOCK(cs_main, return chainActive.Height() + 1);
+    int nCount = 0;
+    CFundamentalnode* winner = mnodeman.GetNextFundamentalnodeInQueueForPayment(nHeight, true, nCount);
     if (winner) {
         UniValue obj(UniValue::VOBJ);
-
         obj.push_back(Pair("protocol", (int64_t)winner->protocolVersion));
         obj.push_back(Pair("txhash", winner->vin.prevout.hash.ToString()));
         obj.push_back(Pair("pubkey", CBitcoinAddress(winner->pubKeyCollateralAddress.GetID()).ToString()));
@@ -451,31 +174,65 @@ UniValue fundamentalnodecurrent (const UniValue& params, bool fHelp)
         return obj;
     }
 
-    throw runtime_error("unknown");
+    throw std::runtime_error("unknown");
 }
 
-UniValue fundamentalnodedebug (const UniValue& params, bool fHelp)
+bool StartFundamentalnodeEntry(UniValue& statusObjRet, CFundamentalnodeBroadcast& mnbRet, bool& fSuccessRet, const CFundamentalnodeConfig::CFundamentalnodeEntry& mne, std::string& errorMessage, std::string strCommand = "")
 {
-    if (fHelp || (params.size() != 0))
-        throw runtime_error(
-            "fundamentalnodedebug\n"
-            "\nPrint fundamentalnode status\n"
+    int nIndex;
+    if(!mne.castOutputIndex(nIndex)) {
+        return false;
+    }
 
-            "\nResult:\n"
-            "\"status\"     (string) Fundamentalnode status message\n"
-            "\nExamples:\n" +
-            HelpExampleCli("fundamentalnodedebug", "") + HelpExampleRpc("fundamentalnodedebug", ""));
+    CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(nIndex));
+    CFundamentalnode* pmn = mnodeman.Find(vin);
+    if (pmn != NULL) {
+        if (strCommand == "missing") return false;
+        if (strCommand == "disabled" && pmn->IsEnabled()) return false;
+    }
 
-    if (activeFundamentalnode.status != ACTIVE_FUNDAMENTALNODE_INITIAL || !fundamentalnodeSync.IsSynced())
-        return activeFundamentalnode.GetStatus();
+    fSuccessRet = CFundamentalnodeBroadcast::Create(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnbRet);
 
-    CTxIn vin = CTxIn();
-    CPubKey pubkey;
-    CKey key;
-    if (!activeFundamentalnode.GetFundamentalNodeVin(vin, pubkey, key))
-        throw runtime_error("Missing fundamentalnode input, please look at the documentation for instructions on fundamentalnode creation\n");
-    else
-        return activeFundamentalnode.GetStatus();
+    statusObjRet.push_back(Pair("alias", mne.getAlias()));
+    statusObjRet.push_back(Pair("result", fSuccessRet ? "success" : "failed"));
+    statusObjRet.push_back(Pair("error", fSuccessRet ? "" : errorMessage));
+
+    return true;
+}
+
+void RelayMNB(CFundamentalnodeBroadcast& mnb, const bool fSuccess, int& successful, int& failed)
+{
+    if (fSuccess) {
+        successful++;
+        mnodeman.UpdateFundamentalnodeList(mnb);
+        mnb.Relay();
+    } else {
+        failed++;
+    }
+}
+
+void RelayMNB(CFundamentalnodeBroadcast& mnb, const bool fSucces)
+{
+    int successful = 0, failed = 0;
+    return RelayMNB(mnb, fSucces, successful, failed);
+}
+
+void SerializeMNB(UniValue& statusObjRet, const CFundamentalnodeBroadcast& mnb, const bool fSuccess, int& successful, int& failed)
+{
+    if(fSuccess) {
+        successful++;
+        CDataStream ssMnb(SER_NETWORK, PROTOCOL_VERSION);
+        ssMnb << mnb;
+        statusObjRet.push_back(Pair("hex", HexStr(ssMnb.begin(), ssMnb.end())));
+    } else {
+        failed++;
+    }
+}
+
+void SerializeMNB(UniValue& statusObjRet, const CFundamentalnodeBroadcast& mnb, const bool fSuccess)
+{
+    int successful = 0, failed = 0;
+    return SerializeMNB(statusObjRet, mnb, fSuccess, successful, failed);
 }
 
 UniValue startfundamentalnode (const UniValue& params, bool fHelp)
@@ -496,59 +253,55 @@ UniValue startfundamentalnode (const UniValue& params, bool fHelp)
     if (fHelp || params.size() < 2 || params.size() > 3 ||
         (params.size() == 2 && (strCommand != "local" && strCommand != "all" && strCommand != "many" && strCommand != "missing" && strCommand != "disabled")) ||
         (params.size() == 3 && strCommand != "alias"))
-        throw runtime_error(
-            "startfundamentalnode \"local|all|many|missing|disabled|alias\" lockwallet ( \"alias\" )\n"
-            "\nAttempts to start one or more fundamentalnode(s)\n"
+        throw std::runtime_error(
+                "startfundamentalnode \"local|all|many|missing|disabled|alias\" lockwallet ( \"alias\" )\n"
+                "\nAttempts to start one or more fundamentalnode(s)\n"
 
-            "\nArguments:\n"
-            "1. set         (string, required) Specify which set of fundamentalnode(s) to start.\n"
-            "2. lockwallet  (boolean, required) Lock wallet after completion.\n"
-            "3. alias       (string) Fundamentalnode alias. Required if using 'alias' as the set.\n"
+                "\nArguments:\n"
+                "1. set         (string, required) Specify which set of fundamentalnode(s) to start.\n"
+                "2. lockwallet  (boolean, required) Lock wallet after completion.\n"
+                "3. alias       (string) Fundamentalnode alias. Required if using 'alias' as the set.\n"
 
-            "\nResult: (for 'local' set):\n"
-            "\"status\"     (string) Fundamentalnode status message\n"
+                "\nResult: (for 'local' set):\n"
+                "\"status\"     (string) Fundamentalnode status message\n"
 
-            "\nResult: (for other sets):\n"
-            "{\n"
-            "  \"overall\": \"xxxx\",     (string) Overall status message\n"
-            "  \"detail\": [\n"
-            "    {\n"
-            "      \"node\": \"xxxx\",    (string) Node name or alias\n"
-            "      \"result\": \"xxxx\",  (string) 'success' or 'failed'\n"
-            "      \"error\": \"xxxx\"    (string) Error message, if failed\n"
-            "    }\n"
-            "    ,...\n"
-            "  ]\n"
-            "}\n"
-            "\nExamples:\n" +
-            HelpExampleCli("startfundamentalnode", "\"alias\" \"0\" \"my_mn\"") + HelpExampleRpc("startfundamentalnode", "\"alias\" \"0\" \"my_mn\""));
+                "\nResult: (for other sets):\n"
+                "{\n"
+                "  \"overall\": \"xxxx\",     (string) Overall status message\n"
+                "  \"detail\": [\n"
+                "    {\n"
+                "      \"node\": \"xxxx\",    (string) Node name or alias\n"
+                "      \"result\": \"xxxx\",  (string) 'success' or 'failed'\n"
+                "      \"error\": \"xxxx\"    (string) Error message, if failed\n"
+                "    }\n"
+                "    ,...\n"
+                "  ]\n"
+                "}\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("startfundamentalnode", "\"alias\" \"0\" \"my_mn\"") + HelpExampleRpc("startfundamentalnode", "\"alias\" \"0\" \"my_mn\""));
 
     bool fLock = (params[1].get_str() == "true" ? true : false);
 
+    EnsureWalletIsUnlocked();
+
     if (strCommand == "local") {
-        if (!fFundamentalNode) throw runtime_error("you must set fundamentalnode=1 in the configuration\n");
+        if (!fFundamentalNode) throw std::runtime_error("you must set fundamentalnode=1 in the configuration\n");
 
-        if (pwalletMain->IsLocked())
-            throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-
-        if (activeFundamentalnode.status != ACTIVE_FUNDAMENTALNODE_STARTED) {
-            activeFundamentalnode.status = ACTIVE_FUNDAMENTALNODE_INITIAL; // TODO: consider better way
-            activeFundamentalnode.ManageStatus();
+        if (activeFundamentalnode.GetStatus() != ACTIVE_FUNDAMENTALNODE_STARTED) {
+            activeFundamentalnode.ResetStatus();
             if (fLock)
                 pwalletMain->Lock();
         }
 
-        return activeFundamentalnode.GetStatus();
+        return activeFundamentalnode.GetStatusMessage();
     }
 
     if (strCommand == "all" || strCommand == "many" || strCommand == "missing" || strCommand == "disabled") {
-        if (pwalletMain->IsLocked())
-            throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-
         if ((strCommand == "missing" || strCommand == "disabled") &&
             (fundamentalnodeSync.RequestedFundamentalnodeAssets <= FUNDAMENTALNODE_SYNC_LIST ||
-                fundamentalnodeSync.RequestedFundamentalnodeAssets == FUNDAMENTALNODE_SYNC_FAILED)) {
-            throw runtime_error("You can't use this command until fundamentalnode list is synced\n");
+             fundamentalnodeSync.RequestedFundamentalnodeAssets == FUNDAMENTALNODE_SYNC_FAILED)) {
+            throw std::runtime_error("You can't use this command until fundamentalnode list is synced\n");
         }
 
         std::vector<CFundamentalnodeConfig::CFundamentalnodeEntry> mnEntries;
@@ -559,35 +312,15 @@ UniValue startfundamentalnode (const UniValue& params, bool fHelp)
 
         UniValue resultsObj(UniValue::VARR);
 
-        BOOST_FOREACH (CFundamentalnodeConfig::CFundamentalnodeEntry mne, fundamentalnodeConfig.getEntries()) {
-            std::string errorMessage;
-            int nIndex;
-            if(!mne.castOutputIndex(nIndex))
-                continue;
-            CTxIn vin = CTxIn(uint256(mne.getTxHash()), uint32_t(nIndex));
-            CFundamentalnode* pmn = mnodeman.Find(vin);
-            CFundamentalnodeBroadcast mnb;
-
-            if (pmn != NULL) {
-                if (strCommand == "missing") continue;
-                if (strCommand == "disabled" && pmn->IsEnabled()) continue;
-            }
-
-            bool result = activeFundamentalnode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb);
-
+        for (CFundamentalnodeConfig::CFundamentalnodeEntry mne : fundamentalnodeConfig.getEntries()) {
             UniValue statusObj(UniValue::VOBJ);
-            statusObj.push_back(Pair("alias", mne.getAlias()));
-            statusObj.push_back(Pair("result", result ? "success" : "failed"));
-
-            if (result) {
-                successful++;
-                statusObj.push_back(Pair("error", ""));
-            } else {
-                failed++;
-                statusObj.push_back(Pair("error", errorMessage));
-            }
-
+            CFundamentalnodeBroadcast mnb;
+            std::string errorMessage;
+            bool fSuccess = false;
+            if (!StartFundamentalnodeEntry(statusObj, mnb, fSuccess, mne, errorMessage, strCommand))
+                continue;
             resultsObj.push_back(statusObj);
+            RelayMNB(mnb, fSuccess, successful, failed);
         }
         if (fLock)
             pwalletMain->Lock();
@@ -602,55 +335,33 @@ UniValue startfundamentalnode (const UniValue& params, bool fHelp)
     if (strCommand == "alias") {
         std::string alias = params[2].get_str();
 
-        if (pwalletMain->IsLocked())
-            throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-
         bool found = false;
-        int successful = 0;
-        int failed = 0;
 
         UniValue resultsObj(UniValue::VARR);
         UniValue statusObj(UniValue::VOBJ);
-        statusObj.push_back(Pair("alias", alias));
 
-        BOOST_FOREACH (CFundamentalnodeConfig::CFundamentalnodeEntry mne, fundamentalnodeConfig.getEntries()) {
+        for (CFundamentalnodeConfig::CFundamentalnodeEntry mne : fundamentalnodeConfig.getEntries()) {
             if (mne.getAlias() == alias) {
+                CFundamentalnodeBroadcast mnb;
                 found = true;
                 std::string errorMessage;
-                CFundamentalnodeBroadcast mnb;
-
-                bool result = activeFundamentalnode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb);
-
-                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-
-                if (result) {
-                    successful++;
-                    mnodeman.UpdateFundamentalnodeList(mnb);
-                    mnb.Relay();
-                } else {
-                    failed++;
-                    statusObj.push_back(Pair("errorMessage", errorMessage));
-                }
+                bool fSuccess = false;
+                if (!StartFundamentalnodeEntry(statusObj, mnb, fSuccess, mne, errorMessage, strCommand))
+                    continue;
+                RelayMNB(mnb, fSuccess);
                 break;
             }
         }
 
-        if (!found) {
-            failed++;
-            statusObj.push_back(Pair("result", "failed"));
-            statusObj.push_back(Pair("error", "could not find alias in config. Verify with list-conf."));
-        }
-
-        resultsObj.push_back(statusObj);
-
         if (fLock)
             pwalletMain->Lock();
 
-        UniValue returnObj(UniValue::VOBJ);
-        returnObj.push_back(Pair("overall", strprintf("Successfully started %d fundamentalnodes, failed to start %d, total %d", successful, failed, successful + failed)));
-        returnObj.push_back(Pair("detail", resultsObj));
+        if(!found) {
+            statusObj.push_back(Pair("success", false));
+            statusObj.push_back(Pair("error_message", "Could not find alias in config. Verify with listfundamentalnodeconf."));
+        }
 
-        return returnObj;
+        return statusObj;
     }
     return NullUniValue;
 }
@@ -658,14 +369,15 @@ UniValue startfundamentalnode (const UniValue& params, bool fHelp)
 UniValue createfundamentalnodekey (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
-        throw runtime_error(
-            "createfundamentalnodekey\n"
-            "\nCreate a new fundamentalnode private key\n"
+        throw std::runtime_error(
+                "createfundamentalnodekey\n"
+                "\nCreate a new fundamentalnode private key\n"
 
-            "\nResult:\n"
-            "\"key\"    (string) Fundamentalnode private key\n"
-            "\nExamples:\n" +
-            HelpExampleCli("createfundamentalnodekey", "") + HelpExampleRpc("createfundamentalnodekey", ""));
+                "\nResult:\n"
+                "\"key\"    (string) Fundamentalnode private key\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("createfundamentalnodekey", "") + HelpExampleRpc("createfundamentalnodekey", ""));
 
     CKey secret;
     secret.MakeNewKey(false);
@@ -676,27 +388,27 @@ UniValue createfundamentalnodekey (const UniValue& params, bool fHelp)
 UniValue getfundamentalnodeoutputs (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
-        throw runtime_error(
-            "getfundamentalnodeoutputs\n"
-            "\nPrint all fundamentalnode transaction outputs\n"
+        throw std::runtime_error(
+                "getfundamentalnodeoutputs\n"
+                "\nPrint all fundamentalnode transaction outputs\n"
 
-            "\nResult:\n"
-            "[\n"
-            "  {\n"
-            "    \"txhash\": \"xxxx\",    (string) output transaction hash\n"
-            "    \"outputidx\": n       (numeric) output index number\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"txhash\": \"xxxx\",    (string) output transaction hash\n"
+                "    \"outputidx\": n       (numeric) output index number\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
 
-            "\nExamples:\n" +
-            HelpExampleCli("getfundamentalnodeoutputs", "") + HelpExampleRpc("getfundamentalnodeoutputs", ""));
+                "\nExamples:\n" +
+                HelpExampleCli("getfundamentalnodeoutputs", "") + HelpExampleRpc("getfundamentalnodeoutputs", ""));
 
     // Find possible candidates
-    vector<COutput> possibleCoins = activeFundamentalnode.SelectCoinsFundamentalnode();
+    std::vector<COutput> possibleCoins = activeFundamentalnode.SelectCoinsFundamentalnode();
 
     UniValue ret(UniValue::VARR);
-    BOOST_FOREACH (COutput& out, possibleCoins) {
+    for (COutput& out : possibleCoins) {
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("txhash", out.tx->GetHash().ToString()));
         obj.push_back(Pair("outputidx", out.i));
@@ -713,47 +425,47 @@ UniValue listfundamentalnodeconf (const UniValue& params, bool fHelp)
     if (params.size() == 1) strFilter = params[0].get_str();
 
     if (fHelp || (params.size() > 1))
-        throw runtime_error(
-            "listfundamentalnodeconf ( \"filter\" )\n"
-            "\nPrint fundamentalnode.conf in JSON format\n"
+        throw std::runtime_error(
+                "listfundamentalnodeconf ( \"filter\" )\n"
+                "\nPrint fundamentalnode.conf in JSON format\n"
 
-            "\nArguments:\n"
-            "1. \"filter\"    (string, optional) Filter search text. Partial match on alias, address, txHash, or status.\n"
+                "\nArguments:\n"
+                "1. \"filter\"    (string, optional) Filter search text. Partial match on alias, address, txHash, or status.\n"
 
-            "\nResult:\n"
-            "[\n"
-            "  {\n"
-            "    \"alias\": \"xxxx\",        (string) fundamentalnode alias\n"
-            "    \"address\": \"xxxx\",      (string) fundamentalnode IP address\n"
-            "    \"privateKey\": \"xxxx\",   (string) fundamentalnode private key\n"
-            "    \"txHash\": \"xxxx\",       (string) transaction hash\n"
-            "    \"outputIndex\": n,       (numeric) transaction output index\n"
-            "    \"status\": \"xxxx\"        (string) fundamentalnode status\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
+                "\nResult:\n"
+                "[\n"
+                "  {\n"
+                "    \"alias\": \"xxxx\",        (string) fundamentalnode alias\n"
+                "    \"address\": \"xxxx\",      (string) fundamentalnode IP address\n"
+                "    \"privateKey\": \"xxxx\",   (string) fundamentalnode private key\n"
+                "    \"txHash\": \"xxxx\",       (string) transaction hash\n"
+                "    \"outputIndex\": n,       (numeric) transaction output index\n"
+                "    \"status\": \"xxxx\"        (string) fundamentalnode status\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
 
-            "\nExamples:\n" +
-            HelpExampleCli("listfundamentalnodeconf", "") + HelpExampleRpc("listfundamentalnodeconf", ""));
+                "\nExamples:\n" +
+                HelpExampleCli("listfundamentalnodeconf", "") + HelpExampleRpc("listfundamentalnodeconf", ""));
 
     std::vector<CFundamentalnodeConfig::CFundamentalnodeEntry> mnEntries;
     mnEntries = fundamentalnodeConfig.getEntries();
 
     UniValue ret(UniValue::VARR);
 
-    BOOST_FOREACH (CFundamentalnodeConfig::CFundamentalnodeEntry mne, fundamentalnodeConfig.getEntries()) {
+    for (CFundamentalnodeConfig::CFundamentalnodeEntry mne : fundamentalnodeConfig.getEntries()) {
         int nIndex;
         if(!mne.castOutputIndex(nIndex))
             continue;
-        CTxIn vin = CTxIn(uint256(mne.getTxHash()), uint32_t(nIndex));
+        CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(nIndex));
         CFundamentalnode* pmn = mnodeman.Find(vin);
 
         std::string strStatus = pmn ? pmn->Status() : "MISSING";
 
-        if (strFilter != "" && mne.getAlias().find(strFilter) == string::npos &&
-            mne.getIp().find(strFilter) == string::npos &&
-            mne.getTxHash().find(strFilter) == string::npos &&
-            strStatus.find(strFilter) == string::npos) continue;
+        if (strFilter != "" && mne.getAlias().find(strFilter) == std::string::npos &&
+            mne.getIp().find(strFilter) == std::string::npos &&
+            mne.getTxHash().find(strFilter) == std::string::npos &&
+            strStatus.find(strFilter) == std::string::npos) continue;
 
         UniValue mnObj(UniValue::VOBJ);
         mnObj.push_back(Pair("alias", mne.getAlias()));
@@ -771,80 +483,85 @@ UniValue listfundamentalnodeconf (const UniValue& params, bool fHelp)
 UniValue getfundamentalnodestatus (const UniValue& params, bool fHelp)
 {
     if (fHelp || (params.size() != 0))
-        throw runtime_error(
-            "getfundamentalnodestatus\n"
-            "\nPrint fundamentalnode status\n"
+        throw std::runtime_error(
+                "getfundamentalnodestatus\n"
+                "\nPrint fundamentalnode status\n"
 
-            "\nResult:\n"
-            "{\n"
-            "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
-            "  \"outputidx\": n,        (numeric) Collateral transaction output index number\n"
-            "  \"netaddr\": \"xxxx\",     (string) Fundamentalnode network address\n"
-            "  \"addr\": \"xxxx\",        (string) VITAE address for fundamentalnode payments\n"
-            "  \"status\": \"xxxx\",      (string) Fundamentalnode status\n"
-            "  \"message\": \"xxxx\"      (string) Fundamentalnode status message\n"
-            "}\n"
+                "\nResult:\n"
+                "{\n"
+                "  \"txhash\": \"xxxx\",      (string) Collateral transaction hash\n"
+                "  \"outputidx\": n,          (numeric) Collateral transaction output index number\n"
+                "  \"netaddr\": \"xxxx\",     (string) Fundamentalnode network address\n"
+                "  \"addr\": \"xxxx\",        (string) PIVX address for fundamentalnode payments\n"
+                "  \"status\": \"xxxx\",      (string) Fundamentalnode status\n"
+                "  \"message\": \"xxxx\"      (string) Fundamentalnode status message\n"
+                "}\n"
 
-            "\nExamples:\n" +
-            HelpExampleCli("getfundamentalnodestatus", "") + HelpExampleRpc("getfundamentalnodestatus", ""));
+                "\nExamples:\n" +
+                HelpExampleCli("getfundamentalnodestatus", "") + HelpExampleRpc("getfundamentalnodestatus", ""));
 
-    if (!fFundamentalNode) throw runtime_error("This is not a fundamentalnode");
+    if (!fFundamentalNode)
+        throw JSONRPCError(RPC_MISC_ERROR, _("This is not a fundamentalnode."));
 
-    CFundamentalnode* pmn = mnodeman.Find(activeFundamentalnode.vin);
+    if (activeFundamentalnode.vin == boost::none)
+        throw JSONRPCError(RPC_MISC_ERROR, _("Active Fundamentalnode not initialized."));
+
+    CFundamentalnode* pmn = mnodeman.Find(*(activeFundamentalnode.vin));
 
     if (pmn) {
         UniValue mnObj(UniValue::VOBJ);
-        mnObj.push_back(Pair("txhash", activeFundamentalnode.vin.prevout.hash.ToString()));
-        mnObj.push_back(Pair("outputidx", (uint64_t)activeFundamentalnode.vin.prevout.n));
+        mnObj.push_back(Pair("txhash", activeFundamentalnode.vin->prevout.hash.ToString()));
+        mnObj.push_back(Pair("outputidx", (uint64_t)activeFundamentalnode.vin->prevout.n));
         mnObj.push_back(Pair("netaddr", activeFundamentalnode.service.ToString()));
         mnObj.push_back(Pair("addr", CBitcoinAddress(pmn->pubKeyCollateralAddress.GetID()).ToString()));
-        mnObj.push_back(Pair("status", activeFundamentalnode.status));
-        mnObj.push_back(Pair("message", activeFundamentalnode.GetStatus()));
+        mnObj.push_back(Pair("status", activeFundamentalnode.GetStatus()));
+        mnObj.push_back(Pair("message", activeFundamentalnode.GetStatusMessage()));
         return mnObj;
     }
-    throw runtime_error("Fundamentalnode not found in the list of available fundamentalnodes. Current status: "
-                        + activeFundamentalnode.GetStatus());
+    throw std::runtime_error("Fundamentalnode not found in the list of available fundamentalnodes. Current status: "
+                             + activeFundamentalnode.GetStatusMessage());
 }
 
 UniValue getfundamentalnodewinners (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 3)
-        throw runtime_error(
-            "getfundamentalnodewinners ( blocks \"filter\" )\n"
-            "\nPrint the fundamentalnode winners for the last n blocks\n"
+        throw std::runtime_error(
+                "getfundamentalnodewinners ( blocks \"filter\" )\n"
+                "\nPrint the fundamentalnode winners for the last n blocks\n"
 
-            "\nArguments:\n"
-            "1. blocks      (numeric, optional) Number of previous blocks to show (default: 10)\n"
-            "2. filter      (string, optional) Search filter matching MN address\n"
+                "\nArguments:\n"
+                "1. blocks      (numeric, optional) Number of previous blocks to show (default: 10)\n"
+                "2. filter      (string, optional) Search filter matching MN address\n"
 
-            "\nResult (single winner):\n"
-            "[\n"
-            "  {\n"
-            "    \"nHeight\": n,           (numeric) block height\n"
-            "    \"winner\": {\n"
-            "      \"address\": \"xxxx\",    (string) VITAE MN Address\n"
-            "      \"nVotes\": n,          (numeric) Number of votes for winner\n"
-            "    }\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
+                "\nResult (single winner):\n"
+                "[\n"
+                "  {\n"
+                "    \"nHeight\": n,           (numeric) block height\n"
+                "    \"winner\": {\n"
+                "      \"address\": \"xxxx\",    (string) PIVX MN Address\n"
+                "      \"nVotes\": n,          (numeric) Number of votes for winner\n"
+                "    }\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
 
-            "\nResult (multiple winners):\n"
-            "[\n"
-            "  {\n"
-            "    \"nHeight\": n,           (numeric) block height\n"
-            "    \"winner\": [\n"
-            "      {\n"
-            "        \"address\": \"xxxx\",  (string) VITAE MN Address\n"
-            "        \"nVotes\": n,        (numeric) Number of votes for winner\n"
-            "      }\n"
-            "      ,...\n"
-            "    ]\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
-            "\nExamples:\n" +
-            HelpExampleCli("getfundamentalnodewinners", "") + HelpExampleRpc("getfundamentalnodewinners", ""));
+                "\nResult (multiple winners):\n"
+                "[\n"
+                "  {\n"
+                "    \"nHeight\": n,           (numeric) block height\n"
+                "    \"winner\": [\n"
+                "      {\n"
+                "        \"address\": \"xxxx\",  (string) PIVX MN Address\n"
+                "        \"nVotes\": n,        (numeric) Number of votes for winner\n"
+                "      }\n"
+                "      ,...\n"
+                "    ]\n"
+                "  }\n"
+                "  ,...\n"
+                "]\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("getfundamentalnodewinners", "") + HelpExampleRpc("getfundamentalnodewinners", ""));
 
     int nHeight;
     {
@@ -869,14 +586,14 @@ UniValue getfundamentalnodewinners (const UniValue& params, bool fHelp)
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("nHeight", i));
 
-        std::string strPayment = GetRequiredPaymentsStringFundamentalnode(i);
+        std::string strPayment = GetRequiredPaymentsString(i);
         if (strFilter != "" && strPayment.find(strFilter) == std::string::npos) continue;
 
         if (strPayment.find(',') != std::string::npos) {
             UniValue winner(UniValue::VARR);
             boost::char_separator<char> sep(",");
             boost::tokenizer< boost::char_separator<char> > tokens(strPayment, sep);
-            BOOST_FOREACH (const string& t, tokens) {
+            for (const std::string& t : tokens) {
                 UniValue addr(UniValue::VOBJ);
                 std::size_t pos = t.find(":");
                 std::string strAddress = t.substr(0,pos);
@@ -901,7 +618,7 @@ UniValue getfundamentalnodewinners (const UniValue& params, bool fHelp)
             obj.push_back(Pair("winner", winner));
         }
 
-            ret.push_back(obj);
+        ret.push_back(obj);
     }
 
     return ret;
@@ -910,37 +627,38 @@ UniValue getfundamentalnodewinners (const UniValue& params, bool fHelp)
 UniValue getfundamentalnodescores (const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
-        throw runtime_error(
-            "getfundamentalnodescores ( blocks )\n"
-            "\nPrint list of winning fundamentalnode by score\n"
+        throw std::runtime_error(
+                "getfundamentalnodescores ( blocks )\n"
+                "\nPrint list of winning fundamentalnode by score\n"
 
-            "\nArguments:\n"
-            "1. blocks      (numeric, optional) Show the last n blocks (default 10)\n"
+                "\nArguments:\n"
+                "1. blocks      (numeric, optional) Show the last n blocks (default 10)\n"
 
-            "\nResult:\n"
-            "{\n"
-            "  xxxx: \"xxxx\"   (numeric : string) Block height : Fundamentalnode hash\n"
-            "  ,...\n"
-            "}\n"
-            "\nExamples:\n" +
-            HelpExampleCli("getfundamentalnodescores", "") + HelpExampleRpc("getfundamentalnodescores", ""));
+                "\nResult:\n"
+                "{\n"
+                "  xxxx: \"xxxx\"   (numeric : string) Block height : Fundamentalnode hash\n"
+                "  ,...\n"
+                "}\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("getfundamentalnodescores", "") + HelpExampleRpc("getfundamentalnodescores", ""));
 
     int nLast = 10;
 
     if (params.size() == 1) {
         try {
             nLast = std::stoi(params[0].get_str());
-        } catch (const boost::bad_lexical_cast &) {
-            throw runtime_error("Exception on param 2");
+        } catch (const std::invalid_argument&) {
+            throw std::runtime_error("Exception on param 2");
         }
     }
     UniValue obj(UniValue::VOBJ);
 
     std::vector<CFundamentalnode> vFundamentalnodes = mnodeman.GetFullFundamentalnodeVector();
     for (int nHeight = chainActive.Tip()->nHeight - nLast; nHeight < chainActive.Tip()->nHeight + 20; nHeight++) {
-        uint256 nHigh = 0;
+        uint256 nHigh;
         CFundamentalnode* pBestFundamentalnode = NULL;
-        BOOST_FOREACH (CFundamentalnode& mn, vFundamentalnodes) {
+        for (CFundamentalnode& mn : vFundamentalnodes) {
             uint256 n = mn.CalculateScore(1, nHeight - 100);
             if (n > nHigh) {
                 nHigh = n;
@@ -959,7 +677,7 @@ bool DecodeHexMnb(CFundamentalnodeBroadcast& mnb, std::string strHexMnb) {
     if (!IsHex(strHexMnb))
         return false;
 
-    vector<unsigned char> mnbData(ParseHex(strHexMnb));
+    std::vector<unsigned char> mnbData(ParseHex(strHexMnb));
     CDataStream ssData(mnbData, SER_NETWORK, PROTOCOL_VERSION);
     try {
         ssData >> mnb;
@@ -970,20 +688,47 @@ bool DecodeHexMnb(CFundamentalnodeBroadcast& mnb, std::string strHexMnb) {
 
     return true;
 }
-
 UniValue createfundamentalnodebroadcast(const UniValue& params, bool fHelp)
 {
-	string strCommand;
-	if (params.size() >= 1)
-		strCommand = params[0].get_str();
-	if (fHelp || (strCommand != "alias" && strCommand != "all") || (strCommand == "alias" && params.size() < 2))
-		throw runtime_error(
-				"createfundamentalnodebroadcast \"command\" ( \"alias\")\n"
-				"Creates a fundamentalnode broadcast message for one or all fundamentalnodes configured in fundamentalnode.conf\n"
-				"\nArguments:\n"
-				"1. \"command\"      (string, required) \"alias\" for single fundamentalnode, \"all\" for all fundamentalnodes\n"
-				"2. \"alias\"        (string, required if command is \"alias\") Alias of the fundamentalnode\n"
-				+ HelpRequiringPassphrase());
+    std::string strCommand;
+    if (params.size() >= 1)
+        strCommand = params[0].get_str();
+    if (fHelp || (strCommand != "alias" && strCommand != "all") || (strCommand == "alias" && params.size() < 2))
+        throw std::runtime_error(
+                "createfundamentalnodebroadcast \"command\" ( \"alias\")\n"
+                "\nCreates a fundamentalnode broadcast message for one or all fundamentalnodes configured in fundamentalnode.conf\n" +
+                HelpRequiringPassphrase() + "\n"
+
+                                            "\nArguments:\n"
+                                            "1. \"command\"      (string, required) \"alias\" for single fundamentalnode, \"all\" for all fundamentalnodes\n"
+                                            "2. \"alias\"        (string, required if command is \"alias\") Alias of the fundamentalnode\n"
+
+                                            "\nResult (all):\n"
+                                            "{\n"
+                                            "  \"overall\": \"xxx\",        (string) Overall status message indicating number of successes.\n"
+                                            "  \"detail\": [                (array) JSON array of broadcast objects.\n"
+                                            "    {\n"
+                                            "      \"alias\": \"xxx\",      (string) Alias of the fundamentalnode.\n"
+                                            "      \"success\": true|false, (boolean) Success status.\n"
+                                            "      \"hex\": \"xxx\"         (string, if success=true) Hex encoded broadcast message.\n"
+                                            "      \"error_message\": \"xxx\"   (string, if success=false) Error message, if any.\n"
+                                            "    }\n"
+                                            "    ,...\n"
+                                            "  ]\n"
+                                            "}\n"
+
+                                            "\nResult (alias):\n"
+                                            "{\n"
+                                            "  \"alias\": \"xxx\",      (string) Alias of the fundamentalnode.\n"
+                                            "  \"success\": true|false, (boolean) Success status.\n"
+                                            "  \"hex\": \"xxx\"         (string, if success=true) Hex encoded broadcast message.\n"
+                                            "  \"error_message\": \"xxx\"   (string, if success=false) Error message, if any.\n"
+                                            "}\n"
+
+                                            "\nExamples:\n" +
+                HelpExampleCli("createfundamentalnodebroadcast", "alias mymn1") + HelpExampleRpc("createfundamentalnodebroadcast", "alias mymn1"));
+
+    EnsureWalletIsUnlocked();
 
     if (strCommand == "alias")
     {
@@ -992,44 +737,30 @@ UniValue createfundamentalnodebroadcast(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
 
         std::string alias = params[1].get_str();
-
-        if(pwalletMain->IsLocked()) {
-            throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Your wallet is locked, it needs to be unlocked first.");
-        }
-
         bool found = false;
 
         UniValue statusObj(UniValue::VOBJ);
         statusObj.push_back(Pair("alias", alias));
 
-        BOOST_FOREACH(CFundamentalnodeConfig::CFundamentalnodeEntry mne, fundamentalnodeConfig.getEntries()) {
+        for (CFundamentalnodeConfig::CFundamentalnodeEntry mne : fundamentalnodeConfig.getEntries()) {
             if(mne.getAlias() == alias) {
+                CFundamentalnodeBroadcast mnb;
                 found = true;
                 std::string errorMessage;
-                CFundamentalnodeBroadcast mnb;
-
-                bool success = activeFundamentalnode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb, true);
-
-                statusObj.push_back(Pair("success", success));
-                if(success) {
-                    CDataStream ssMnb(SER_NETWORK, PROTOCOL_VERSION);
-                    ssMnb << mnb;
-                    statusObj.push_back(Pair("hex", HexStr(ssMnb.begin(), ssMnb.end())));
-                } else {
-                    statusObj.push_back(Pair("error_message", errorMessage));
-                }
+                bool fSuccess = false;
+                if (!StartFundamentalnodeEntry(statusObj, mnb, fSuccess, mne, errorMessage, strCommand))
+                    continue;
+                SerializeMNB(statusObj, mnb, fSuccess);
                 break;
             }
         }
 
         if(!found) {
             statusObj.push_back(Pair("success", false));
-            statusObj.push_back(Pair("error_message", "Could not find alias in config. Verify with list-conf."));
+            statusObj.push_back(Pair("error_message", "Could not find alias in config. Verify with listfundamentalnodeconf."));
         }
 
-        pwalletMain->Lock();
         return statusObj;
-
     }
 
     if (strCommand == "all")
@@ -1037,10 +768,6 @@ UniValue createfundamentalnodebroadcast(const UniValue& params, bool fHelp)
         // wait for reindex and/or import to finish
         if (fImporting || fReindex)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
-
-        if(pwalletMain->IsLocked()) {
-            throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Your wallet is locked, it needs to be unlocked first.");
-        }
 
         std::vector<CFundamentalnodeConfig::CFundamentalnodeEntry> mnEntries;
         mnEntries = fundamentalnodeConfig.getEntries();
@@ -1050,31 +777,16 @@ UniValue createfundamentalnodebroadcast(const UniValue& params, bool fHelp)
 
         UniValue resultsObj(UniValue::VARR);
 
-        BOOST_FOREACH(CFundamentalnodeConfig::CFundamentalnodeEntry mne, fundamentalnodeConfig.getEntries()) {
-            std::string errorMessage;
-
-            CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
-            CFundamentalnodeBroadcast mnb;
-
-            bool success = activeFundamentalnode.CreateBroadcast(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, mnb, true);
-
+        for (CFundamentalnodeConfig::CFundamentalnodeEntry mne : fundamentalnodeConfig.getEntries()) {
             UniValue statusObj(UniValue::VOBJ);
-            statusObj.push_back(Pair("alias", mne.getAlias()));
-            statusObj.push_back(Pair("success", success));
-
-            if(success) {
-                successful++;
-                CDataStream ssMnb(SER_NETWORK, PROTOCOL_VERSION);
-                ssMnb << mnb;
-                statusObj.push_back(Pair("hex", HexStr(ssMnb.begin(), ssMnb.end())));
-            } else {
-                failed++;
-                statusObj.push_back(Pair("error_message", errorMessage));
-            }
-
+            CFundamentalnodeBroadcast mnb;
+            std::string errorMessage;
+            bool fSuccess = false;
+            if (!StartFundamentalnodeEntry(statusObj, mnb, fSuccess, mne, errorMessage, strCommand))
+                continue;
+            SerializeMNB(statusObj, mnb, fSuccess, successful, failed);
             resultsObj.push_back(statusObj);
         }
-        pwalletMain->Lock();
 
         UniValue returnObj(UniValue::VOBJ);
         returnObj.push_back(Pair("overall", strprintf("Successfully created broadcast messages for %d fundamentalnodes, failed to create %d, total %d", successful, failed, successful + failed)));
@@ -1082,45 +794,48 @@ UniValue createfundamentalnodebroadcast(const UniValue& params, bool fHelp)
 
         return returnObj;
     }
-    
     return NullUniValue;
 }
 
 UniValue decodefundamentalnodebroadcast(const UniValue& params, bool fHelp)
 {
-	if (fHelp || params.size() != 1)
-		throw runtime_error(
-				"decodefundamentalnodebroadcast \"hexstring\"\n"
-				"Command to decode fundamentalnode broadcast messages\n"
-				"\nArgument:\n"
-				"1. \"hexstring\"        (hex string) The fundamentalnode broadcast message\n"
-		        "\nResult:\n"
-		        "{\n"
-		        "  \"vin\": \"xxxx\"                (COutPoint) The unspent output which is holding the fundamentalnode collateral\n"
-		        "  \"addr\": \"xxxx\"               (string) IP address of the fundamentalnode\n"
-		        "  \"pubkeycollateral\": \"xxxx\"   (string) Collateral address's public key\n"
-		        "  \"pubkeymasternode\": \"xxxx\"   (string) Fundamentalnode's public key\n"
-		        "  \"vchsig\": \"xxxx\"             (string) Base64-encoded signature of this message (verifiable via pubkeycollateral)\n"
-		        "  \"sigtime\": \"nnn\"             (numeric) Signature timestamp\n"
-		        "  \"protocolversion\": \"nnn\"     (numeric) Fundamentalnode's protocol version\n"
-		        "  \"nlastdsq\": \"nnn\"            (numeric) The last time the fundamentalnode sent a DSQ message (for mixing) (DEPRECATED)\n"
-		        "  \"lastping\" : {                 (json object) information about the fundamentalnode's last ping\n"
-		        "      \"vin\": \"xxxx\"            (COutPoint) The unspent output of the fundamentalnode which is signing the message\n"
-		        "      \"blockhash\": \"xxxx\"      (string) Current chaintip blockhash minus 12\n"
-		        "      \"sigtime\": \"nnn\"         (numeric) Signature time for this ping\n"
-		        "      \"vchsig\": \"xxxx\"         (string) Base64-encoded signature of this ping (verifiable via pubkeyfundamentalnode)\n"
-		        "}\n"
-				"\nExamples:\n" +
-				        HelpExampleCli("decodefundamentalnodebroadcast", "hexstring") +
-						HelpExampleRpc("decodefundamentalnodebroadcast", "hexstring"));
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error(
+                "decodefundamentalnodebroadcast \"hexstring\"\n"
+                "\nCommand to decode fundamentalnode broadcast messages\n"
+
+                "\nArgument:\n"
+                "1. \"hexstring\"        (string) The hex encoded fundamentalnode broadcast message\n"
+
+                "\nResult:\n"
+                "{\n"
+                "  \"vin\": \"xxxx\"                (string) The unspent output which is holding the fundamentalnode collateral\n"
+                "  \"addr\": \"xxxx\"               (string) IP address of the fundamentalnode\n"
+                "  \"pubkeycollateral\": \"xxxx\"   (string) Collateral address's public key\n"
+                "  \"pubkeyfundamentalnode\": \"xxxx\"   (string) Fundamentalnode's public key\n"
+                "  \"vchsig\": \"xxxx\"             (string) Base64-encoded signature of this message (verifiable via pubkeycollateral)\n"
+                "  \"sigtime\": \"nnn\"             (numeric) Signature timestamp\n"
+                "  \"sigvalid\": \"xxx\"            (string) \"true\"/\"false\" whether or not the mnb signature checks out.\n"
+                "  \"protocolversion\": \"nnn\"     (numeric) Fundamentalnode's protocol version\n"
+                "  \"nlastdsq\": \"nnn\"            (numeric) The last time the fundamentalnode sent a DSQ message (for mixing) (DEPRECATED)\n"
+                "  \"nMessVersion\": \"nnn\"        (numeric) MNB Message version number\n"
+                "  \"lastping\" : {                 (object) JSON object with information about the fundamentalnode's last ping\n"
+                "      \"vin\": \"xxxx\"            (string) The unspent output of the fundamentalnode which is signing the message\n"
+                "      \"blockhash\": \"xxxx\"      (string) Current chaintip blockhash minus 12\n"
+                "      \"sigtime\": \"nnn\"         (numeric) Signature time for this ping\n"
+                "      \"sigvalid\": \"xxx\"        (string) \"true\"/\"false\" whether or not the mnp signature checks out.\n"
+                "      \"vchsig\": \"xxxx\"         (string) Base64-encoded signature of this ping (verifiable via pubkeyfundamentalnode)\n"
+                "      \"nMessVersion\": \"nnn\"    (numeric) MNP Message version number\n"
+                "  }\n"
+                "}\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("decodefundamentalnodebroadcast", "hexstring") + HelpExampleRpc("decodefundamentalnodebroadcast", "hexstring"));
 
     CFundamentalnodeBroadcast mnb;
 
     if (!DecodeHexMnb(mnb, params[0].get_str()))
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Fundamentalnode broadcast message decode failed");
-
-    if(!mnb.VerifySignature())
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Fundamentalnode broadcast signature verification failed");
 
     UniValue resultObj(UniValue::VOBJ);
 
@@ -1128,40 +843,46 @@ UniValue decodefundamentalnodebroadcast(const UniValue& params, bool fHelp)
     resultObj.push_back(Pair("addr", mnb.addr.ToString()));
     resultObj.push_back(Pair("pubkeycollateral", CBitcoinAddress(mnb.pubKeyCollateralAddress.GetID()).ToString()));
     resultObj.push_back(Pair("pubkeyfundamentalnode", CBitcoinAddress(mnb.pubKeyFundamentalnode.GetID()).ToString()));
-    resultObj.push_back(Pair("vchsig", EncodeBase64(&mnb.sig[0], mnb.sig.size())));
+    resultObj.push_back(Pair("vchsig", mnb.GetSignatureBase64()));
     resultObj.push_back(Pair("sigtime", mnb.sigTime));
+    resultObj.push_back(Pair("sigvalid", mnb.CheckSignature() ? "true" : "false"));
     resultObj.push_back(Pair("protocolversion", mnb.protocolVersion));
     resultObj.push_back(Pair("nlastdsq", mnb.nLastDsq));
+    resultObj.push_back(Pair("nMessVersion", mnb.nMessVersion));
 
     UniValue lastPingObj(UniValue::VOBJ);
     lastPingObj.push_back(Pair("vin", mnb.lastPing.vin.prevout.ToString()));
     lastPingObj.push_back(Pair("blockhash", mnb.lastPing.blockHash.ToString()));
     lastPingObj.push_back(Pair("sigtime", mnb.lastPing.sigTime));
-    lastPingObj.push_back(Pair("vchsig", EncodeBase64(&mnb.lastPing.vchSig[0], mnb.lastPing.vchSig.size())));
+    lastPingObj.push_back(Pair("sigvalid", mnb.lastPing.CheckSignature(mnb.pubKeyFundamentalnode) ? "true" : "false"));
+    lastPingObj.push_back(Pair("vchsig", mnb.lastPing.GetSignatureBase64()));
+    lastPingObj.push_back(Pair("nMessVersion", mnb.lastPing.nMessVersion));
 
     resultObj.push_back(Pair("lastping", lastPingObj));
 
     return resultObj;
 }
 
-
 UniValue relayfundamentalnodebroadcast(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
-        		"relayfundamentalnodebroadcast \"hexstring\"\n"
-        		"Command to relay fundamentalnode broadcast messages\n"
-        		"1. \"hexstring\"        (hex string) The fundamentalnode broadcast message\n"
-        		"\nExamples:\n" +
-				HelpExampleCli("relayfundamentalnodebroadcast", "hexstring") +
-				HelpExampleRpc("relayfundamentalnodebroadcast", "hexstring"));
+        throw std::runtime_error(
+                "relayfundamentalnodebroadcast \"hexstring\"\n"
+                "\nCommand to relay fundamentalnode broadcast messages\n"
+
+                "\nArguments:\n"
+                "1. \"hexstring\"        (string) The hex encoded fundamentalnode broadcast message\n"
+
+                "\nExamples:\n" +
+                HelpExampleCli("relayfundamentalnodebroadcast", "hexstring") + HelpExampleRpc("relayfundamentalnodebroadcast", "hexstring"));
+
 
     CFundamentalnodeBroadcast mnb;
 
     if (!DecodeHexMnb(mnb, params[0].get_str()))
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Fundamentalnode broadcast message decode failed");
 
-    if(!mnb.VerifySignature())
+    if(!mnb.CheckSignature())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Fundamentalnode broadcast signature verification failed");
 
     mnodeman.UpdateFundamentalnodeList(mnb);
