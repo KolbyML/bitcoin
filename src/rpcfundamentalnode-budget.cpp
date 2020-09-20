@@ -157,9 +157,7 @@ UniValue preparebudget(const UniValue& params, bool fHelp)
     // make our change address
     CReserveKey reservekey(pwalletMain);
     //send the tx to the network
-    const CWallet::CommitResult& res = pwalletMain->CommitTransaction(wtx, reservekey, useIX ? NetMsgType::IX : NetMsgType::TX);
-    if (res.status != CWallet::CommitStatus::OK)
-        throw JSONRPCError(RPC_WALLET_ERROR, res.ToString());
+    pwalletMain->CommitTransaction(wtx, reservekey, useIX ? NetMsgType::IX : NetMsgType::TX);
 
     return wtx.GetHash().ToString();
 }
