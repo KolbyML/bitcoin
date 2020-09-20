@@ -33,8 +33,8 @@ void CFundamentalnodeConfig::remove(std::string alias) {
 bool CFundamentalnodeConfig::read(std::string& strErr)
 {
     int linenumber = 1;
-    fs::path pathFundamentalnodeConfigFile = GetFundamentalnodeConfigFile();
-    fs::ifstream streamConfig(pathFundamentalnodeConfigFile);
+    boost::filesystem::path pathFundamentalnodeConfigFile = GetFundamentalnodeConfigFile();
+    boost::filesystem::ifstream streamConfig(pathFundamentalnodeConfigFile);
 
     if (!streamConfig.good()) {
         FILE* configFile = fsbridge::fopen(pathFundamentalnodeConfigFile, "a");

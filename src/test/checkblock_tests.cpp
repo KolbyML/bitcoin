@@ -24,11 +24,11 @@ BOOST_AUTO_TEST_SUITE(CheckBlock_tests)
 bool read_block(const std::string& filename, CBlock& block)
 {
     namespace fs = boost::filesystem;
-    fs::path testFile = fs::current_path() / "data" / filename;
+    boost::filesystem::path testFile = boost::filesystem::current_path() / "data" / filename;
 #ifdef TEST_DATA_DIR
     if (!fs::exists(testFile))
     {
-        testFile = fs::path(BOOST_PP_STRINGIZE(TEST_DATA_DIR)) / filename;
+        testFile = boost::filesystem::path(BOOST_PP_STRINGIZE(TEST_DATA_DIR)) / filename;
     }
 #endif
     FILE* fp = fopen(testFile.string().c_str(), "rb");
