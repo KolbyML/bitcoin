@@ -33,7 +33,7 @@ void DumpFundamentalnodes();
 class CFundamentalnodeDB
 {
 private:
-    fs::path pathMN;
+    boost::filesystem::path pathMN;
     std::string strMagicMessage;
 
 public:
