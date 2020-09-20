@@ -50,6 +50,8 @@ public:
     std::string GetStatusMessage() const;
     int GetStatus() const { return status; }
 
+    std::vector<COutput> SelectCoinsFundamentalnode();
+
     /// Enable cold wallet mode (run a Fundamentalnode with no funds)
     bool EnableHotColdFundamentalNode(CTxIn& vin, CService& addr);
 };
