@@ -22,6 +22,7 @@
 #include "fundamentalnode-budget.h"
 #include "fundamentalnode-payments.h"
 #include "fundamentalnodeman.h"
+#include "fundamentalnode-sync.h"
 #include "merkleblock.h"
 #include "messagesigner.h"
 #include "net.h"
