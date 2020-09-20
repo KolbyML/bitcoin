@@ -81,7 +81,7 @@ void CActiveFundamentalnode::ManageStatus()
         LogPrintf("CActiveFundamentalnode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString());
 
         CAddress addr(service, NODE_NETWORK);
-        if (!OpenNetworkConnection(addr, true, nullptr)) {
+        if (!OpenNetworkConnection(addr, nullptr)) {
             notCapableReason = "Could not connect to " + service.ToString();
             LogPrintf("CActiveFundamentalnode::ManageStatus() - not capable: %s\n", notCapableReason);
             return;

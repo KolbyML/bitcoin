@@ -24,7 +24,7 @@ class CActiveFundamentalnode;
 
 extern CFundamentalnodeMan mnodeman;
 extern CActiveFundamentalnode activeFundamentalnode;
-extern std::string strFundamentalnodePrivKey;
+extern std::string strFundamentalNodePrivKey;
 
 void DumpFundamentalnodes();
 
