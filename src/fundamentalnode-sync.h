@@ -1,10 +1,12 @@
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
+// Copyright (c) 2015-2020 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef FUNDAMENTALNODE_SYNC_H
 #define FUNDAMENTALNODE_SYNC_H
+
+#include <atomic>
 
 #define FUNDAMENTALNODE_SYNC_INITIAL 0
 #define FUNDAMENTALNODE_SYNC_SPORKS 1
@@ -39,6 +41,9 @@ public:
     int64_t lastFailure;
     int nCountFailures;
 
+    std::atomic<int64_t> lastProcess;
+    std::atomic<bool> fBlockchainSynced;
+
     // sum of all counts
     int sumFundamentalnodeList;
     int sumFundamentalnodeWinner;
@@ -71,8 +76,10 @@ public:
     void Reset();
     void Process();
     bool IsSynced();
+    bool NotCompleted();
+    bool IsSporkListSynced();
+    bool IsFundamentalnodeListSynced();
     bool IsBlockchainSynced();
-    bool IsFundamentalnodeListSynced() { return RequestedFundamentalnodeAssets > FUNDAMENTALNODE_SYNC_LIST; }
     void ClearFulfilledRequest();
 };
 

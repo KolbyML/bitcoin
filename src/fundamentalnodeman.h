@@ -1,11 +1,12 @@
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
+// Copyright (c) 2015-2020 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef FUNDAMENTALNODEMAN_H
 #define FUNDAMENTALNODEMAN_H
 
+#include "activefundamentalnode.h"
 #include "base58.h"
 #include "key.h"
 #include "main.h"
@@ -17,11 +18,14 @@
 #define FUNDAMENTALNODES_DUMP_SECONDS (15 * 60)
 #define FUNDAMENTALNODES_DSEG_SECONDS (3 * 60 * 60)
 
-using namespace std;
 
 class CFundamentalnodeMan;
+class CActiveFundamentalnode;
 
 extern CFundamentalnodeMan mnodeman;
+extern CActiveFundamentalnode activeFundamentalnode;
+extern std::string strFundamentalnodePrivKey;
+
 void DumpFundamentalnodes();
 
 /** Access to the MN database (mncache.dat)
@@ -29,7 +33,7 @@ void DumpFundamentalnodes();
 class CFundamentalnodeDB
 {
 private:
-    boost::filesystem::path pathMN;
+    fs::path pathMN;
     std::string strMagicMessage;
 
 public:
@@ -68,11 +72,12 @@ private:
 
 public:
     // Keep track of all broadcasts I've seen
-    map<uint256, CFundamentalnodeBroadcast> mapSeenFundamentalnodeBroadcast;
+    std::map<uint256, CFundamentalnodeBroadcast> mapSeenFundamentalnodeBroadcast;
     // Keep track of all pings I've seen
-    map<uint256, CFundamentalnodePing> mapSeenFundamentalnodePing;
+    std::map<uint256, CFundamentalnodePing> mapSeenFundamentalnodePing;
 
     // keep track of dsq count to prevent fundamentalnodes from gaming obfuscation queue
+    // TODO: Remove this from serialization
     int64_t nDsqCount;
 
     ADD_SERIALIZE_METHODS;
@@ -120,11 +125,8 @@ public:
     CFundamentalnode* Find(const CTxIn& vin);
     CFundamentalnode* Find(const CPubKey& pubKeyFundamentalnode);
 
-    /// Find an entry in the fundamentalnode list that is next to be paid
+    /// Find an entry in the Fundamentalnode list that is next to be paid
     CFundamentalnode* GetNextFundamentalnodeInQueueForPayment(int nBlockHeight, bool fFilterSigTime, int& nCount);
-
-    /// Find a random entry
-    CFundamentalnode* FindRandomNotInVec(std::vector<CTxIn>& vecToExclude, int protocolVersion = -1);
 
     /// Get the current winner for this block
     CFundamentalnode* GetCurrentFundamentalNode(int mod = 1, int64_t nBlockHeight = 0, int minProtocol = 0);
@@ -135,11 +137,9 @@ public:
         return vFundamentalnodes;
     }
 
-    std::vector<pair<int, CFundamentalnode> > GetFundamentalnodeRanks(int64_t nBlockHeight, int minProtocol = 0);
+    std::vector<std::pair<int, CFundamentalnode> > GetFundamentalnodeRanks(int64_t nBlockHeight, int minProtocol = 0);
     int GetFundamentalnodeRank(const CTxIn& vin, int64_t nBlockHeight, int minProtocol = 0, bool fOnlyActive = true);
     CFundamentalnode* GetFundamentalnodeByRank(int nRank, int64_t nBlockHeight, int minProtocol = 0, bool fOnlyActive = true);
-
-    void ProcessFundamentalnodeConnections();
 
     void ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
 
@@ -158,5 +158,7 @@ public:
     /// Update fundamentalnode list and maps using provided CFundamentalnodeBroadcast
     void UpdateFundamentalnodeList(CFundamentalnodeBroadcast mnb);
 };
+
+void ThreadCheckFundamentalnodes();
 
 #endif

@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
+// Copyright (c) 2015-2019 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,24 +11,38 @@
 
 CFundamentalnodeConfig fundamentalnodeConfig;
 
-void CFundamentalnodeConfig::add(std::string alias, std::string ip, std::string privKey, std::string txHash, std::string outputIndex)
+CFundamentalnodeConfig::CFundamentalnodeEntry* CFundamentalnodeConfig::add(std::string alias, std::string ip, std::string privKey, std::string txHash, std::string outputIndex)
 {
     CFundamentalnodeEntry cme(alias, ip, privKey, txHash, outputIndex);
     entries.push_back(cme);
+    return &(entries[entries.size()-1]);
+}
+
+void CFundamentalnodeConfig::remove(std::string alias) {
+    int pos = -1;
+    for (int i = 0; i < ((int) entries.size()); ++i) {
+        CFundamentalnodeEntry e = entries[i];
+        if (e.getAlias() == alias) {
+            pos = i;
+            break;
+        }
+    }
+    entries.erase(entries.begin() + pos);
 }
 
 bool CFundamentalnodeConfig::read(std::string& strErr)
 {
     int linenumber = 1;
-    boost::filesystem::path pathFundamentalnodeConfigFile = GetFundamentalnodeConfigFile();
-    boost::filesystem::ifstream streamConfig(pathFundamentalnodeConfigFile);
+    fs::path pathFundamentalnodeConfigFile = GetFundamentalnodeConfigFile();
+    fs::ifstream streamConfig(pathFundamentalnodeConfigFile);
 
     if (!streamConfig.good()) {
-        FILE* configFile = fopen(pathFundamentalnodeConfigFile.string().c_str(), "a");
+        FILE* configFile = fsbridge::fopen(pathFundamentalnodeConfigFile, "a");
         if (configFile != NULL) {
-            std::string strHeader = "# Fundamentalnode config file\n"
+            std::string strHeader = "# fundamentalnode config file\n"
                                     "# Format: alias IP:port fundamentalnodeprivkey collateral_output_txid collateral_output_index\n"
-                                    "# Example: mn1 127.0.0.2:8765 93HaYBVUCYjEMeeH1Y4sBGLALQZE1Yc1K64xiqgX37tGBDQL8Xg 2bcd3c84c84f87eaa86e4e56834c92927a07f9e18718810b92e0d0324456a67c 0\n";
+                                    "# Example: mn1 127.0.0.2:51472 93HaYBVUCYjEMeeH1Y4sBGLALQZE1Yc1K64xiqgX37tGBDQL8Xg 2bcd3c84c84f87eaa86e4e56834c92927a07f9e18718810b92e0d0324456a67c 0"
+                                    "#\n";
             fwrite(strHeader.c_str(), std::strlen(strHeader.c_str()), 1, configFile);
             fclose(configFile);
         }
@@ -59,6 +73,7 @@ bool CFundamentalnodeConfig::read(std::string& strErr)
         }
 
         int port = 0;
+        int nDefaultPort = Params().GetDefaultPort();
         std::string hostname = "";
         SplitHostPort(ip, port, hostname);
         if(port == 0 || hostname == "") {
@@ -68,18 +83,10 @@ bool CFundamentalnodeConfig::read(std::string& strErr)
             return false;
         }
 
-        if (Params().NetworkID() == CBaseChainParams::MAIN) {
-            if (port != 8765) {
-                strErr = _("Invalid port detected in fundamentalnode.conf") + "\n" +
-                         strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
-                         _("(must be 8765 for mainnet)");
-                streamConfig.close();
-                return false;
-            }
-        } else if (port == 8765) {
-            strErr = _("Invalid port detected in fundamentalnode.conf") + "\n" +
-                     strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
-                     _("(8765 could be used only on mainnet)");
+        if (port != nDefaultPort) {
+            strErr = strprintf(_("Invalid port %d detected in fundamentalnode.conf"), port) + "\n" +
+                     strprintf(_("Line: %d"), linenumber) + "\n\"" + ip + "\"" + "\n" +
+                     strprintf(_("(must be %d for %s-net)"), nDefaultPort, Params().NetworkIDString());
             streamConfig.close();
             return false;
         }
@@ -92,11 +99,11 @@ bool CFundamentalnodeConfig::read(std::string& strErr)
     return true;
 }
 
-bool CFundamentalnodeConfig::CFundamentalnodeEntry::castOutputIndex(int &n)
+bool CFundamentalnodeConfig::CFundamentalnodeEntry::castOutputIndex(int &n) const
 {
     try {
         n = std::stoi(outputIndex);
-    } catch (const std::exception e) {
+    } catch (const std::exception& e) {
         LogPrintf("%s: %s on getOutputIndex\n", __func__, e.what());
         return false;
     }

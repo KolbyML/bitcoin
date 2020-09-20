@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
+// Copyright (c) 2015-2020 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 #include "base58.h"
 #include "key.h"
 #include "main.h"
+#include "messagesigner.h"
 #include "net.h"
 #include "sync.h"
 #include "timedata.h"
@@ -25,28 +26,24 @@
 static const CAmount FUNDAMENTALNODE_AMOUNT = 10000* COIN;
 static const CAmount FN_MAGIC_AMOUNT = 0.1234 *COIN;
 
-using namespace std;
-
 class CFundamentalnode;
 class CFundamentalnodeBroadcast;
 class CFundamentalnodePing;
-extern map<int64_t, uint256> mapFundamentalnodeCacheBlockHashes;
+extern std::map<int64_t, uint256> mapCacheBlockHashes;
 
-bool GetBlockHashFundamentalnode(uint256& hash, int nBlockHeight);
+bool GetBlockHash(uint256& hash, int nBlockHeight);
 
 
 //
 // The Fundamentalnode Ping Class : Contains a different serialize method for sending pings from fundamentalnodes throughout the network
 //
 
-class CFundamentalnodePing
+class CFundamentalnodePing : public CSignedMessage
 {
 public:
     CTxIn vin;
     uint256 blockHash;
     int64_t sigTime; //mnb message times
-    std::vector<unsigned char> vchSig;
-    //removed stop
 
     CFundamentalnodePing();
     CFundamentalnodePing(CTxIn& newVin);
@@ -54,29 +51,34 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(vin);
         READWRITE(blockHash);
         READWRITE(sigTime);
         READWRITE(vchSig);
+        try
+        {
+            READWRITE(nMessVersion);
+        } catch (...) {
+            nMessVersion = MessageVersion::MESS_VER_STRMESS;
+        }
     }
+
+    uint256 GetHash() const;
+
+    // override CSignedMessage functions
+    uint256 GetSignatureHash() const override { return GetHash(); }
+    std::string GetStrMessage() const override;
+    const CTxIn GetVin() const override  { return vin; };
 
     bool CheckAndUpdate(int& nDos, bool fRequireEnabled = true, bool fCheckSigTimeOnly = false);
-    bool Sign(CKey& keyFundamentalnode, CPubKey& pubKeyFundamentalnode);
-    bool VerifySignature(CPubKey& pubKeyFundamentalnode, int &nDos);
     void Relay();
-
-    uint256 GetHash()
-    {
-        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-        ss << vin;
-        ss << sigTime;
-        return ss.GetHash();
-    }
 
     void swap(CFundamentalnodePing& first, CFundamentalnodePing& second) // nothrow
     {
+        CSignedMessage::swap(first, second);
+
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
 
@@ -85,7 +87,6 @@ public:
         swap(first.vin, second.vin);
         swap(first.blockHash, second.blockHash);
         swap(first.sigTime, second.sigTime);
-        swap(first.vchSig, second.vchSig);
     }
 
     CFundamentalnodePing& operator=(CFundamentalnodePing from)
@@ -104,10 +105,10 @@ public:
 };
 
 //
-// The Fundamentalnode Class. For managing the Obfuscation process. It contains the input of the 10000 VITAE, signature to prove
+// The Fundamentalnode Class. It contains the input of the 10000 PIV, signature to prove
 // it's the one who own that ip address and code for calculating the payment election.
 //
-class CFundamentalnode
+class CFundamentalnode : public CSignedMessage
 {
 private:
     // critical section to protect the inner data structures
@@ -119,12 +120,12 @@ public:
         FUNDAMENTALNODE_PRE_ENABLED,
         FUNDAMENTALNODE_ENABLED,
         FUNDAMENTALNODE_EXPIRED,
-        FUNDAMENTALNODE_OUTPOINT_SPENT,
         FUNDAMENTALNODE_REMOVE,
         FUNDAMENTALNODE_WATCHDOG_EXPIRED,
         FUNDAMENTALNODE_POSE_BAN,
         FUNDAMENTALNODE_VIN_SPENT,
-        FUNDAMENTALNODE_POS_ERROR
+        FUNDAMENTALNODE_POS_ERROR,
+        FUNDAMENTALNODE_MISSING
     };
 
     CTxIn vin;
@@ -133,7 +134,6 @@ public:
     CPubKey pubKeyFundamentalnode;
     CPubKey pubKeyCollateralAddress1;
     CPubKey pubKeyFundamentalnode1;
-    std::vector<unsigned char> sig;
     int activeState;
     int64_t sigTime; //mnb message time
     int cacheInputAge;
@@ -141,22 +141,24 @@ public:
     bool unitTest;
     bool allowFreeTx;
     int protocolVersion;
-    int nActiveState;
     int64_t nLastDsq; //the dsq count from the last dsq broadcast of this node
     int nScanningErrorCount;
     int nLastScanningErrorBlockHeight;
     CFundamentalnodePing lastPing;
 
-    int64_t nLastDsee;  // temporary, do not save. Remove after migration to v12
-    int64_t nLastDseep; // temporary, do not save. Remove after migration to v12
-
     CFundamentalnode();
     CFundamentalnode(const CFundamentalnode& other);
-    CFundamentalnode(const CFundamentalnodeBroadcast& mnb);
 
+    // override CSignedMessage functions
+    uint256 GetSignatureHash() const override;
+    std::string GetStrMessage() const override;
+    const CTxIn GetVin() const override { return vin; };
+    const CPubKey GetPublicKey(std::string& strErrorRet) const override { return pubKeyCollateralAddress; }
 
     void swap(CFundamentalnode& first, CFundamentalnode& second) // nothrow
     {
+        CSignedMessage::swap(first, second);
+
         // enable ADL (not necessary in our case, but good practice)
         using std::swap;
 
@@ -166,7 +168,6 @@ public:
         swap(first.addr, second.addr);
         swap(first.pubKeyCollateralAddress, second.pubKeyCollateralAddress);
         swap(first.pubKeyFundamentalnode, second.pubKeyFundamentalnode);
-        swap(first.sig, second.sig);
         swap(first.activeState, second.activeState);
         swap(first.sigTime, second.sigTime);
         swap(first.lastPing, second.lastPing);
@@ -199,7 +200,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         LOCK(cs);
 
@@ -207,7 +208,7 @@ public:
         READWRITE(addr);
         READWRITE(pubKeyCollateralAddress);
         READWRITE(pubKeyFundamentalnode);
-        READWRITE(sig);
+        READWRITE(vchSig);
         READWRITE(sigTime);
         READWRITE(protocolVersion);
         READWRITE(activeState);
@@ -262,8 +263,6 @@ public:
         return cacheInputAge + (chainActive.Tip()->nHeight - cacheInputAgeBlock);
     }
 
-    std::string GetStatus();
-
     std::string Status()
     {
         std::string strStatus = "ACTIVE";
@@ -273,12 +272,16 @@ public:
         if (activeState == CFundamentalnode::FUNDAMENTALNODE_VIN_SPENT) strStatus = "VIN_SPENT";
         if (activeState == CFundamentalnode::FUNDAMENTALNODE_REMOVE) strStatus = "REMOVE";
         if (activeState == CFundamentalnode::FUNDAMENTALNODE_POS_ERROR) strStatus = "POS_ERROR";
+        if (activeState == CFundamentalnode::FUNDAMENTALNODE_MISSING) strStatus = "MISSING";
 
         return strStatus;
     }
 
     int64_t GetLastPaid();
     bool IsValidNetAddr();
+
+    /// Is the input associated with collateral public key? (and there is 10000 PIV - checking if valid masternode)
+    bool IsInputAssociatedWithPubkey() const;
 };
 
 
@@ -295,40 +298,38 @@ public:
 
     bool CheckAndUpdate(int& nDoS);
     bool CheckInputsAndAdd(int& nDos);
-    bool Sign(CKey& keyCollateralAddress);
-    bool VerifySignature();
+
+    uint256 GetHash() const;
+
     void Relay();
-    std::string GetOldStrMessage();
-    std::string GetNewStrMessage();
+
+    // special sign/verify
+    bool Sign(const CKey& key, const CPubKey& pubKey);
+    bool Sign(const std::string strSignKey);
+    bool CheckSignature() const;
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(vin);
         READWRITE(addr);
         READWRITE(pubKeyCollateralAddress);
         READWRITE(pubKeyFundamentalnode);
-        READWRITE(sig);
+        READWRITE(vchSig);
         READWRITE(sigTime);
         READWRITE(protocolVersion);
         READWRITE(lastPing);
-        READWRITE(nLastDsq);
-    }
-
-    uint256 GetHash()
-    {
-        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-        ss << sigTime;
-        ss << pubKeyCollateralAddress;
-        return ss.GetHash();
+        READWRITE(nMessVersion);    // abuse nLastDsq (which will be removed) for old serialization
+        if (ser_action.ForRead())
+            nLastDsq = 0;
     }
 
     /// Create Fundamentalnode broadcast, needs to be relayed manually after that
     static bool Create(CTxIn vin, CService service, CKey keyCollateralAddressNew, CPubKey pubKeyCollateralAddressNew, CKey keyFundamentalnodeNew, CPubKey pubKeyFundamentalnodeNew, std::string& strErrorRet, CFundamentalnodeBroadcast& mnbRet);
     static bool Create(std::string strService, std::string strKey, std::string strTxHash, std::string strOutputIndex, std::string& strErrorRet, CFundamentalnodeBroadcast& mnbRet, bool fOffline = false);
-    static bool CheckDefaultPort(std::string strService, std::string& strErrorRet, std::string strContext);
+    static bool CheckDefaultPort(CService service, std::string& strErrorRet, const std::string& strContext);
 };
 
 #endif
