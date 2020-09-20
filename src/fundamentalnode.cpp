@@ -567,7 +567,7 @@ bool CFundamentalnodeBroadcast::CheckInputsAndAdd(int& nDoS)
 {
     // we are a fundamentalnode with the same vin (i.e. already activated) and this mnb is ours (matches our Fundamentalnode privkey)
     // so nothing to do here for us
-    if (fFundamentalNode && activeFundamentalnode.vin != nullopt &&
+    if (fFundamentalNode && activeFundamentalnode.vin != boost::none &&
         vin.prevout == activeFundamentalnode.vin->prevout && pubKeyFundamentalnode == activeFundamentalnode.pubKeyFundamentalnode)
         return true;
 

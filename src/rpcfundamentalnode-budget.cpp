@@ -284,7 +284,7 @@ UniValue fnbudgetvote(const UniValue& params, bool fHelp)
         if (!fFundamentalNode)
             throw JSONRPCError(RPC_MISC_ERROR, _("This is not a fundamentalnode. 'local' option disabled."));
 
-        if (activeFundamentalnode.vin == nullopt)
+        if (activeFundamentalnode.vin == boost::none)
             throw JSONRPCError(RPC_MISC_ERROR, _("Active Fundamentalnode not initialized."));
 
         CPubKey pubKeyFundamentalnode;
@@ -845,7 +845,7 @@ UniValue fnfinalbudget(const UniValue& params, bool fHelp)
         if (!fFundamentalNode)
             throw JSONRPCError(RPC_MISC_ERROR, _("This is not a fundamentalnode. 'local' option disabled."));
 
-        if (activeFundamentalnode.vin == nullopt)
+        if (activeFundamentalnode.vin == boost::none)
             throw JSONRPCError(RPC_MISC_ERROR, _("Active Fundamentalnode not initialized."));
 
         if (params.size() != 2)

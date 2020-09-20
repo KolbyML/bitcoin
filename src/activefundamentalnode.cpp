@@ -118,7 +118,7 @@ std::string CActiveFundamentalnode::GetStatusMessage() const
 
 bool CActiveFundamentalnode::SendFundamentalnodePing(std::string& errorMessage)
 {
-    if (vin == nullopt) {
+    if (vin == boost::none) {
         errorMessage = "Active Fundamentalnode not initialized";
         return false;
     }

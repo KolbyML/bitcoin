@@ -265,7 +265,7 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
 {
     if (!fFundamentalNode) return;
 
-    if (activeMasternode.vin == nullopt)
+    if (activeMasternode.vin == boost::none)
         LogPrint("fundamentalnode", "%s: Active Fundamentalnode not initialized.", __func__);
     return;
 

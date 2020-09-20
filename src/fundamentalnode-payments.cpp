@@ -878,7 +878,7 @@ bool CFundamentalnodePayments::ProcessBlock(int nBlockHeight)
 {
     if (!fFundamentalNode) return false;
 
-    if (activeFundamentalnode.vin == nullopt)
+    if (activeFundamentalnode.vin == boost::none)
         return error("%s: Active Fundamentalnode not initialized.", __func__);
 
     //reference node - hybrid mode
