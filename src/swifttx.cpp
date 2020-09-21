@@ -263,7 +263,7 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
 {
     if (!fFundamentalNode) return;
 
-    if (activeFundamentalnode.vin == nullopt)
+    if (activeFundamentalnode.vin == boost::none)
         LogPrint("swiftx", "%s: Active Fundamentalnode not initialized.", __func__);
     return;
 
