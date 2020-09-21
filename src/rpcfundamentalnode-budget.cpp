@@ -83,7 +83,7 @@ void checkBudgetInputs(const UniValue& params, std::string &strProposalName, std
 
     CBitcoinAddress address2(params[4].get_str());
     address = address2;
-    if (!address.IsValid())
+    if (!address2.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid VITAE address");
 
     nAmount = AmountFromValue(params[5]);
