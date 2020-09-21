@@ -52,7 +52,7 @@ void budgetToJSON(CBudgetProposal* pbudgetProposal, UniValue& bObj)
 }
 
 void checkBudgetInputs(const UniValue& params, std::string &strProposalName, std::string &strURL,
-                       int &nPaymentCount, int &nBlockStart, CTxDestination &address, CAmount &nAmount)
+                       int &nPaymentCount, int &nBlockStart, CAmount &nAmount)
 {
     strProposalName = SanitizeString(params[0].get_str());
     if (strProposalName.size() > 20)
@@ -80,12 +80,7 @@ void checkBudgetInputs(const UniValue& params, std::string &strProposalName, std
     nBlockStart = params[3].get_int();
     if ((nBlockStart < nBlockMin) || ((nBlockStart % budgetCycleBlocks) != 0))
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid block start - must be a budget cycle block. Next valid block: %d", nBlockMin));
-
-    CBitcoinAddress address2(params[4].get_str());
-    address = address2;
-    if (!address2.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid VITAE address");
-
+    
     nAmount = AmountFromValue(params[5]);
     if (nAmount < 10 * COIN)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid amount - Payment of %s is less than minimum 10 PIV allowed", FormatMoney(nAmount)));
@@ -131,10 +126,14 @@ UniValue preparebudget(const UniValue& params, bool fHelp)
     CTxDestination address;
     CAmount nAmount;
 
-    checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, address, nAmount);
+    checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, nAmount);
+
+    CBitcoinAddress address(params[4].get_str());
+    if (!address.IsValid())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid VITAE address");
 
     // Parse PIVX address
-    CScript scriptPubKey = GetScriptForDestination(address);
+    CScript scriptPubKey = GetScriptForDestination(address.Get());
 
     // create transaction 15 minutes into the future, to allow for confirmation time
     CBudgetProposalBroadcast budgetProposalBroadcast(strProposalName, strURL, nPaymentCount, scriptPubKey, nAmount, nBlockStart, uint256());
@@ -193,10 +192,14 @@ UniValue submitbudget(const UniValue& params, bool fHelp)
     CTxDestination address;
     CAmount nAmount;
 
-    checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, address, nAmount);
+    checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, nAmount);
+
+    CBitcoinAddress address(params[4].get_str());
+    if (!address.IsValid())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid VITAE address");
 
     // Parse PIVX address
-    CScript scriptPubKey = GetScriptForDestination(address);
+    CScript scriptPubKey = GetScriptForDestination(address.Get());
 
     uint256 hash = ParseHashV(params[6], "parameter 1");
 
