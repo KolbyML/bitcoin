@@ -99,6 +99,7 @@ CFundamentalnode::CFundamentalnode(const CFundamentalnode& other) :
     cacheInputAgeBlock = other.cacheInputAgeBlock;
     unitTest = other.unitTest;
     allowFreeTx = other.allowFreeTx;
+    nActiveState = FUNDAMENTALNODE_ENABLED;
     protocolVersion = other.protocolVersion;
     nLastDsq = other.nLastDsq;
     nScanningErrorCount = other.nScanningErrorCount;
@@ -295,6 +296,26 @@ int64_t CFundamentalnode::GetLastPaid()
     }
 
     return 0;
+}
+
+std::string CFundamentalnode::GetStatus()
+{
+    switch (nActiveState) {
+        case CFundamentalnode::FUNDAMENTALNODE_PRE_ENABLED:
+            return "PRE_ENABLED";
+        case CFundamentalnode::FUNDAMENTALNODE_ENABLED:
+            return "ENABLED";
+        case CFundamentalnode::FUNDAMENTALNODE_EXPIRED:
+            return "EXPIRED";
+        case CFundamentalnode::FUNDAMENTALNODE_REMOVE:
+            return "REMOVE";
+        case CFundamentalnode::FUNDAMENTALNODE_WATCHDOG_EXPIRED:
+            return "WATCHDOG_EXPIRED";
+        case CFundamentalnode::FUNDAMENTALNODE_POSE_BAN:
+            return "POSE_BAN";
+        default:
+            return "UNKNOWN";
+    }
 }
 
 bool CFundamentalnode::IsValidNetAddr()
