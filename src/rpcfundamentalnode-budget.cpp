@@ -80,7 +80,7 @@ void checkBudgetInputs(const UniValue& params, std::string &strProposalName, std
     nBlockStart = params[3].get_int();
     if ((nBlockStart < nBlockMin) || ((nBlockStart % budgetCycleBlocks) != 0))
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid block start - must be a budget cycle block. Next valid block: %d", nBlockMin));
-    
+
     nAmount = AmountFromValue(params[5]);
     if (nAmount < 10 * COIN)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid amount - Payment of %s is less than minimum 10 PIV allowed", FormatMoney(nAmount)));
@@ -123,7 +123,6 @@ UniValue preparebudget(const UniValue& params, bool fHelp)
     std::string strURL;
     int nPaymentCount;
     int nBlockStart;
-    CTxDestination address;
     CAmount nAmount;
 
     checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, nAmount);
@@ -189,7 +188,6 @@ UniValue submitbudget(const UniValue& params, bool fHelp)
     std::string strURL;
     int nPaymentCount;
     int nBlockStart;
-    CTxDestination address;
     CAmount nAmount;
 
     checkBudgetInputs(params, strProposalName, strURL, nPaymentCount, nBlockStart, nAmount);
