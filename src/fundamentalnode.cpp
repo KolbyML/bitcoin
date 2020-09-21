@@ -381,9 +381,7 @@ bool CFundamentalnodeBroadcast::Create(std::string strService, std::string strKe
         return false;
     }
 
-    std::string strError;
-    if (!pwalletMain->GetFundamentalnodeVinAndKeys(txin, pubKeyCollateralAddressNew, keyCollateralAddressNew, strTxHash, strOutputIndex, strError)) {
-        strErrorRet = strError; // GetFundamentalnodeVinAndKeys logs this error. Only returned for GUI error notification.
+    if (!pwalletMain->GetFundamentalnodeVinAndKeys(txin, pubKeyCollateralAddressNew, keyCollateralAddressNew, strTxHash, strOutputIndex)) {
         LogPrint("fundamentalnode","CFundamentalnodeBroadcast::Create -- %s\n", strprintf("Could not allocate txin %s:%s for fundamentalnode %s", strTxHash, strOutputIndex, strService));
         return false;
     }
