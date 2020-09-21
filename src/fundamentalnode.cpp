@@ -76,7 +76,7 @@ CFundamentalnode::CFundamentalnode() :
     cacheInputAgeBlock = 0;
     unitTest = false;
     allowFreeTx = true;
-    nActiveState = FUNDAMENTALNODE_ENABLED,
+    nActiveState = FUNDAMENTALNODE_ENABLED;
     protocolVersion = PROTOCOL_VERSION;
     nLastDsq = 0;
     nScanningErrorCount = 0;
