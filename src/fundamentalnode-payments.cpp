@@ -769,6 +769,7 @@ bool CFundamentalnodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
     if (nMaxSignatures < MNPAYMENTS_SIGNATURES_REQUIRED) return true;
 
     std::string strPayeesPossible = "";
+    CAmount nReward = GetBlockValue(nBlockHeight);
     CAmount requiredFundamentalnodePayment = GetFundamentalnodePayment(nBlockHeight, nReward);
 
     for (CFundamentalnodePayee& payee : vecPayments) {
