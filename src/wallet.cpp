@@ -4307,12 +4307,12 @@ void CWallet::ZVitBackupWallet()
         strNewBackupName = strprintf("wallet-autozVitbackup-%d.dat", i);
         backupPath = backupDir / strNewBackupName;
 
-        if (filesystem::exists(backupPath)) {
+        if (boost::filesystem::exists(backupPath)) {
             //Keep up to 10 backups
             if (i <= 8) {
                 //If the next file backup exists and is newer, then iterate
                 boost::filesystem::path nextBackupPath = backupDir / strprintf("wallet-autozVitbackup-%d.dat", i + 1);
-                if (filesystem::exists(nextBackupPath)) {
+                if (boost::filesystem::exists(nextBackupPath)) {
                     time_t timeThis = filesystem::last_write_time(backupPath);
                     time_t timeNext = filesystem::last_write_time(nextBackupPath);
                     if (timeThis > timeNext) {
