@@ -856,7 +856,7 @@ void ThreadCheckFundamentalnodes()
     if (fLiteMode) return; //disable all Fundamentalnode related functionality
 
     // Make this thread recognisable as the wallet flushing thread
-    util::ThreadRename("pivx-fundamentalnodeman");
+    RenameThread("pivx-fundamentalnodeman");
     LogPrintf("Fundamentalnodes thread started\n");
 
     unsigned int c = 0;
