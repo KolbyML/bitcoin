@@ -1083,9 +1083,9 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #ifdef ENABLE_WALLET
     if (!fDisableWallet) {
         boost::filesystem::path backupDir = GetDataDir() / "backups";
-        if (!filesystem::exists(backupDir)) {
+        if (!boost::filesystem::exists(backupDir)) {
             // Always create backup folder to not confuse the operating system's file browser
-            filesystem::create_directories(backupDir);
+            boost::filesystem::create_directories(backupDir);
         }
         nWalletBackups = GetArg("-createwalletbackups", 10);
         nWalletBackups = std::max(0, std::min(10, nWalletBackups));
@@ -1362,18 +1362,18 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // Upgrading to 0.8; hard-link the old blknnnn.dat files into /blocks/
     boost::filesystem::path blocksDir = GetDataDir() / "blocks";
-    if (!filesystem::exists(blocksDir)) {
-        filesystem::create_directories(blocksDir);
+    if (!boost::filesystem::exists(blocksDir)) {
+        boost::filesystem::create_directories(blocksDir);
         bool linked = false;
         for (unsigned int i = 1; i < 10000; i++) {
             boost::filesystem::path source = GetDataDir() / strprintf("blk%04u.dat", i);
             if (!filesystem::exists(source)) break;
             boost::filesystem::path dest = blocksDir / strprintf("blk%05u.dat", i - 1);
             try {
-                filesystem::create_hard_link(source, dest);
+                boost::filesystem::create_hard_link(source, dest);
                 LogPrintf("Hardlinked %s -> %s\n", source.string(), dest.string());
                 linked = true;
-            } catch (const filesystem::filesystem_error& e) {
+            } catch (const boost::filesystem::filesystem_error& e) {
                 // Note: hardlink creation failing is not a disaster, it just means
                 // blocks will get re-downloaded from peers.
                 LogPrintf("Error hardlinking blk%04u.dat : %s\n", i, e.what());

@@ -929,8 +929,8 @@ bool BackupWallet(const CWallet& wallet, const boost::filesystem::path& strDest,
                 pathCustom = pathWithFile.parent_path();
             }
             try {
-                filesystem::create_directories(pathCustom);
-            } catch(const filesystem::filesystem_error& e) {
+                boost::filesystem::create_directories(pathCustom);
+            } catch(const boost::filesystem::filesystem_error& e) {
                 NotifyBacked(wallet, false, strprintf("%s\n", e.what()));
                 pathCustom = "";
             }
@@ -961,7 +961,7 @@ bool BackupWallet(const CWallet& wallet, const boost::filesystem::path& strDest,
 
                         typedef std::multimap<std::time_t, boost::filesystem::path> folder_set_t;
                         folder_set_t folderSet;
-                        filesystem::directory_iterator end_iter;
+                        boost::filesystem::directory_iterator end_iter;
 
                         pathCustom.make_preferred();
                         // Build map of backup files for current(!) wallet sorted by last write time
@@ -997,10 +997,10 @@ bool BackupWallet(const CWallet& wallet, const boost::filesystem::path& strDest,
                             try {
                                 auto entry = folderSet.find(oldestBackup);
                                 if (entry != folderSet.end()) {
-                                    filesystem::remove(entry->second);
+                                    boost::filesystem::remove(entry->second);
                                     LogPrintf("Old backup deleted: %s\n", (*entry).second);
                                 }
-                            } catch (const filesystem::filesystem_error& error) {
+                            } catch (const boost::filesystem::filesystem_error& error) {
                                 string strMessage = strprintf("Failed to delete backup %s\n", error.what());
                                 LogPrint(nullptr, strMessage.data());
                                 NotifyBacked(wallet, false, strMessage);
@@ -1024,7 +1024,7 @@ bool AttemptBackupWallet(const CWallet& wallet, const boost::filesystem::path& p
     string strMessage;
     try {
 #if BOOST_VERSION >= 105800 /* BOOST_LIB_VERSION 1_58 */
-        filesystem::copy_file(pathSrc.c_str(), pathDest, filesystem::copy_option::overwrite_if_exists);
+        boost::filesystem::copy_file(pathSrc.c_str(), pathDest, boost::filesystem::copy_option::overwrite_if_exists);
 #else
         std::ifstream src(pathSrc.c_str(),  std::ios::binary | std::ios::in);
         std::ofstream dst(pathDest.c_str(), std::ios::binary | std::ios::out | std::ios::trunc);
@@ -1036,7 +1036,7 @@ bool AttemptBackupWallet(const CWallet& wallet, const boost::filesystem::path& p
         strMessage = strprintf("copied wallet.dat to %s\n", pathDest.string());
         LogPrint(nullptr, strMessage.data());
         retStatus = true;
-    } catch (const filesystem::filesystem_error& e) {
+    } catch (const boost::filesystem::filesystem_error& e) {
         retStatus = false;
         strMessage = strprintf("%s\n", e.what());
         LogPrint(nullptr, strMessage.data());

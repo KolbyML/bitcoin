@@ -4313,8 +4313,8 @@ void CWallet::ZVitBackupWallet()
                 //If the next file backup exists and is newer, then iterate
                 boost::filesystem::path nextBackupPath = backupDir / strprintf("wallet-autozVitbackup-%d.dat", i + 1);
                 if (boost::filesystem::exists(nextBackupPath)) {
-                    time_t timeThis = filesystem::last_write_time(backupPath);
-                    time_t timeNext = filesystem::last_write_time(nextBackupPath);
+                    time_t timeThis = boost::filesystem::last_write_time(backupPath);
+                    time_t timeNext = boost::filesystem::last_write_time(nextBackupPath);
                     if (timeThis > timeNext) {
                         //The next backup is created before this backup was
                         //The next backup is the correct path to use
@@ -4338,7 +4338,7 @@ void CWallet::ZVitBackupWallet()
 
     if(!GetArg("-zvitaebackuppath", "").empty()) {
         boost::filesystem::path customPath(GetArg("-zvitaebackuppath", ""));
-        filesystem::create_directories(customPath);
+        boost::filesystem::create_directories(customPath);
 
         if(!customPath.has_extension()) {
             customPath /= GetUniqueWalletBackupName(true);
