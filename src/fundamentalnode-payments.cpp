@@ -598,7 +598,7 @@ int CFundamentalnodePayments::GetMinFundamentalnodePaymentsProto()
     return ActiveProtocol();
 }
 
-void CFundamentalnodePayments::ProcessMessagefundamentalnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CFundamentalnodePayments::ProcessMessageFundamentalnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if (!fundamentalnodeSync.IsBlockchainSynced()) return;
 
