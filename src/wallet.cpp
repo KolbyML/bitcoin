@@ -14,6 +14,7 @@
 #include "coincontrol.h"
 #include "kernel.h"
 #include "fundamentalnode-budget.h"
+#include "fundamentalnode-payments.h"
 #include "net.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
