@@ -913,10 +913,10 @@ void NotifyBacked(const CWallet& wallet, bool fSuccess, string strMessage)
     wallet.NotifyWalletBacked(fSuccess, strMessage);
 }
 
-bool BackupWallet(const CWallet& wallet, const filesystem::path& strDest, bool fEnableCustom)
+bool BackupWallet(const CWallet& wallet, const boost::filesystem::path& strDest, bool fEnableCustom)
 {
-    filesystem::path pathCustom;
-    filesystem::path pathWithFile;
+    boost::filesystem::path pathCustom;
+    boost::filesystem::path pathWithFile;
     if (!wallet.fFileBacked) {
         return false;
     } else if(fEnableCustom) {
@@ -947,8 +947,8 @@ bool BackupWallet(const CWallet& wallet, const filesystem::path& strDest, bool f
                 bitdb.mapFileUseCount.erase(wallet.strWalletFile);
 
                 // Copy wallet.dat
-                filesystem::path pathDest(strDest);
-                filesystem::path pathSrc = GetDataDir() / wallet.strWalletFile;
+                boost::filesystem::path pathDest(strDest);
+                boost::filesystem::path pathSrc = GetDataDir() / wallet.strWalletFile;
                 if (is_directory(pathDest)) {
                     if(!exists(pathDest)) create_directory(pathDest);
                     pathDest /= wallet.strWalletFile;
@@ -959,14 +959,14 @@ bool BackupWallet(const CWallet& wallet, const filesystem::path& strDest, bool f
                     int nThreshold = GetArg("-custombackupthreshold", DEFAULT_CUSTOMBACKUPTHRESHOLD);
                     if (nThreshold > 0) {
 
-                        typedef std::multimap<std::time_t, filesystem::path> folder_set_t;
+                        typedef std::multimap<std::time_t, boost::filesystem::path> folder_set_t;
                         folder_set_t folderSet;
                         filesystem::directory_iterator end_iter;
 
                         pathCustom.make_preferred();
                         // Build map of backup files for current(!) wallet sorted by last write time
 
-                        filesystem::path currentFile;
+                        boost::filesystem::path currentFile;
                         for (filesystem::directory_iterator dir_iter(pathCustom); dir_iter != end_iter; ++dir_iter) {
                             // Only check regular files
                             if (filesystem::is_regular_file(dir_iter->status())) {
@@ -1018,7 +1018,7 @@ bool BackupWallet(const CWallet& wallet, const filesystem::path& strDest, bool f
     return false;
 }
 
-bool AttemptBackupWallet(const CWallet& wallet, const filesystem::path& pathSrc, const filesystem::path& pathDest)
+bool AttemptBackupWallet(const CWallet& wallet, const boost::filesystem::path& pathSrc, const boost::filesystem::path& pathDest)
 {
     bool retStatus;
     string strMessage;

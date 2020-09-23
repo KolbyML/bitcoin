@@ -4299,8 +4299,8 @@ string CWallet::GetUniqueWalletBackupName(bool fzvitAuto) const
 
 void CWallet::ZVitBackupWallet()
 {
-    filesystem::path backupDir = GetDataDir() / "backups";
-    filesystem::path backupPath;
+    boost::filesystem::path backupDir = GetDataDir() / "backups";
+    boost::filesystem::path backupPath;
     string strNewBackupName;
 
     for (int i = 0; i < 10; i++) {
@@ -4311,7 +4311,7 @@ void CWallet::ZVitBackupWallet()
             //Keep up to 10 backups
             if (i <= 8) {
                 //If the next file backup exists and is newer, then iterate
-                filesystem::path nextBackupPath = backupDir / strprintf("wallet-autozVitbackup-%d.dat", i + 1);
+                boost::filesystem::path nextBackupPath = backupDir / strprintf("wallet-autozVitbackup-%d.dat", i + 1);
                 if (filesystem::exists(nextBackupPath)) {
                     time_t timeThis = filesystem::last_write_time(backupPath);
                     time_t timeNext = filesystem::last_write_time(nextBackupPath);
@@ -4337,7 +4337,7 @@ void CWallet::ZVitBackupWallet()
     BackupWallet(*this, backupPath.string());
 
     if(!GetArg("-zvitaebackuppath", "").empty()) {
-        filesystem::path customPath(GetArg("-zvitaebackuppath", ""));
+        boost::filesystem::path customPath(GetArg("-zvitaebackuppath", ""));
         filesystem::create_directories(customPath);
 
         if(!customPath.has_extension()) {
