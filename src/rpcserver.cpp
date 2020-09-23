@@ -405,8 +405,6 @@ static const CRPCCommand vRPCCommands[] =
         {"vitae", "getpoolinfo", &getpoolinfo, true, true, false},
         {"vitae", "makekeypair", &makekeypair, true, true, false},
 #ifdef ENABLE_WALLET
-        {"vitae", "obfuscation", &obfuscation, false, false, true}, /* not threadSafe because of SendMoney */
-
         /* Wallet */
         {"wallet", "addmultisigaddress", &addmultisigaddress, true, false, true},
         {"wallet", "autocombinerewards", &autocombinerewards, false, false, true},

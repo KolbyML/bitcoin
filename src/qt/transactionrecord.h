@@ -87,13 +87,7 @@ public:
         ZerocoinSpend,
         RecvFromZerocoinSpend,
         ZerocoinSpend_Change_zVITAE,
-        ZerocoinSpend_FromMe,
-        RecvWithObfuscation,
-        ObfuscationDenominate,
-        ObfuscationCollateralPayment,
-        ObfuscationMakeCollaterals,
-        ObfuscationCreateDenominations,
-        Obfuscated
+        ZerocoinSpend_FromMe
     };
 
     /** Number of confirmation recommended for accepting a transaction */
