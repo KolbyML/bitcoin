@@ -305,7 +305,7 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
         if(pindex != NULL){
             if(pindex->GetBlockHash() == block.hashPrevBlock){
                 CAmount stakeReward = GetBlockValue(pindex->nHeight + 1);
-                CAmount masternodePaymentAmount = GetMasternodePayment(pindex->nHeight+1, stakeReward, 0, false);//todo++
+                CAmount masternodePaymentAmount = GetMasternodePayment(pindex->nHeight+1, stakeReward);
 
                 bool fIsInitialDownload = IsInitialBlockDownload();
 
