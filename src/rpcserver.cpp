@@ -353,15 +353,12 @@ static const CRPCCommand vRPCCommands[] =
         {"hidden", "setmocktime", &setmocktime, true, false, false},
 
         /* VITAE features */
-        {"fundamentalnode", "fundamentalnode", &fundamentalnode, true, true, false},
         {"fundamentalnode", "listfundamentalnodes", &listfundamentalnodes, true, true, false},
         {"fundamentalnode", "getfundamentalnodecount", &getfundamentalnodecount, true, true, false},
-        {"fundamentalnode", "fundamentalnodeconnect", &fundamentalnodeconnect, true, true, false},
         {"fundamentalnode", "createfundamentalnodebroadcast", &createfundamentalnodebroadcast, true, true, false},
         {"fundamentalnode", "decodefundamentalnodebroadcast", &decodefundamentalnodebroadcast, true, true, false},
         {"fundamentalnode", "relayfundamentalnodebroadcast", &relayfundamentalnodebroadcast, true, true, false},
         {"fundamentalnode", "fundamentalnodecurrent", &fundamentalnodecurrent, true, true, false},
-        {"fundamentalnode", "fundamentalnodedebug", &fundamentalnodedebug, true, true, false},
         {"fundamentalnode", "startfundamentalnode", &startfundamentalnode, true, true, false},
         {"fundamentalnode", "createfundamentalnodekey", &createfundamentalnodekey, true, true, false},
         {"fundamentalnode", "getfundamentalnodeoutputs", &getfundamentalnodeoutputs, true, true, false},
@@ -402,7 +399,6 @@ static const CRPCCommand vRPCCommands[] =
         {"masternode", "mnsync", &mnsync, true, true, false },
 
         {"vitae", "spork", &spork, true, true, false},
-        {"vitae", "getpoolinfo", &getpoolinfo, true, true, false},
         {"vitae", "makekeypair", &makekeypair, true, true, false},
 #ifdef ENABLE_WALLET
         /* Wallet */
