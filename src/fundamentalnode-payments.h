@@ -28,7 +28,7 @@ void ProcessMessageFundamentalnodePayments(CNode* pfrom, std::string& strCommand
 bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight);
 std::string GetRequiredPaymentsString(int nBlockHeight);
 bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted);
-void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake);
+void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake);
 
 void DumpFundamentalnodePayments();
 
@@ -280,7 +280,7 @@ public:
     int GetMinFundamentalnodePaymentsProto();
     void ProcessMessageFundamentalnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
     std::string GetRequiredPaymentsString(int nBlockHeight);
-    void FillBlockPayee(CMutableTransaction& txNew, int64_t nFees, bool fProofOfStake);
+    void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, int64_t nFees, bool fProofOfStake);
     std::string ToString() const;
     int GetOldestBlock();
     int GetNewestBlock();
