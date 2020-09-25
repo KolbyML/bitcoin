@@ -432,7 +432,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
 
         if (!fProofOfStake) {
             //Fundamentalnode and general budget payments
-            FillBlockPayee(txNew, nFees, fProofOfStake);
+            FillBlockPayeeFundamentalnode(txNew, nFees, fProofOfStake);
 
             //Make payee
             if (txNew.vout.size() > 1) {
