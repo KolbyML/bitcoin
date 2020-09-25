@@ -401,7 +401,7 @@ void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, CAmount nFees, bo
     if (!pindexPrev) return;
 
     if (sporkManager.IsSporkActive(SPORK_11_ENABLE_SUPERBLOCKS) && budget.IsBudgetPaymentBlock(pindexPrev->nHeight + 1)) {
-        budget.FillBlockPayee(txNew, nFees, fProofOfStake);
+        budget.FillBlockPayeeFundamentalnode(txNew, nFees, fProofOfStake);
     } else {
         fundamentalnodePayments.FillBlockPayeeFundamentalnode(txNew, nFees, fProofOfStake);
     }
