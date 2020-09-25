@@ -574,7 +574,7 @@ int CFundamentalnodeMan::GetFundamentalnodeRank(const CTxIn& vin, int64_t nBlock
 
     //make sure we know about this block
     uint256 hash;
-    if (!GetBlockHash(hash, nBlockHeight)) return -1;
+    if (!GetFundamentalnodeBlockHash(hash, nBlockHeight)) return -1;
 
     // scan for winner
     for (CFundamentalnode& mn : vFundamentalnodes) {
@@ -620,7 +620,7 @@ std::vector<std::pair<int, CFundamentalnode> > CFundamentalnodeMan::GetFundament
 
     //make sure we know about this block
     uint256 hash;
-    if (!GetBlockHash(hash, nBlockHeight)) return vecFundamentalnodeRanks;
+    if (!GetFundamentalnodeBlockHash(hash, nBlockHeight)) return vecFundamentalnodeRanks;
 
     // scan for winner
     for (CFundamentalnode& mn : vFundamentalnodes) {

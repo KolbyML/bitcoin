@@ -31,7 +31,7 @@ class CFundamentalnodeBroadcast;
 class CFundamentalnodePing;
 extern std::map<int64_t, uint256> mapCacheBlockHashes;
 
-bool GetBlockHash(uint256& hash, int nBlockHeight);
+bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight);
 
 
 //

@@ -21,7 +21,7 @@ std::map<uint256, int> mapSeenFundamentalnodeScanningErrors;
 std::map<int64_t, uint256> mapCacheBlockHashes;
 
 //Get the last hash that matches the modulus given. Processed in reverse order
-bool GetBlockHash(uint256& hash, int nBlockHeight)
+bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight)
 {
     if (chainActive.Tip() == NULL) return false;
 
@@ -164,7 +164,7 @@ uint256 CFundamentalnode::CalculateScore(int mod, int64_t nBlockHeight)
     uint256 hash;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
 
-    if (!GetBlockHash(hash, nBlockHeight)) {
+    if (!GetFundamentalnodeBlockHash(hash, nBlockHeight)) {
         LogPrint("fundamentalnode","CalculateScore ERROR - nHeight %d - Returned 0\n", nBlockHeight);
         return uint256();
     }
