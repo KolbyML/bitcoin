@@ -202,7 +202,7 @@ void CFundamentalnodePaymentWinner::Relay()
     RelayInv(inv);
 }
 
-void DumpfundamentalnodePayments()
+void DumpFundamentalnodePayments()
 {
     int64_t nStart = GetTimeMillis();
 
