@@ -29,7 +29,7 @@ static const CAmount FN_MAGIC_AMOUNT = 0.1234 *COIN;
 class CFundamentalnode;
 class CFundamentalnodeBroadcast;
 class CFundamentalnodePing;
-extern std::map<int64_t, uint256> mapCacheBlockHashes;
+extern std::map<int64_t, uint256> mapFundamentalnodeCacheBlockHashes;
 
 bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight);
 

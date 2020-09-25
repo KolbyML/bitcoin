@@ -18,7 +18,7 @@
 // keep track of the scanning errors I've seen
 std::map<uint256, int> mapSeenFundamentalnodeScanningErrors;
 // cache block hashes as we calculate them
-std::map<int64_t, uint256> mapCacheBlockHashes;
+std::map<int64_t, uint256> mapFundamentalnodeCacheBlockHashes;
 
 //Get the last hash that matches the modulus given. Processed in reverse order
 bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight)
@@ -28,8 +28,8 @@ bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight)
     if (nBlockHeight == 0)
         nBlockHeight = chainActive.Tip()->nHeight;
 
-    if (mapCacheBlockHashes.count(nBlockHeight)) {
-        hash = mapCacheBlockHashes[nBlockHeight];
+    if (mapFundamentalnodeCacheBlockHashes.count(nBlockHeight)) {
+        hash = mapFundamentalnodeCacheBlockHashes[nBlockHeight];
         return true;
     }
 
@@ -46,7 +46,7 @@ bool GetFundamentalnodeBlockHash(uint256& hash, int nBlockHeight)
     for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
         if (n >= nBlocksAgo) {
             hash = BlockReading->GetBlockHash();
-            mapCacheBlockHashes[nBlockHeight] = hash;
+            mapFundamentalnodeCacheBlockHashes[nBlockHeight] = hash;
             return true;
         }
         n++;
