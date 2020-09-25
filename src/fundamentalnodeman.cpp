@@ -71,7 +71,7 @@ bool CFundamentalnodeDB::Write(const CFundamentalnodeMan& mnodemanToSave)
     ssFundamentalnodes << hash;
 
     // open output file, and associate with CAutoFile
-    FILE* file = fsbridge::fopen(pathMN, "wb");
+    FILE* file = fopen(pathMN.string().c_str(), "wb");
     CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
     if (fileout.IsNull())
         return error("%s : Failed to open file %s", __func__, pathMN.string());
@@ -95,7 +95,7 @@ CFundamentalnodeDB::ReadResult CFundamentalnodeDB::Read(CFundamentalnodeMan& mno
 {
     int64_t nStart = GetTimeMillis();
     // open input file, and associate with CAutoFile
-    FILE* file = fsbridge::fopen(pathMN, "rb");
+    FILE* file = fopen(pathMN.string().c_str(), "rb");
     CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
     if (filein.IsNull()) {
         error("%s : Failed to open file %s", __func__, pathMN.string());

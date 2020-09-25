@@ -37,7 +37,7 @@ bool CFundamentalnodeConfig::read(std::string& strErr)
     boost::filesystem::ifstream streamConfig(pathFundamentalnodeConfigFile);
 
     if (!streamConfig.good()) {
-        FILE* configFile = fsbridge::fopen(pathFundamentalnodeConfigFile, "a");
+        FILE* configFile = fopen(pathFundamentalnodeConfigFile.string().c_str(), "a");
         if (configFile != NULL) {
             std::string strHeader = "# fundamentalnode config file\n"
                                     "# Format: alias IP:port fundamentalnodeprivkey collateral_output_txid collateral_output_index\n"
