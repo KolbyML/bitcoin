@@ -407,12 +407,12 @@ void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, CAmount nFees, bo
     }
 }
 
-std::string GetRequiredPaymentsString(int nBlockHeight)
+std::string GetFundamentalnodeRequiredPaymentsString(int nBlockHeight)
 {
     if (sporkManager.IsSporkActive(SPORK_11_ENABLE_SUPERBLOCKS) && budget.IsBudgetPaymentBlock(nBlockHeight)) {
-        return budget.GetRequiredPaymentsString(nBlockHeight);
+        return budget.GetFundamentalnodeRequiredPaymentsString(nBlockHeight);
     } else {
-        return fundamentalnodePayments.GetRequiredPaymentsString(nBlockHeight);
+        return fundamentalnodePayments.GetFundamentalnodeRequiredPaymentsString(nBlockHeight);
     }
 }
 
@@ -803,7 +803,7 @@ bool CFundamentalnodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
     return false;
 }
 
-std::string CFundamentalnodeBlockPayees::GetRequiredPaymentsString()
+std::string CFundamentalnodeBlockPayees::GetFundamentalnodeRequiredPaymentsString()
 {
     LOCK(cs_vecFundamentalnodePayments);
 
@@ -824,12 +824,12 @@ std::string CFundamentalnodeBlockPayees::GetRequiredPaymentsString()
     return ret;
 }
 
-std::string CFundamentalnodePayments::GetRequiredPaymentsString(int nBlockHeight)
+std::string CFundamentalnodePayments::GetFundamentalnodeRequiredPaymentsString(int nBlockHeight)
 {
     LOCK(cs_mapFundamentalnodeBlocks);
 
     if (mapFundamentalnodeBlocks.count(nBlockHeight)) {
-        return mapFundamentalnodeBlocks[nBlockHeight].GetRequiredPaymentsString();
+        return mapFundamentalnodeBlocks[nBlockHeight].GetFundamentalnodeRequiredPaymentsString();
     }
 
     return "Unknown";

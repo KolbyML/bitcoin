@@ -26,7 +26,7 @@ extern CFundamentalnodePayments fundamentalnodePayments;
 
 void ProcessMessageFundamentalnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
 bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight);
-std::string GetRequiredPaymentsString(int nBlockHeight);
+std::string GetFundamentalnodeRequiredPaymentsString(int nBlockHeight);
 bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted);
 void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake);
 
@@ -144,7 +144,7 @@ public:
     }
 
     bool IsTransactionValid(const CTransaction& txNew);
-    std::string GetRequiredPaymentsString();
+    std::string GetFundamentalnodeRequiredPaymentsString();
 
     ADD_SERIALIZE_METHODS;
 
@@ -279,7 +279,7 @@ public:
 
     int GetMinFundamentalnodePaymentsProto();
     void ProcessMessageFundamentalnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
-    std::string GetRequiredPaymentsString(int nBlockHeight);
+    std::string GetFundamentalnodeRequiredPaymentsString(int nBlockHeight);
     void FillBlockPayeeFundamentalnode(CMutableTransaction& txNew, int64_t nFees, bool fProofOfStake);
     std::string ToString() const;
     int GetOldestBlock();

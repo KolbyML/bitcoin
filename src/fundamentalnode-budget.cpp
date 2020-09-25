@@ -876,7 +876,7 @@ std::vector<CFinalizedBudget*> CBudgetManager::GetFinalizedBudgets()
     return vFinalizedBudgetsRet;
 }
 
-std::string CBudgetManager::GetRequiredPaymentsString(int nBlockHeight)
+std::string CBudgetManager::GetFundamentalnodeRequiredPaymentsString(int nBlockHeight)
 {
     LOCK(cs);
 
@@ -895,7 +895,7 @@ std::string CBudgetManager::GetRequiredPaymentsString(int nBlockHeight)
                     ret += payment.nProposalHash.ToString();
                 }
             } else {
-                LogPrint("fnbudget","CBudgetManager::GetRequiredPaymentsString - Couldn't find budget payment for block %d\n", nBlockHeight);
+                LogPrint("fnbudget","CBudgetManager::GetFundamentalnodeRequiredPaymentsString - Couldn't find budget payment for block %d\n", nBlockHeight);
             }
         }
 
