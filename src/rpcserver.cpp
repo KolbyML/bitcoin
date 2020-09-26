@@ -351,7 +351,6 @@ static const CRPCCommand vRPCCommands[] =
         {"hidden", "invalidateblock", &invalidateblock, true, true, false},
         {"hidden", "reconsiderblock", &reconsiderblock, true, true, false},
         {"hidden", "setmocktime", &setmocktime, true, false, false},
-
         /* VITAE features */
         {"fundamentalnode", "listfundamentalnodes", &listfundamentalnodes, true, true, false},
         {"fundamentalnode", "getfundamentalnodecount", &getfundamentalnodecount, true, true, false},
