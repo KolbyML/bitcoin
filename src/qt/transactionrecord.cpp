@@ -209,7 +209,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
             // Label for payment to self
             CTxDestination address;
             if (ExtractDestination(wtx.vout[0].scriptPubKey, address)) {
-                sub.address = EncodeDestination(address);
+                sub.address = CBitcoinAddress(address).ToString();
             }
 
             CAmount nChange = wtx.GetChange();
