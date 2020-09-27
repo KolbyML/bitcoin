@@ -211,13 +211,12 @@ void CFundamentalnode::Check(bool forceCheck)
     }
 
     if (!unitTest) {
-        CValidationState state;
+        /*CValidationState state;
         CMutableTransaction tx = CMutableTransaction();
-        CScript dummyScript;
-        dummyScript << ToByteVector(pubKeyCollateralAddress) << OP_CHECKSIG;
-        CTxOut vout = CTxOut(9999.99 * COIN, dummyScript);
+        CTxOut vout = CTxOut(9999.99 * COIN, obfuScationPool.collateralPubKey);
         tx.vin.push_back(vin);
         tx.vout.push_back(vout);
+
         {
             TRY_LOCK(cs_main, lockMain);
             if (!lockMain) return;
@@ -226,7 +225,7 @@ void CFundamentalnode::Check(bool forceCheck)
                 activeState = FUNDAMENTALNODE_VIN_SPENT;
                 return;
             }
-        }
+        }*/
     }
 
     activeState = FUNDAMENTALNODE_ENABLED; // OK
@@ -605,12 +604,9 @@ bool CFundamentalnodeBroadcast::CheckInputsAndAdd(int& nDoS)
     }
 
     CValidationState state;
-    CMutableTransaction tx = CMutableTransaction();
-    CScript dummyScript;
-    dummyScript << ToByteVector(pubKeyCollateralAddress) << OP_CHECKSIG;
-    CTxOut vout = CTxOut(9999.99 * COIN, dummyScript);
-    tx.vin.push_back(vin);
-    tx.vout.push_back(vout);
+    uint256 hashBlock = 0;
+    CTransaction tx2, tx1;
+    GetTransaction(vin.prevout.hash, tx2, hashBlock, true);
 
     {
         TRY_LOCK(cs_main, lockMain);
@@ -621,8 +617,22 @@ bool CFundamentalnodeBroadcast::CheckInputsAndAdd(int& nDoS)
             return false;
         }
 
-        if (!AcceptableInputs(mempool, state, CTransaction(tx), false, NULL)) {
-            //set nDos
+        int64_t nValueIn = 0;
+
+        BOOST_FOREACH (const CTxIn& txin, tx2.vin) {
+            // First try finding the previous transaction in database
+            CTransaction txPrev;
+            uint256 hashBlockPrev;
+            if (!GetTransaction(txin.prevout.hash, txPrev, hashBlockPrev, true)) {
+                LogPrintf("CheckInputsAndAdd: failed to find vin transaction \n");
+                continue; // previous transaction not in main chain
+            }
+
+            nValueIn += txPrev.vout[txin.prevout.n].nValue;
+
+        }
+
+        if(nValueIn - tx2.GetValueOut() < FUNDAMENTALNODE_AMOUNT - FN_MAGIC_AMOUNT){
             state.IsInvalid(nDoS);
             return false;
         }
