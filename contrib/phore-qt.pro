@@ -137,7 +137,6 @@ HEADERS += src/activemasternode.h \
            src/utiltime.h \
            src/version.h \
            src/wallet.h \
-           src/wallet_ismine.h \
            src/walletdb.h \
            src/validationinterface.h \
            src/compat/sanity.h \
