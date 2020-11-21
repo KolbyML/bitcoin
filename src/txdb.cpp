@@ -100,11 +100,6 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CBlockTreeDB::WriteBlockFileInfo(int nFile, const CBlockFileInfo& info)
-{
-    return Write(std::make_pair('f', nFile), info);
-}
-
 bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo& info)
 {
     return Read(std::make_pair('f', nFile), info);
