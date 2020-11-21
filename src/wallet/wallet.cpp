@@ -3276,7 +3276,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
             }
             // TODO: implement keypools for all accounts?
             if (!walletdb.WritePool(nEnd, CKeyPool(GenerateNewKey(0, fInternal, &walletdb), fInternal)))
-                throw runtime_error("TopUpKeyPool() : writing generated key failed");
+                throw std::runtime_error("TopUpKeyPool() : writing generated key failed");
             if (fInternal) {
                 setInternalKeyPool.insert(nEnd);
             } else {

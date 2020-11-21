@@ -81,7 +81,7 @@ std::string DecodeDumpString(const std::string& str)
 UniValue importprivkey(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
-        throw runtime_error(
+        throw std::runtime_error(
             "importprivkey \"pivxprivkey\" ( \"label\" rescan )\n"
             "\nAdds a private key (as returned by dumpprivkey) to your wallet.\n" +
             HelpRequiringPassphrase() + "\n"
@@ -155,7 +155,7 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
 UniValue importaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
-        throw runtime_error(
+        throw std::runtime_error(
             "importaddress \"address\" ( \"label\" rescan )\n"
             "\nAdds an address or script (in hex) that can be watched as if it were in your wallet but cannot be used to spend.\n"
 
@@ -226,7 +226,7 @@ UniValue importaddress(const UniValue& params, bool fHelp)
 UniValue importwallet(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "importwallet \"filename\"\n"
             "\nImports keys from a wallet dump file (see dumpwallet).\n" +
             HelpRequiringPassphrase() + "\n"
@@ -329,7 +329,7 @@ UniValue importwallet(const UniValue& params, bool fHelp)
 UniValue dumpprivkey(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "dumpprivkey \"pivxaddress\"\n"
             "\nReveals the private key corresponding to 'pivxaddress'.\n"
             "Then the importprivkey can be used with this output\n" +
@@ -365,7 +365,7 @@ UniValue dumpprivkey(const UniValue& params, bool fHelp)
 UniValue dumpwallet(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "dumpwallet \"filename\"\n"
             "\nDumps all wallet keys in a human-readable format.\n" +
             HelpRequiringPassphrase() + "\n"
@@ -428,7 +428,7 @@ UniValue dumpwallet(const UniValue& params, bool fHelp)
 UniValue bip38encrypt(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 2)
-        throw runtime_error(
+        throw std::runtime_error(
             "bip38encrypt \"pivxaddress\" \"passphrase\"\n"
             "\nEncrypts a private key corresponding to 'pivxaddress'.\n" +
             HelpRequiringPassphrase() + "\n"
@@ -474,7 +474,7 @@ UniValue bip38encrypt(const UniValue& params, bool fHelp)
 UniValue bip38decrypt(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 2)
-        throw runtime_error(
+        throw std::runtime_error(
             "bip38decrypt \"pivxaddress\" \"passphrase\"\n"
             "\nDecrypts and then imports password protected private key.\n" +
             HelpRequiringPassphrase() + "\n"
