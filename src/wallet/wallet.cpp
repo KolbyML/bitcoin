@@ -2381,7 +2381,7 @@ bool CWallet::MintableCoins()
     return false;
 }
 
-bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy) const
+bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy) const
 {
     setCoinsRet.clear();
     nValueRet = 0;
@@ -2514,7 +2514,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int
     return true;
 }
 
-bool CWallet::SelectCoins(const CAmount& nTargetValue, set<pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX) const
+bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX) const
 {
     // Note: this function should never be used for "always free" tx types like dstx
 
