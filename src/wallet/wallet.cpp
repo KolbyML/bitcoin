@@ -2565,6 +2565,18 @@ bool CWallet::GetBudgetSystemCollateralTX(CWalletTx& tx, uint256 hash, bool useI
     return true;
 }
 
+enum class ErrorOfCreateTransaction
+{
+    other,
+    transactionSizeTooLarge,
+};
+
+struct CWallet::ParamForCreateTransaction
+{
+    CoinSelectStrategy coinSelectStrategy;
+    ErrorOfCreateTransaction error;
+};
+
 bool CWallet::CreateTransaction(const std::vector<std::pair<CScript, CAmount> >& vecSend,
                                 CWalletTx& wtxNew,
                                 CReserveKey& reservekey,
