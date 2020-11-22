@@ -2684,7 +2684,7 @@ bool CWallet::CreateTransactionHelper(const std::vector<std::pair<CScript, CAmou
                 std::set<std::pair<const CWalletTx*, unsigned int> > setCoins;
                 CAmount nValueIn = 0;
 
-                if (!SelectCoins(nTotalValue, setCoins, nValueIn, param->coinSelectStrategy, coinControl, coin_type, useIX)) {
+                if (!SelectCoins(nTotalValue, setCoins, nValueIn, param->coinSelectStrategy, coinControl, coin_type)) {
                     if (coin_type == ALL_COINS) {
                         strFailReason = _("Insufficient funds.");
                     } else if (coin_type == ONLY_NOT10000IFMN) {
