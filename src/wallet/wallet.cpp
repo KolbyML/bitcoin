@@ -2381,7 +2381,7 @@ bool CWallet::MintableCoins()
     return false;
 }
 
-bool CWallet::SelectCoinsMinConf(getValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy) const
+bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet) const
 {
     setCoinsRet.clear();
     nValueRet = 0;
@@ -2392,30 +2392,11 @@ bool CWallet::SelectCoinsMinConf(getValue, int nConfMine, int nConfTheirs, std::
     coinLowestLarger.second.first = NULL;
     std::vector<std::pair<CAmount, std::pair<const CWalletTx*, unsigned int> > > vValue;
     CAmount nTotalLower = 0;
-    
-	switch(coinSelectStrategy) {
-	case CoinSelectStrategy::random:
-		random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
-		break;
 
-	default:
-		break;
-	}
+    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
 
     // move denoms down on the list
     std::sort(vCoins.begin(), vCoins.end(), less_then_denom);
-
-	switch(coinSelectStrategy) {
-	case CoinSelectStrategy::descentByAmount:
-        // sort after sorted by denoms
-		std::sort(vCoins.begin(), vCoins.end(), [](const COutput & a, const COutput & b) -> bool {
-			return a.Value() > b.Value();
-		});
-		break;
-
-	default:
-		break;
-	}
 
     // try to find nondenom first to prevent unneeded spending of mixed coins
     for (unsigned int tryDenom = 0; tryDenom < 2; tryDenom++) {
@@ -2437,14 +2418,8 @@ bool CWallet::SelectCoinsMinConf(getValue, int nConfMine, int nConfTheirs, std::
             if (tryDenom == 0 && IsDenominatedAmount(n)) continue; // we don't want denom values on first run
 
             std::pair<CAmount, std::pair<const CWalletTx*, unsigned int> > coin = std::make_pair(n, std::make_pair(pcoin, i));
-            
-            bool equalOrGreater = (n == nTargetValue);
-            
-            if(coinSelectStrategy == CoinSelectStrategy::descentByAmount) {
-                equalOrGreater = (n >= nTargetValue);
-            }
 
-            if (equalOrGreater) {
+            if (n == nTargetValue) {
                 setCoinsRet.insert(coin.second);
                 nValueRet += coin.first;
                 return true;
@@ -2513,7 +2488,7 @@ bool CWallet::SelectCoinsMinConf(getValue, int nConfMine, int nConfTheirs, std::
     return true;
 }
 
-bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, CoinSelectStrategy coinSelectStrategy, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX) const
+bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX) const
 {
     // Note: this function should never be used for "always free" tx types like dstx
 
@@ -2532,10 +2507,11 @@ bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const 
         return (nValueRet >= nTargetValue);
     }
 
-    return (SelectCoinsMinConf(nTargetValue, 1, 6, vCoins, setCoinsRet, nValueRet, coinSelectStrategy) ||
-            SelectCoinsMinConf(nTargetValue, 1, 1, vCoins, setCoinsRet, nValueRet, coinSelectStrategy) ||
-            (bSpendZeroConfChange && SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet, coinSelectStrategy)));
+    return (SelectCoinsMinConf(nTargetValue, 1, 6, vCoins, setCoinsRet, nValueRet) ||
+            SelectCoinsMinConf(nTargetValue, 1, 1, vCoins, setCoinsRet, nValueRet) ||
+            (bSpendZeroConfChange && SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet)));
 }
+
 
 bool CWallet::IsCollateralAmount(CAmount nInputAmount) const
 {
