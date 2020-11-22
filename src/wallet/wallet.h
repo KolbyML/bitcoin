@@ -264,7 +264,7 @@ public:
     void MarkPreSplitKeys();
 
     bool MintableCoins();
-    bool SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) const;
+    bool SelectStakeCoins(std::list<std::unique_ptr<CStakeInput> >& listInputs, CAmount nTargetAmount, int blockHeight) const;
     bool IsCollateralAmount(CAmount nInputAmount) const;
 
     // Zerocoin additions
