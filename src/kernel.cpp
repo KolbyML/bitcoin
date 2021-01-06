@@ -14,6 +14,7 @@
 #include "wallet/wallet.h"
 #include "init.h"
 
+#include "core_io.h"
 #include "kernel.h"
 #include "script/interpreter.h"
 #include "timedata.h"
