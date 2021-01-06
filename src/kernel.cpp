@@ -12,6 +12,7 @@
 #include "script/sign.h"
 #include "wallet/db.h"
 #include "wallet/wallet.h"
+#include "init.h"
 
 #include "kernel.h"
 #include "script/interpreter.h"
