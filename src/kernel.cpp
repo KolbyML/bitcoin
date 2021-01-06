@@ -411,7 +411,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                         SignSignature(keystore, prevPubKey, rawTx, i, cost, nHashType);
                     }
                     // Make sure we verify the tx
-                    if (!VerifyScript(txin.scriptSig, prevPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&rawTx, i, cost))) {
+                    if (!VerifyScript(txin.scriptSig, prevPubKey, NULL, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&rawTx, i, cost))) {
                         LogPrintf("VerifyScript() : could not verify the signature for mutableTx %s\n", rawTx.GetHash().ToString());
                         continue;
                     }
