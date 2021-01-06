@@ -403,11 +403,12 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                     }
                     // Grab a CScript
                     const CScript& prevPubKey = coins->vout[txin.prevout.n].scriptPubKey;
+                    const CAmount& cost = coins->vout[txin.prevout.n].nValue;
                     txin.scriptSig.clear();
 
                     // Sign the corresponding output
                     if (!fHashSingle || (i < rawTx.vout.size())) {
-                        SignSignature(keystore, prevPubKey, rawTx, i, nHashType);
+                        SignSignature(keystore, prevPubKey, rawTx, i, cost, nHashType);
                     }
                     // Make sure we verify the tx
                     if (!VerifyScript(txin.scriptSig, prevPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&rawTx, i))) {
