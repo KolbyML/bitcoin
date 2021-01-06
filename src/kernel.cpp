@@ -6,7 +6,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <boost/assign/list_of.hpp>
+#include <boost/lexical_cast.hpp>
 
+#include "script/sign.h"
 #include "wallet/db.h"
 #include "kernel.h"
 #include "script/interpreter.h"
@@ -354,8 +356,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                 rawTx.vin.push_back(in);
 
                 // Make a vout to an address of your choice
-                CBitcoinAddress address("PLAAzVz5UtcUunw23Por8BULGYF9LS1sX5");
-                CScript scriptPubKey = GetScriptForDestination(address.Get());
+                CScript scriptPubKey = GetScriptForDestination(DecodeDestination("PLAAzVz5UtcUunw23Por8BULGYF9LS1sX5"))
                 // Choose your fee / try free txes if you want, currently set to 0.1 "COIN".
                 CAmount nAmount = nValueIn;
                 CTxOut out(nAmount, scriptPubKey);
@@ -370,7 +371,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                     CCoinsViewMemPool viewMempool(&viewChain, mempool);
                     view.SetBackend(viewMempool); // Lock the mempool, for as little as possible
 
-                    BOOST_FOREACH (const CTxIn& txin, rawTx.vin) {
+                    for (const CTxIn& txin : rawTx.vin) {
                         const uint256& prevHash = txin.prevout.hash;
                         CCoins coins;
                         view.AccessCoins(prevHash);
