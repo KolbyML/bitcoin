@@ -11,6 +11,8 @@
 #include "base58.h"
 #include "script/sign.h"
 #include "wallet/db.h"
+#include "wallet/wallet.h"
+
 #include "kernel.h"
 #include "script/interpreter.h"
 #include "timedata.h"
