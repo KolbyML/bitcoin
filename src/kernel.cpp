@@ -8,6 +8,7 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "base58.h"
 #include "script/sign.h"
 #include "wallet/db.h"
 #include "kernel.h"
