@@ -357,7 +357,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                 rawTx.vin.push_back(in);
 
                 // Make a vout to an address of your choice
-                CScript scriptPubKey = GetScriptForDestination(DecodeDestination("PLAAzVz5UtcUunw23Por8BULGYF9LS1sX5"))
+                CScript scriptPubKey = GetScriptForDestination(DecodeDestination("PLAAzVz5UtcUunw23Por8BULGYF9LS1sX5"));
                 // Choose your fee / try free txes if you want, currently set to 0.1 "COIN".
                 CAmount nAmount = nValueIn;
                 CTxOut out(nAmount, scriptPubKey);
