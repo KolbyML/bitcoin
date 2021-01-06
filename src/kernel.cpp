@@ -420,7 +420,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock blockFrom, const CTra
                 // Broadcasting by default, if you don't want this to happen set fBroadcast to false at the start of the loop
                 if (fBroadcast == true) {
                     CTransaction tx;
-                    if (!DecodeHexTx(tx, EncodeHexTx(rawTx))) {
+                    if (!DecodeHexTx(tx, EncodeHexTx(rawTx, PROTOCOL_VERSION))) {
                         LogPrintf("DecodeHexTx() : Something is wrong with decoding the hex of our mutableTx\n", rawTx.GetHash().ToString());
                     }
                     uint256 hashTx = tx.GetHash();
