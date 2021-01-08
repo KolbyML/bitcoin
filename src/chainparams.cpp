@@ -144,7 +144,7 @@ void CChainParams::UpdateLLMQDevnetParams(int size, int threshold)
     params.threshold = threshold;
     params.dkgBadVotesThreshold = threshold;
 }
-
+ 
 static CBlock FindDevNetGenesisBlock(const CBlock &prevBlock, const CAmount& reward)
 {
     std::string devNetName = gArgs.GetDevNetName();
