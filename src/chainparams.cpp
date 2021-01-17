@@ -12,7 +12,7 @@
 #include <utilstrencodings.h>
 
 #include <arith_uint256.h>
-
+ 
 #include <assert.h>
 
 #include <chainparamsseeds.h>
