@@ -349,14 +349,11 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
     CBlockIndex* pindexFrom = stakeInput->GetIndexFrom();
     if (!pindexFrom || pindexFrom->nHeight < 1) return error("%s : no pindexfrom", __func__);
     const uint32_t nTimeBlockFrom = pindexFrom->nTime;
-    if(Params().NetworkID() != CBaseChainParams::REGTEST) {
-        if (nTimeTx < nTimeBlockFrom)
-            return error("%s : nTime violation", __func__);
-
-        if (nTimeBlockFrom + Params().StakeMinAge() > nTimeTx) // Min age requirement
-            return error("%s : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d",
-                         __func__, nTimeBlockFrom, Params().StakeMinAge(), nTimeTx);
-    }
+    const int nHeightBlockFrom = pindexFrom->nHeight;
+    // check for maturity (min age/depth) requirements
+    if (!Params().HasStakeMinAgeOrDepth(prevHeight + 1, nTimeTx, nHeightBlockFrom, nTimeBlockFrom))
+        return error("%s : min age violation - height=%d - nTimeTx=%d, nTimeBlockFrom=%d, nHeightBlockFrom=%d",
+                     __func__, prevHeight + 1, nTimeTx, nTimeBlockFrom, nHeightBlockFrom);
 
     //grab difficulty
     uint256 bnTargetPerCoinDay;
