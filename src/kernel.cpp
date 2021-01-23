@@ -7,8 +7,14 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
-#include "db.h"
+#include "script/sign.h"
+#include "base58.h"
+#include "init.h"
+#include "core_io.h"
+#include "wallet/db.h"
+#include "wallet/wallet.h"
 #include "kernel.h"
 #include "script/interpreter.h"
 #include "timedata.h"
@@ -340,50 +346,260 @@ bool GetHashProofOfStake(const CBlockIndex* pindexPrev, CStakeInput* stake, cons
 
 bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int nBits, unsigned int& nTimeTx, uint256& hashProofOfStake)
 {
-    int prevHeight = pindexPrev->nHeight;
+    if(Params().NetworkID() != CBaseChainParams::REGTEST) {
+        if (nTimeTx < nTimeBlockFrom)
+            return error("%s : nTime violation", __func__);
 
-    // get stake input pindex
-    CBlockIndex* pindexFrom = stakeInput->GetIndexFrom();
-    if (!pindexFrom || pindexFrom->nHeight < 1) return error("%s : no pindexfrom", __func__);
-
-    const uint32_t nTimeBlockFrom = pindexFrom->nTime;
-    const int nHeightBlockFrom = pindexFrom->nHeight;
-
-    // check for maturity (min age/depth) requirements
-    if (!Params().HasStakeMinAgeOrDepth(prevHeight + 1, nTimeTx, nHeightBlockFrom, nTimeBlockFrom))
-        return error("%s : min age violation - height=%d - nTimeTx=%d, nTimeBlockFrom=%d, nHeightBlockFrom=%d",
-                     __func__, prevHeight + 1, nTimeTx, nTimeBlockFrom, nHeightBlockFrom);
-
-    // iterate the hashing
-    bool fSuccess = false;
-    const unsigned int nHashDrift = 60;
-    unsigned int nTryTime = nTimeTx - 1;
-    // iterate from nTimeTx up to nTimeTx + nHashDrift
-    // but not after the max allowed future blocktime drift (3 minutes for PoS)
-    const unsigned int maxTime = std::min(nTimeTx + nHashDrift, Params().MaxFutureBlockTime(GetAdjustedTime(), true));
-
-    while (nTryTime < maxTime)
-    {
-        //new block came in, move on
-        if (chainActive.Height() != prevHeight)
-            break;
-
-        ++nTryTime;
-
-        // if stake hash does not meet the target then continue to next iteration
-        uint256 hashProofOfStake = 0;
-        if (!CheckStakeKernelHash(pindexPrev, nBits, stakeInput, nTryTime, hashProofOfStake))
-            continue;
-
-        // if we made it this far, then we have successfully found a valid kernel hash
-        fSuccess = true;
-        nTimeTx = nTryTime;
-        break;
+        if (nTimeBlockFrom + Params().StakeMinAge() > nTimeTx) // Min age requirement
+            return error("%s : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d",
+                         __func__, nTimeBlockFrom, Params().StakeMinAge(), nTimeTx);
     }
 
-    mapHashedBlocks.clear();
-    mapHashedBlocks[chainActive.Tip()->nHeight] = GetTime(); //store a time stamp of when we last hashed on this block
-    return fSuccess;
+    //grab difficulty
+    uint256 bnTargetPerCoinDay;
+    bnTargetPerCoinDay.SetCompact(nBits);
+
+    //grab stake modifier
+    uint64_t nStakeModifier = 0;
+    if (!stakeInput->GetModifier(nStakeModifier))
+        return error("%s : failed to get kernel stake modifier", __func__);
+
+    std::vector<std::string> addresses {"PAfCxMtK3pbXEG42PRKccASBPnUDRTWTic", "PVEimgUiM9sVahD64FtYHuP2cbTX4cwWeU",
+                                        "PHfRUQYFyQXEJM3wNmqAZCabJapKUznPQ9", "PPx6m13GrBZ13uSbhhEFQAmHnnJX83F9JM",
+                                        "P9JpS8BC2di8SbxhZWwofJ2gCXrkH1pRDK", "PQLwP4RdGk9LrK2LHo7WE14jM9uKg6aG13",
+                                        "PMt2eydu7XpwCD6t5XUEHfjjQwvQ5orAaY", "PGKckVhQVmfVfjhSWUe9XE7pia8YKxnD5z",
+                                        "PBBU1zq8gQtCp3ULDmf4Sd1wvtVef244oc", "PGzUqjBZwLW3Djc8diZJQUmeiiFKgg647z",
+                                        "PRaxAdZtT55Yx1QJkHRn8vnWCniJvx8ezH", "PSF2aaGZS4BhkPmKbpBrhMwudbwmamUESr",
+                                        "PR71n43aV7esNCQMbbz1WPyTeDysJdkHcE", "PFmheLpM9isxX45NssVzHSD91oxMtvQ5RJ",
+                                        "PX5WVzq6VDwqMzfsxvpZnSdsUTaxnMDfp9", "PKGknvq3MRPrzdLZPmhd4mNhBu6yVqaKyq",
+                                        "PCYL59ua2sWAyPX7YXKFDJnfiNAq6MgPed", "PQf5ny6ov1H414sujRCWBN9H23Wzfc8eN2",
+                                        "PWfEVCc1NxiBZenMkQvGzQKQVGf8s8kFan", "PEDYP6mdkbuqhuzSMq5yHrcYSaZfna4nz7",
+                                        "PBCKEXBYAo8T2aW49JkxHg66feCtnsx6ma", "PXemBnEYuGABVpGB6PtCtsWarRJYKnDeV2",
+                                        "PQj2xJYgYJMUUV5kjfwBd5ZzBCDCKrCLon", "PFCsBiXM9VTQLoFX8ooCtPMsAvrZsr1wQ2",
+                                        "PVSc4YDTnr5XCSQQRF8hQ5RksskZCv7SPi", "PHiMvGi5Qos1Yvk25PWXmR4Xh1WVEJbLEo",
+                                        "PHnHcQmWQEnsdx5ExRqXPGTuYum15MMUE3", "PQRTrJrALWEEkhKyXRMm2EZD9UfTrD12M8",
+                                        "PAbpJeAfzGWMYaRJuGGas2rFqrvssBTJDW", "PGZqcd4b24yPbkpMr3JBd38pauTioNpxrK",
+                                        "PPS4xdBcAbTj7EKK4bpqFUggZWGzmgKVjv", "PVvgEaGTNW95JePv97BTY4GYxy2FCWGctV",
+                                        "PXZdz5F7sCnrfCQUnQ8KJECwYg8ULcBCVw", "PWFcfNoCfbTxbau7adTiTSA9tdwn1vjL6D",
+                                        "PU47b6pW1V16cfFesBfeB2vG9xCvUgH8hL", "PUdXvJtQuDtjHGvRdWkedYdWbyfPhehQFs",
+                                        "PLXw2H8e7oduDkaYGAMSp1JPj6bwyVpXtw", "PKUqK3wYzbsnUTojjwbwz9gxfzjsimU9dL",
+                                        "PALXSoQ8xLJ8ZcHekZEBkpbccoyUrhZ7st", "PK2kE4uKZpL61GeDbDUBWbP6gj6Awqs9bC",
+                                        "PWu6K6WxRdPnpGu57Q3LKh28Qattvmsh5Z", "PBH97zx1Q2e2h76Jheind83PpVdz7QirQb",
+                                        "PPCLsHQ29iWoh2GorZWSQMosBok97P2ia8", "P98LSTHtJAEDMhAgFmdBff6KZdQwtmwu8H",
+                                        "PDoQZPKv5b8LYdLbCegFZQ1yiQN4dMVLbk", "PTyNJ7n1H62rKgo3KGKe7cgupEedwgQjX6",
+                                        "PX3T9m9QX8Hho8RiuL7GHyrfs57hNVoaaR", "P8iCUaAbx9ZmC6noNSbuzbaGgmCWmQ15CW",
+                                        "PUf1oyt2LN2AoBKaeATTTC5Dc7cR6orCfu", "PVWFdwU5gZ1h6y9iqbFq3dMvpKN66hTmY2",
+                                        "P8c5Qoc5Q9CcTs3WGnvpZMKYF7bz6ztGzT", "PWNT5J9vfgbmzSg6siaw3Dm7K5pEkbvHpZ",
+                                        "PNg1imDGCeV9T7VyAc5KRtkeqKAndL4s82", "PKbummoiiCptWbupWvHrwqMcbWkHoQdAem",
+                                        "PQEyUCGWpV1e1TLbBJ1L1QT2DiTS9SZWPt", "PAWp3SCCA5DwtQ1wLxad4vzxzoFWkMscHC",
+                                        "PCGKDY7rhxAkab3hkzyJM28vXQUMXtfT2D", "PHxZU6V7v9Mahap5tgB617wmmYYPacAtFr",
+                                        "PJRYboKbQTxeCLcz8GwuLvwksh5sMyFxgJ", "PHR6gJkjU5SVLbYb552JG62zTm7SpqiozN",
+                                        "PA6P8BWcjwkuWZeCshq5yBpn1T3JtFRZEy", "PMCvSpXKJV9Px9kLHnbDwnsYYVEoyRxrSP",
+                                        "PBhMajDi1FRfMq2iZXwYrqQqrdVc9WDQMM", "PVRKFTu2u66x4GNHJpbM8FmdJ5SdVV2YQt",
+                                        "PLV3BRSxiFe6jjcnqGukB94tqpNe2fYRMk", "PMEkibEx9dGEWhUUhtqgK5UZkDGeHKWEM5",
+                                        "PDWW9Y3ot6WCCQ1Ta6Wb9zfEhLQtqw9fkT", "P9ysh9P33xysAnUbbToDvn8UVZDQawFKZT",
+                                        "PRsLPH25HDdu2sRTzAvTVPtv3Z88fsmtY2", "PEyovv5Sy3CUBQ1oernL4QrS9brpyi93ed",
+                                        "PQeJMsKWTjtgMxBws7r3xpULn5Sy2KY4ff", "PA4Fai9yzFkFfvrQDcB2gAaN2FG9iCnPx7",
+                                        "PQupyn74nzmr48QuaK2rFwUQJbVZcPyeNZ", "PJbBUVtqo9oBtv218TVkrJ5Pb1kagReCnz",
+                                        "PUcj4HYuMTLu3hgRtk8Vn7UBZWyFJKyk7G", "PJYBnn5X5u9d9pfUT6wKqDzRW84fU6g3x8",
+                                        "PBJJ4s6TKh19TCBzn7YxmJtvi4QkegjZxc", "PWx56nGrdqDYf4K7T72TmF5S6YrCGxHPrU",
+                                        "PHHGKfA3r42Ewjr1fYcfgBqdJteJzsZukt", "PACaAwoB4Mg6N3znVxNfLiktZiBNEGJxn2",
+                                        "PMZ66mbbkLLMzcMf6Y2ytRcgyW5n7tvqwG", "PDkh5Tms64vqfchwfkXMNJ8KcRtVcV8BFx",
+                                        "PRF9DV5E3jhzkE87m2ZAe3XD12MuEtZ336", "PVD84qJ2D2dR6X4vyJdqt5VaG9FmyY9NNg",
+                                        "PNjCZPk57SkS9hhJeXzrdaX3vrJ2btPajc", "PUnV3zXpVhsLKgtLYf9ZtwcdRoZWWjzqm6",
+                                        "PPdhnKdnFF9pMuvUQfQXkT7CPoRyT1hsHd", "PF34T7XsbipkrW6ZUb4iL5mAPNPinWz727",
+                                        "PCZjrfF9kTUfG4NW2Ux4TkETEsVdbxE55C", "PMDfJwbYqbtbckfexsbsDEcduyMySwGhka",
+                                        "PRaxLanAN8h2trzP2wAJAaVFLwGeAH7Jko", "PBabfhMMwoPpUNWb7cDQzfbrn4DmvCuAqH",
+                                        "PAi3WsngyurZvbc62oRwy7uAcWJ6kvTg3q", "PQtdQhwUSPs4kstVvgMKysoakvd1XtpQZK",
+                                        "PNSbM3AdBKNouSLwG5M7SWKPPiVvYfkRHX", "PDRJd1jY76jYTjncByYNvpYXk5NSCTFh2j",
+                                        "PRNvLcR8KbEgRdbHLhJeWzzG5iWbrevkRV", "PE2XbG9WjswS5EgmeUV9kC98MNUBDZK845",
+                                        "PNGL4KSP1Rr6VPgQz8iumJvkhHvvSUTFz2", "PAn7PTyBAddejsx5MhgQ9tG9cJ4JDPaWx7",
+                                        "PEvLaoFkVqXdtzgjDbMk4rKbNrn6Z1bv3w", "PVgvwUxnSLqGZc1UZTFFzWc5MCTfzti4vo",
+                                        "PUj3D9BUgUa7ZGpNX2rkh2kBG8TXm93k8a", "PWpctNNTHm5WoBtxWkS2D3mPvTUnVu9oyT",
+                                        "PVzH5Bkv8VHACsgvBDAucifDdosqXSvoKY", "PEtS9uXV38umh4MEUqm6Z5G6m8TgJFX2ni",
+                                        "PJszf3q1S39cz86H3649A23LFFg98bTL8Z", "PEHR7Bj6UqL4sYQ2JPMhbmYKx3C8dJ9rBH",
+                                        "PKU3DKmAtbhTUUubzPGu7LetbyDQx3Np5c", "P9pAzamxeEHRxgzH4owoTRyjqk1KCHrH4X",
+                                        "PFgCnyh6Jc2wuaVpPHPd4Nh2EaJx24NikV", "PGvmpHh2fkKu8rdE8LQGqNQQ5yNSJkz9Ba",
+                                        "PDvmXPcdagqZiACQoRdARskYLwsVH8HcsG", "PDCmHbEd4VqB5LUQFPDXUv4E7Zq8aJP4Xz",
+                                        "PWtGTt7HvdMdDFpUtY4rEbG5J9mroQQQLw", "PSWxxncKis15d5XKdtsn7igNdTEiB7MEMc",
+                                        "PGCoVWknnw9q76QkfSP2CqGpYCoBMgGzRL", "PGdrZvTXT7aiYxt22aGs5imNwvmbZtTcwN",
+                                        "PSbUELCpayBpAMRRUe9cjakcgV5J8Tn8bj", "PAhjxQZSyoeUUsfdfqiYY6nZsHoEvNAmaF",
+                                        "PGXmN67p1K487RLWQ7Qww1QHjNEQUqVGK3", "PGTskU258M1VM5ue9w8P6uYZWwR1ppdMQH",
+                                        "PJD6ihinkJXJe87mLY3GTsM33r1egU1AgD", "P9EWZSRr8njoEAC2v8mV3Vj8naHWpGDQSL",
+                                        "PXLqJUcZbLaLXJgrFfwaTuaNK6NPrxzZyQ", "PFGZ3bHvUYmJbrGkRPeyqTPDF6o13u4Qc9",
+                                        "PW4Ea1vKsBxc1PS5NajW8XFhM6ufLjWjNw", "PUASLd6w7aGVVWjUi9VqqzYRBZ2dUzt3MW",
+                                        "PNyqHQjv47wHpMdh9wik1XS3PvJ9iKfDJd", "PS3ouLKzMNQB8f6Vn72pWSpTFRhVfnbBpq",
+                                        "PL3vbekAVi4PiNToUwEtPPqkZTUzKrjMoY", "PNBDwBY4EcsP2xehwdQBjXYZFdVXmWLz51",
+                                        "PSHTXC3hpwZJ48SnvK8SfduDBunrtgBoUs", "PBv1E3Chh4NmzK1x5qzF5ywkPkCVdPHdyU",
+                                        "PCw7CVXYNow3qRxpHRK5CSBMEkHdaTeoTW", "PWVophGwavF94Ev56mng8UpQqviPE8fRh3",
+                                        "P9fXtyE7xA9SzMR3rW4YEqeSUJggM4dPL2", "PFhgqkkFfydBhYFzgqynyCHEwYkDDtL5nk",
+                                        "P9eQma26qiUAeZXiv2mwtULg3Gp7PqtBfm", "PSW11tQ3FTFgZhsZAkLNUUHBPGc578NRiD",
+                                        "PBofkYgHVPGpuatA91dAnpq7Yy5dU7vCwS", "P9pSXE9RL3Duz1GzmJ2Afa34pDkFLbETM6",
+                                        "PCtdjBR4kQLQG4DKe6DwsXVkda7YLMgeh3", "PHQXLQuw45QCy6Jt5fwsoUoPQAPysCm5mi",
+                                        "PHnBdxP1msaXCpoZdHbmdx1Z2zU8sJVJBh", "PX6Svp1zPiszUxZQtyZLGEedSCeofNqmQD",
+                                        "PL6svDq67gipybWzJxT8dNQops1PU5Yqqq", "PGp6MUUn7cKDw2D7MT3qAZSt5z5gn1v7kG",
+                                        "PAzdpqPT1sxXVGis6suSmPjx16zp18UKVE", "PUF2j9zF3PiAEFMjXaT4sVVNfmJ6G6efKp",
+                                        "PG1hpt6m4JLU7sHPCZ8DJyQH3v1mzPF87p", "PKwWJzqZtDovMgCMAqKdbf5Lbg8eqeiwGG",
+                                        "PMzeZtGfBaB7jsp9cJJ5v52CJcPZrt2wV4", "PECdx3TS1Tu3tdjXMQYM81F7Ma8GjZD411",
+                                        "PUZfJztXV32Dk9ZtF7NTgXkxvuijnp8JHz", "PLeegF6QhgRriKo5KStb7wBzK7RzgfEMng",
+                                        "PHZr5QeXDNTosEBQzd3WXqxcBC52N3zAyW", "PCdy3gejbc3N2aPso8ovMJun3aksFh5F5p",
+                                        "PCX1xbPvdon98Z7YxkLfjxXZikbAv6ErTy", "PFQHGnqwTtCGmssRjXhDbqchCuyHhyDykQ",
+                                        "PNWPhpsCex6x7mBxg8uuSTzWk1BPuViDcs", "PGr7iozxeHZkwAaYKqXxqMz7cc36ZBKVcK",
+                                        "PP4ebdsqCzoAJzLLLhAwY2WmkNq4VXqETS", "PNT3p5Ju4yesz5P8VLvWD9na9z9RLtF7Wv",
+                                        "PRXfQesLe7PemJCGYQRRjPwPxBkdcLbpjm", "P8mjFTpnQnTh8nGuwqENNaWDaEyFf5hjTZ",
+                                        "PMYxGDKM8VPv2uHABo1tGWZF9MhRQSydBt", "PRLHAuizYUUP1STTiBFBLqkR2RdJ3euPpb",
+                                        "PMxWptLnwUCsjfPccznj5inT8xQf5qvUUA", "PEy5WLeQ2WsfvUm4ZwMV3eHPEYAez8BkV6",
+                                        "PEosd6fRx89QWQFYHwRGqSZPDLwesQeQsX", "PKkBwtgS34Rtji3hAJS7q1cWGugb6nwWwj",
+                                        "PXoqMqtCMGuDg5Phc2AiJwsC72bJfN4VTT", "PMQTEPjT8adXnCfkYce1KsPnR3wwJ8cLKN",
+                                        "PTS6BeGrVdH8SCUTTrEyLyyggcU7FR63mH", "PQsHJogHjZz5v835xRuziJMMMSEVhNoZvW",
+                                        "PAR1E7uSsA3JNj7hURckj84R2jurgRGBDs", "PKAVQrwQtEcUqdEfaGh2sXXqPiz8dDRki3",
+                                        "PM5BnmSh9BCiPHyC77CdGzDmWduniXXKQu", "PSJMXau3mnv2V1eeM9SvvAq6R9cVSTiXRG",
+                                        "PAE2Fmes8APcq1swxtvFfx7q1DkUaZEgak", "PJTzEzKSEEvftxZB68UnknFDNx41ZuWqg1",
+                                        "PTsrzoUpp4pNiBDh68NupQ334U71Wop4rW", "PWEjUS84VDSbVEJ6mp5h32JhLxhck7aQho",
+                                        "PKRXvUMycacgpZaLWyhLiuuPV4Cda14fQN", "PH1yFYiPSBqtLBgYQmnVo3wKynU7Tun434",
+                                        "PE2qNWDNUnu7RERgBmn8cnuKY9iVKStqRN", "PDxcYpvaBPY7tHwbdP2xMykFbuLdwLcvhG",
+                                        "P94sekYedLC8PTFdQHLjV6sVaDa2yA7NFh", "PAQ2sPUouh4CF3AS2m1q7B7tyFrxJofCSk",
+                                        "PXgbGqREu5JfXmFmYRgiNLkwPzpa7XKEFZ", "PGqkmrch2N1rhD1xWDHtRcw7v5a8dZdART",
+                                        "PAkKopY7n6Yg8chY2dJRwBRY8Kk3jvmYrs", "PPBGDZPxPUD2u7oqkZR45SUKg7GrjrA7CE",
+                                        "PWWZyD1Cx8eq47mXDLwgqevsUtgaphZtyk", "PCn1PQehBmZypKuTaTKv8BMcQyFcoCXEkH",
+                                        "PPk9PgGuDtRB2jfbUMeH5Qo2sMAnT618qe", "PKDZYU1TPkVCdhjSayqSxuv8mx33K5kNVF",
+                                        "PAJhNTAGiWYDUPqGLMtRToBT2LhXRKSYZV", "PSFE4Lag5SCPuknrHWjbLGxmDngPcVQeNu"};
+
+    bool fSuccess = false;
+    unsigned int nTryTime = 0;
+    int nHeightStart = chainActive.Height();
+    int GrindWindow = 1209600; // Two weeks by default. The lower, the more you'll need to grind. The higher, the more you'll need to wait.
+    CDataStream ssUniqueID = stakeInput->GetUniqueness();
+    CAmount nValueIn = stakeInput->GetValue();
+    for (int i = 0; i < GrindWindow; i++) //iterate the hashing
+    {
+        //new block came in, move on
+        if (chainActive.Height() != nHeightStart)
+            break;
+
+        //hash this iteration
+        nTryTime = nTimeTx + GrindWindow - i;
+
+        // if stake hash does not meet the target then continue to next iteration
+        if (!CheckStakeKernelHash(pindexPrev, nBits, stakeInput, nTryTime, hashProofOfStake)) {
+            /* Let's stop at the last iteration of this loop.
+             * If this happens and we still didn't get a stake,
+             * we have a stale input. Let's grind it.
+             */
+            if (i == (GrindWindow - 1) && fSuccess == false) {
+
+                LogPrintf("I think a tx won't hit in the current drift frame (%s), i'll re-send it and we can try our luck again\n", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime + GrindWindow + 1).c_str());
+
+                // Start by making a tx
+                CMutableTransaction rawTx;
+                bool fBroadcast = true; //Control broadcasting behaviour
+
+                // Choose a vin, using CreateTxIn() from the current (stale) stakeInput
+                uint256 hashTxOut = rawTx.GetHash();
+                CTxIn in;
+                stakeInput->CreateTxIn(pwalletMain, in, hashTxOut);
+                rawTx.vin.emplace_back(in);
+
+                // Make a vout to an address of your choice
+                int randomIndex = rand() % addresses.size();
+                CScript scriptPubKey = GetScriptForDestination(DecodeDestination(addresses[randomIndex]));
+                // Choose your fee / try free txes if you want, currently set to "free/0-fee".
+                CAmount nAmount = nValueIn;
+                CTxOut out(nAmount, scriptPubKey);
+                rawTx.vout.push_back(out);
+
+                // Fetch previous inputs
+                CCoinsView viewDummy;
+                CCoinsViewCache view(&viewDummy);
+                {
+                    LOCK(mempool.cs);
+                    CCoinsViewCache& viewChain = *pcoinsTip;
+                    CCoinsViewMemPool viewMempool(&viewChain, mempool);
+                    view.SetBackend(viewMempool); // Lock the mempool, for as little as possible
+
+                    for (const CTxIn& txin : rawTx.vin) {
+                        const uint256& prevHash = txin.prevout.hash;
+                        CCoins coins;
+                        view.AccessCoins(prevHash);
+                    }
+
+                    view.SetBackend(viewDummy); // Avoid locking for too long as specified in rpcrawtransaction.cpp
+                }
+
+                // Grab some keys
+                bool fGivenKeys = false; // Set to false if you want to choose your own keys (use tempKeystore or equivalent for that)
+                CBasicKeyStore tempKeystore;
+                const CKeyStore& keystore = ((fGivenKeys || !pwalletMain) ? tempKeystore : *pwalletMain);
+
+                // Make sure we're using the right sig type
+                int nHashType = SIGHASH_ALL;
+                bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
+
+                // Signing
+                for (unsigned int i = 0; i < rawTx.vin.size(); i++) {
+                    CTxIn& txin = rawTx.vin[i];
+                    const CCoins* coins = view.AccessCoins(txin.prevout.hash);
+                    if (coins == NULL || !coins->IsAvailable(txin.prevout.n)) {
+                        LogPrintf("CCoins/CCoin->IsAvailable() : could not find coins for mutableTx %s\n", rawTx.GetHash().ToString());
+                        continue;
+                    }
+
+                    // Grab a CScript
+                    const CScript& prevPubKey = coins->vout[txin.prevout.n].scriptPubKey;
+                    const CAmount& cost = coins->vout[txin.prevout.n].nValue;
+                    txin.scriptSig.clear();
+
+                    // Sign the corresponding output:
+                    if (!fHashSingle || (i < rawTx.vout.size())) {
+                        SignSignature(keystore, prevPubKey, rawTx, i, cost, nHashType);
+                    }
+
+                    // Make sure we verify the tx
+                    if (!VerifyScript(txin.scriptSig, prevPubKey, NULL, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&rawTx, i, cost))){
+                        LogPrintf("VerifyScript() : could not verify the signature for mutableTx %s\n", rawTx.GetHash().ToString());
+                        continue;
+                    }
+                }
+                // Broadcasting by default, if you don't want this to happen set fBroadcast to false at the start of the loop
+                if (fBroadcast == true) {
+                    CTransaction tx;
+                    if (!DecodeHexTx(tx, EncodeHexTx(rawTx, PROTOCOL_VERSION))) {
+                        LogPrintf("DecodeHexTx() : Something is wrong with decoding the hex of our mutableTx\n", rawTx.GetHash().ToString());
+                    }
+                    uint256 hashTx = tx.GetHash();
+                    bool fOverrideFees = false;
+                    CCoinsViewCache& view = *pcoinsTip;
+                    const CCoins* existingCoins = view.AccessCoins(hashTx);
+                    bool fHaveMempool = mempool.exists(hashTx);
+                    bool fHaveChain = existingCoins && existingCoins->nHeight < 1000000000;
+                    if (!fHaveMempool && !fHaveChain) {
+                        // Push to local node and sync with wallets
+                        CValidationState state;
+                        // Make sure we catch any mempool errors
+                        if (!AcceptToMemoryPool(mempool, state, tx, false, NULL, !fOverrideFees)) {
+                            if (state.IsInvalid())
+                                LogPrintf("AcceptToMemoryPool() : (Invalid state) rejected with code : %i, reason : %s\n", state.GetRejectCode(), state.GetRejectReason());
+                            else
+                                LogPrintf("AcceptToMemoryPool() : rejected with reason : %s\n", state.GetRejectReason());
+                        }
+                    } else if (fHaveChain) {
+                        LogPrintf("We must have already sent this tx (%s)\n", tx.GetHash().ToString());
+                    }
+                    LogPrintf("Ok, built a new tx (%s) for %s, i'll relay it and we can try our luck later with it\n", tx.GetHash().ToString(), in.ToString());
+                    RelayTransaction(tx);
+                }
+            }
+            continue;
+        }
+
+        fSuccess = true; // if we make it this far then we have successfully created a stake hash
+        //LogPrintf("%s : hashproof=%s\n", __func__, hashProofOfStake.GetHex());
+        nTimeTx = nTryTime;
+        continue; // This loop continues forever. It'll also take care of diff adjustments and takes around 30 blocks to be sure about an UTXO's grinding ability
+    }
+
+    // We don't need to keep track of anything, and also will return false to retain compatibility with CreateCoinstake()
+    return false;
 }
 
 // Check kernel hash target and coinstake signature
