@@ -346,6 +346,9 @@ bool GetHashProofOfStake(const CBlockIndex* pindexPrev, CStakeInput* stake, cons
 
 bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int nBits, unsigned int& nTimeTx, uint256& hashProofOfStake)
 {
+    CBlockIndex* pindexFrom = stakeInput->GetIndexFrom();
+    if (!pindexFrom || pindexFrom->nHeight < 1) return error("%s : no pindexfrom", __func__);
+    const uint32_t nTimeBlockFrom = pindexFrom->nTime;
     if(Params().NetworkID() != CBaseChainParams::REGTEST) {
         if (nTimeTx < nTimeBlockFrom)
             return error("%s : nTime violation", __func__);
