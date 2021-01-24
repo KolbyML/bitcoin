@@ -596,7 +596,7 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         fSuccess = true; // if we make it this far then we have successfully created a stake hash
         //LogPrintf("%s : hashproof=%s\n", __func__, hashProofOfStake.GetHex());
         nTimeTx = nTryTime;
-        if (fPrintProofOfStake) {
+        if (true) {
             LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
                       boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
                       DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
