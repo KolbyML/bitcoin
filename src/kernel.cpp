@@ -597,10 +597,10 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         //LogPrintf("%s : hashproof=%s\n", __func__, hashProofOfStake.GetHex());
         nTimeTx = nTryTime;
         if (true) {
-            LogPrintf("CheckStakeKernelHash() : PASS protocol=%s modifier=%s nTimeBlockFrom=%u prevoutHash=%s nTimeTxPrev=%u nPrevout=%u will hit at nTimeTx=%s hashProof=%s\n",
+            LogPrintf("CheckStakeKernelHash() : PASS protocol=%s modifier=%s nTimeBlockFrom=%u prevoutHash=%s nTimeTxPrev=%u will hit at nTimeTx=%s hashProof=%s\n",
                       "0.3",
                       boost::lexical_cast<std::string>(nStakeModifier).c_str(),
-                      nTimeBlockFrom, prevout.hash.ToString().c_str(), nTimeBlockFrom, prevout.n, DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime).c_str(),
+                      nTimeBlockFrom, prevout.hash.ToString().c_str(), nTimeBlockFrom, DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime).c_str(),
                       hashProofOfStake.ToString().c_str());
         }
         continue; // This loop continues forever. It'll also take care of diff adjustments and takes around 30 blocks to be sure about an UTXO's grinding ability
