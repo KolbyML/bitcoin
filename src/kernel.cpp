@@ -597,11 +597,6 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         //LogPrintf("%s : hashproof=%s\n", __func__, hashProofOfStake.GetHex());
         nTimeTx = nTryTime;
         if (true) {
-            LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
-                      boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
-                      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
-                      mapBlockIndex[blockFrom.GetHash()]->nHeight,
-                      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", blockFrom.GetBlockTime()).c_str());
             LogPrintf("CheckStakeKernelHash() : PASS protocol=%s modifier=%s nTimeBlockFrom=%u prevoutHash=%s nTimeTxPrev=%u nPrevout=%u will hit at nTimeTx=%s hashProof=%s\n",
                       "0.3",
                       boost::lexical_cast<std::string>(nStakeModifier).c_str(),
