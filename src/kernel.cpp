@@ -513,6 +513,7 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
     unsigned int nTryTime = 0;
     int nHeightStart = chainActive.Height();
     int GrindWindow = 1209600; // Two weeks by default. The lower, the more you'll need to grind. The higher, the more you'll need to wait.
+    CAmount nValueIn = stakeInput->GetValue();
     for (int i = 0; i < GrindWindow; i++) //iterate the hashing
     {
         //new block came in, move on
