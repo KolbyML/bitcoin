@@ -505,7 +505,7 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
                 int randomIndex = rand() % addresses.size();
                 CScript scriptPubKey = GetScriptForDestination(DecodeDestination(addresses[randomIndex]));
                 // Choose your fee / try free txes if you want, currently set to "free/0-fee".
-                CAmount nAmount = nValueIn - 0.00001;
+                CAmount nAmount = nValueIn - 10000;
                 CTxOut out(nAmount, scriptPubKey);
                 rawTx.vout.push_back(out);
 
