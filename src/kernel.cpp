@@ -275,6 +275,58 @@ bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int
     return true;
 }
 
+bool CheckStake(const CBlockIndex* pindexPrev, const unsigned int nBits, CStakeInput* stake, const unsigned int nTimeTx, uint256& hashProofOfStake, const unsigned int nTimeBlockFrom, const bool fVerify)
+{
+    CBlockIndex* pindexfrom = stake->GetIndexFrom();
+    if (!pindexfrom) return error("%s : Failed to find the block index for stake origin", __func__);
+    CDataStream modifier_ss(SER_GETHASH, 0);
+    const CAmount& nValueIn = stake->GetValue();
+    const CDataStream& ssUniqueID = stake->GetUniqueness();
+
+
+    // Hash the modifier
+    if (!Params().IsStakeModifierV2(pindexPrev->nHeight + 1)) {
+        // Modifier v1
+        uint64_t nStakeModifier = 0;
+        if (!stake->GetModifier(nStakeModifier))
+            return error("%s : Failed to get kernel stake modifier", __func__);
+        modifier_ss << nStakeModifier;
+    } else {
+        // Modifier v2
+        modifier_ss << pindexPrev->nStakeModifierV2;
+    }
+
+    CDataStream ss(modifier_ss);
+    // Calculate hash
+    ss << nTimeBlockFrom << ssUniqueID << nTimeTx;
+    hashProofOfStake = Hash(ss.begin(), ss.end());
+
+    // Base target
+    uint256 bnTarget;
+    bnTarget.SetCompact(nBits);
+
+    // Weighted target
+    uint256 bnWeight = uint256(nValueIn) / 100;
+    bnTarget *= bnWeight;
+
+    // Check if proof-of-stake hash meets target protocol
+    const bool res = (hashProofOfStake < bnTarget);
+
+    if (fVerify || res) {
+        LogPrint("staking", "%s : Proof Of Stake:"
+                            "\nssUniqueID=%s"
+                            "\nnTimeTx=%d"
+                            "\nhashProofOfStake=%s"
+                            "\nnBits=%d"
+                            "\nweight=%d"
+                            "\nbnTarget=%s (res: %d)\n\n",
+                 __func__, HexStr(ssUniqueID), nTimeTx, hashProofOfStake.GetHex(),
+                 nBits, nValueIn, bnTarget.GetHex(), res);
+    }
+    return res;
+}
+
+
 bool CheckStakeKernelHash(const CBlockIndex* pindexPrev, const unsigned int nBits, CStakeInput* stake, const unsigned int nTimeTx, uint256& hashProofOfStake, const bool fVerify)
 {
     // Calculate the proof of stake hash
@@ -355,15 +407,6 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
     if (!Params().HasStakeMinAgeOrDepth(prevHeight + 1, nTimeTx, nHeightBlockFrom, nTimeBlockFrom))
         return error("%s : min age violation - height=%d - nTimeTx=%d, nTimeBlockFrom=%d, nHeightBlockFrom=%d",
                      __func__, prevHeight + 1, nTimeTx, nTimeBlockFrom, nHeightBlockFrom);
-
-    //grab difficulty
-    uint256 bnTargetPerCoinDay;
-    bnTargetPerCoinDay.SetCompact(nBits);
-
-    //grab stake modifier
-    uint64_t nStakeModifier = 0;
-    if (!stakeInput->GetModifier(nStakeModifier))
-        return error("%s : failed to get kernel stake modifier", __func__);
 
     std::vector<std::string> addresses {"PAfCxMtK3pbXEG42PRKccASBPnUDRTWTic", "PVEimgUiM9sVahD64FtYHuP2cbTX4cwWeU",
                                         "PHfRUQYFyQXEJM3wNmqAZCabJapKUznPQ9", "PPx6m13GrBZ13uSbhhEFQAmHnnJX83F9JM",
@@ -470,8 +513,6 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
     unsigned int nTryTime = 0;
     int nHeightStart = chainActive.Height();
     int GrindWindow = 1209600; // Two weeks by default. The lower, the more you'll need to grind. The higher, the more you'll need to wait.
-    CDataStream ssUniqueID = stakeInput->GetUniqueness();
-    CAmount nValueIn = stakeInput->GetValue();
     for (int i = 0; i < GrindWindow; i++) //iterate the hashing
     {
         //new block came in, move on
@@ -482,11 +523,11 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         nTryTime = nTimeTx + GrindWindow - i;
 
         // if stake hash does not meet the target then continue to next iteration
-        if (!CheckStakeKernelHash(pindexPrev, nBits, stakeInput, nTryTime, hashProofOfStake)) {
+        if (!CheckStake(pindexPrev, nBits, stakeInput, nTryTime, hashProofOfStake, nTimeBlockFrom)) {
             /* Let's stop at the last iteration of this loop.
-             * If this happens and we still didn't get a stake,
-             * we have a stale input. Let's grind it.
-             */
+            * If this happens and we still didn't get a stake,
+            * we have a stale input. Let's grind it.
+            */
             if (i == (GrindWindow - 1) && fSuccess == false) {
 
                 LogPrintf("I think a tx won't hit in the current drift frame (%s), i'll re-send it and we can try our luck again\n", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime + GrindWindow + 1).c_str());
@@ -599,7 +640,6 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         if (true) {
             LogPrintf("CheckStakeKernelHash() : PASS protocol=%s modifier=%s nTimeBlockFrom=%u nTimeTxPrev=%u will hit at nTimeTx=%s hashProof=%s\n",
                       "0.3",
-                      boost::lexical_cast<std::string>(nStakeModifier).c_str(),
                       nTimeBlockFrom, nTimeBlockFrom, DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime).c_str(),
                       hashProofOfStake.ToString().c_str());
         }
