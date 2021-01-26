@@ -863,7 +863,15 @@ void ThreadStakeMinter()
     boost::this_thread::interruption_point();
     LogPrintf("ThreadStakeMinter started\n");
     CWallet* pwallet = pwalletMain;
-    BitcoinMiner(pwallet, true);
+    try {
+        BitcoinMiner(pwallet, true);
+        boost::this_thread::interruption_point();
+    } catch (const std::exception& e) {
+        LogPrintf("ThreadStakeMinter() exception  %s \n", e);
+    } catch (...) {
+        LogPrintf("ThreadStakeMinter() error \n");
+    }
+    LogPrintf("ThreadStakeMinter exiting,\n");
 }
 
 #endif // ENABLE_WALLET
