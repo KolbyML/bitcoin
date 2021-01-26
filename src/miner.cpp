@@ -649,7 +649,7 @@ int nMintableLastCheck = 0;
 void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
 {
     LogPrintf("PhoreMiner started\n");
-    SetThreadPriority(THREAD_PRIORITY_LOWEST);
+    SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
     RenameThread("phore-miner");
 
     // Each thread has its own key and counter
@@ -726,9 +726,9 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
             }
 
             LogPrintf("CPUMiner : proof-of-stake block was signed %s \n", pblock->GetHash().ToString().c_str());
-            SetThreadPriority(THREAD_PRIORITY_NORMAL);
+            SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
             ProcessBlockFound(pblock, *pwallet, reservekey);
-            SetThreadPriority(THREAD_PRIORITY_LOWEST);
+            SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
 
             continue;
         }
@@ -749,11 +749,11 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
                 hash = pblock->GetHash();
                 if (hash <= hashTarget) {
                     // Found a solution
-                    SetThreadPriority(THREAD_PRIORITY_NORMAL);
+                    SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
                     LogPrintf("%s:\n", __func__);
                     LogPrintf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex(), hashTarget.GetHex());
                     ProcessBlockFound(pblock, *pwallet, reservekey);
-                    SetThreadPriority(THREAD_PRIORITY_LOWEST);
+                    SetThreadPriority(THREAD_PRIORITY_ABOVE_NORMAL);
 
                     // In regression test mode, stop mining after a block is found. This
                     // allows developers to controllably generate a block on demand.
