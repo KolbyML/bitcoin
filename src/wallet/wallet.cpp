@@ -3370,6 +3370,7 @@ bool CWallet::CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWa
 // ppcoin: create coin stake transaction
 bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, CMutableTransaction& txNew, unsigned int& nTxNewTime)
 {
+    LogPrintf("test 3\n");
     // The following split & combine thresholds are important to security
     // Should not be adjusted if you don't understand the consequences
     //int64_t nCombineThreshold = 0;
@@ -3432,7 +3433,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         uint256 hashProofOfStake = 0;
         nAttempts++;
         //iterates each utxo inside of CheckStakeKernelHash()
+        LogPrintf("test 5\n");
         if (Stake(pindexPrev, stakeInput.get(), nBits, nTxNewTime, hashProofOfStake)) {
+            LogPrintf("test 6\n");
 
             // Found a kernel
             LogPrintf("CreateCoinStake : kernel found\n");
