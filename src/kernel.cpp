@@ -398,7 +398,6 @@ bool GetHashProofOfStake(const CBlockIndex* pindexPrev, CStakeInput* stake, cons
 
 bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int nBits, unsigned int& nTimeTx, uint256& hashProofOfStake)
 {
-    LogPrintf("test 1\n");
     int prevHeight = pindexPrev->nHeight;
     CBlockIndex* pindexFrom = stakeInput->GetIndexFrom();
     if (!pindexFrom || pindexFrom->nHeight < 1) return error("%s : no pindexfrom", __func__);
