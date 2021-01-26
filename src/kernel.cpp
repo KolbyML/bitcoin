@@ -639,7 +639,7 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
         //LogPrintf("%s : hashproof=%s\n", __func__, hashProofOfStake.GetHex());
         nTimeTx = nTryTime;
         if (true) {
-            LogPrintf("CheckStakeKernelHash() : PASS protocol=%s modifier=%s nTimeBlockFrom=%u nTimeTxPrev=%u will hit at nTimeTx=%s hashProof=%s\n",
+            LogPrintf("CheckStakeKernelHash() : PASS protocol=%s nTimeBlockFrom=%u nTimeTxPrev=%u will hit at nTimeTx=%s hashProof=%s\n",
                       "0.3",
                       nTimeBlockFrom, nTimeBlockFrom, DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTryTime).c_str(),
                       hashProofOfStake.ToString().c_str());
